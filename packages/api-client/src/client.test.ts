@@ -279,3 +279,62 @@ describe('teacher and availability requests', () => {
     ).rejects.toBeInstanceOf(ApiClientError);
   });
 });
+
+describe('booking requests', () => {
+  const lesson = {
+    id: '019880d3-0000-7000-8000-00000000000a',
+    startsAt: '2026-09-02T07:00:00.000Z',
+    endsAt: '2026-09-02T08:00:00.000Z',
+    durationMinutes: 60,
+    kind: 'TRIAL',
+    status: 'PENDING',
+    cancelReason: null,
+    teacher: {
+      id: '019880d3-0000-7000-8000-00000000000b',
+      firstName: 'Ірина',
+      lastName: 'Мельник',
+    },
+    student: {
+      id: '019880d3-0000-7000-8000-00000000000c',
+      firstName: 'Олена',
+      lastName: 'Коваль',
+      phone: '+380671234567',
+    },
+    location: {
+      id: '019880d3-0000-7000-8000-00000000000d',
+      name: 'Благовісна',
+      address: 'вул. Благовісна, 170',
+    },
+    directionName: 'Вокал',
+  };
+
+  it('posts a booking with the session token', async () => {
+    const { client, calls } = recordingClient(() => jsonResponse(lesson, 201));
+
+    const created = await client.createBooking(
+      {
+        teacherId: lesson.teacher.id,
+        locationId: lesson.location.id,
+        pricePlanId: '019880d3-0000-7000-8000-00000000000e',
+        startsAt: lesson.startsAt,
+        kind: 'TRIAL',
+      },
+      'an-access-token',
+    );
+
+    expect(calls[0]?.url).toBe('http://api.test/bookings');
+    expect(calls[0]?.headers['authorization']).toBe('Bearer an-access-token');
+    expect(created.status).toBe('PENDING');
+  });
+
+  it('sends an empty object when a cancellation has no reason', async () => {
+    const { client, calls } = recordingClient(() =>
+      jsonResponse({ ...lesson, status: 'CANCELLED' }),
+    );
+
+    await client.cancelLesson(lesson.id, undefined, 'an-access-token');
+
+    expect(calls[0]?.url).toBe(`http://api.test/lessons/${lesson.id}/cancel`);
+    expect(calls[0]?.body).toEqual({});
+  });
+});

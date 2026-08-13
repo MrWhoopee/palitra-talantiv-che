@@ -31,9 +31,11 @@ model User {
   createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
 
-  refreshTokens  RefreshToken[]
-  oneTimeTokens  OneTimeToken[]
-  teacherProfile TeacherProfile?
+  refreshTokens    RefreshToken[]
+  oneTimeTokens    OneTimeToken[]
+  teacherProfile   TeacherProfile?
+  lessons          Lesson[]        @relation("StudentLessons")
+  cancelledLessons Lesson[]        @relation("CancelledLessons")
 
   @@index([role])
 }
@@ -100,6 +102,7 @@ model Location {
 
   teachers TeacherLocation[]
   rules    AvailabilityRule[]
+  lessons  Lesson[]
 }
 
 /// What the studio teaches: vocals, piano, guitar, ukulele.
@@ -116,7 +119,8 @@ model Direction {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
 
-  teachers TeacherDirection[]
+  teachers   TeacherDirection[]
+  pricePlans PricePlan[]
 }
 
 /// The teaching side of a user account. Keyed by `userId` rather than by an id
@@ -140,6 +144,7 @@ model TeacherProfile {
   directions TeacherDirection[]
   rules      AvailabilityRule[]
   exceptions AvailabilityException[]
+  lessons    Lesson[]
 }
 
 model TeacherLocation {
@@ -215,4 +220,94 @@ model AvailabilityException {
   teacher TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
 
   @@index([teacherId, startsAt])
+}
+
+enum LessonFormat {
+  INDIVIDUAL
+  GROUP
+}
+
+/// A tariff: "Вокал, 8 занять по 45 хвилин, індивідуально".
+///
+/// The plan is what fixes a lesson's duration - the student picks a tariff,
+/// not a length. Prices are whole hryvnias; there are no fractional prices in
+/// the studio's list and integers cannot drift the way money in a float does.
+model PricePlan {
+  id              String       @id @default(uuid(7)) @db.Uuid
+  directionId     String       @db.Uuid
+  name            String
+  lessonsCount    Int
+  durationMinutes Int          @db.SmallInt
+  format          LessonFormat @default(INDIVIDUAL)
+  priceUah        Int
+  isActive        Boolean      @default(true)
+  sortOrder       Int          @default(0)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+
+  direction Direction @relation(fields: [directionId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+
+  @@index([directionId])
+}
+
+enum LessonKind {
+  TRIAL
+  SINGLE
+  SUBSCRIPTION
+}
+
+enum LessonStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+/// One table for every kind of lesson. A trial, a single lesson and one drawn
+/// from a subscription differ by `kind`, not by which table they live in:
+/// separate tables would turn every calendar view into a UNION and would make
+/// the overlap check unreliable, because a teacher can only be in one place at
+/// a time regardless of who is paying.
+///
+/// Two rules are enforced by the database rather than by this application,
+/// in `20260813195455_add_lessons_and_price_plans`:
+///
+///   * no two PENDING or CONFIRMED lessons of one teacher may overlap, via a
+///     gist exclusion constraint. An application-level "is it free?" check
+///     always has a race window - two parents press the button in the same
+///     second, both read "free", both write - and the constraint closes it.
+///   * `endsAt` must be after `startsAt`.
+///
+/// `endsAt` is stored next to `durationMinutes` even though it follows from
+/// it, because the exclusion constraint indexes `tstzrange(startsAt, endsAt)`
+/// and an expression computed per query would not use that index. The two
+/// stay consistent because only the booking service writes lessons.
+model Lesson {
+  id              String       @id @default(uuid(7)) @db.Uuid
+  teacherId       String       @db.Uuid
+  /// Stage 4 makes this nullable and adds `groupId` alongside it, with a check
+  /// constraint requiring exactly one of the two.
+  studentId       String       @db.Uuid
+  locationId      String       @db.Uuid
+  pricePlanId     String?      @db.Uuid
+  startsAt        DateTime     @db.Timestamptz(3)
+  endsAt          DateTime     @db.Timestamptz(3)
+  durationMinutes Int          @db.SmallInt
+  kind            LessonKind
+  status          LessonStatus @default(PENDING)
+  cancelledById   String?      @db.Uuid
+  cancelReason    String?
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Restrict)
+  student     User           @relation("StudentLessons", fields: [studentId], references: [id], onDelete: Cascade)
+  location    Location       @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  pricePlan   PricePlan?     @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
+  cancelledBy User?          @relation("CancelledLessons", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  @@index([teacherId, startsAt])
+  @@index([studentId, startsAt])
+  @@index([status])
 }

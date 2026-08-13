@@ -30,5 +30,9 @@ export function createTeachersRouter({ teachers }: TeachersRouterDeps): Router {
     res.status(200).json(await teachers.listDirections());
   });
 
+  router.get('/price-plans', async (_req, res) => {
+    res.status(200).json(await teachers.listPricePlans());
+  });
+
   return router;
 }

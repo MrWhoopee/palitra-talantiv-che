@@ -5,7 +5,10 @@ import {
   availabilityRuleSchema,
   directionSchema,
   healthResponseSchema,
+  lessonListSchema,
+  lessonSchema,
   locationSchema,
+  pricePlanSchema,
   publicTeacherListSchema,
   publicTeacherSchema,
   publicUserSchema,
@@ -17,11 +20,14 @@ import {
   type AvailabilityRule,
   type AvailabilityRuleInput,
   type BadResponseCode,
+  type BookingRequest,
   type Direction,
   type DomainErrorCode,
   type HealthResponse,
+  type Lesson,
   type Location,
   type LoginRequest,
+  type PricePlan,
   type PublicTeacher,
   type PublicUser,
   type RegisterRequest,
@@ -93,6 +99,14 @@ export interface ApiClient {
     exceptionId: string,
     accessToken: string,
   ): Promise<void>;
+
+  getPricePlans(): Promise<PricePlan[]>;
+  createBooking(input: BookingRequest, accessToken: string): Promise<Lesson>;
+  getMyLessons(accessToken: string): Promise<Lesson[]>;
+  confirmLesson(lessonId: string, accessToken: string): Promise<Lesson>;
+  cancelLesson(lessonId: string, reason: string | undefined, accessToken: string): Promise<Lesson>;
+  completeLesson(lessonId: string, accessToken: string): Promise<Lesson>;
+  markNoShow(lessonId: string, accessToken: string): Promise<Lesson>;
 }
 
 /** The query as the caller writes it - the duration is a number, not text. */
@@ -268,7 +282,43 @@ export function createApiClient({
         accessToken,
       });
     },
+
+    getPricePlans: () => requestParsed(z.array(pricePlanSchema), '/price-plans'),
+
+    createBooking: (input, accessToken) =>
+      requestParsed(lessonSchema, '/bookings', { method: 'POST', body: input, accessToken }),
+
+    getMyLessons: (accessToken) => requestParsed(lessonListSchema, '/me/lessons', { accessToken }),
+
+    confirmLesson: (lessonId, accessToken) =>
+      requestParsed(lessonSchema, `${lessonPath(lessonId)}/confirm`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    cancelLesson: (lessonId, reason, accessToken) =>
+      requestParsed(lessonSchema, `${lessonPath(lessonId)}/cancel`, {
+        method: 'POST',
+        body: reason ? { reason } : {},
+        accessToken,
+      }),
+
+    completeLesson: (lessonId, accessToken) =>
+      requestParsed(lessonSchema, `${lessonPath(lessonId)}/complete`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    markNoShow: (lessonId, accessToken) =>
+      requestParsed(lessonSchema, `${lessonPath(lessonId)}/no-show`, {
+        method: 'POST',
+        accessToken,
+      }),
   };
+}
+
+function lessonPath(lessonId: string): string {
+  return `/lessons/${encodeURIComponent(lessonId)}`;
 }
 
 function rulesPath(teacherId: string): string {

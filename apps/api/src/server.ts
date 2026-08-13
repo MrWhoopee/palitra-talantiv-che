@@ -10,6 +10,8 @@ import { createAuthRouter } from './modules/auth/auth.router';
 import { createAuthService } from './modules/auth/auth.service';
 import { createAvailabilityRouter } from './modules/availability/availability.router';
 import { createAvailabilityService } from './modules/availability/availability.service';
+import { createBookingRouter } from './modules/booking/booking.router';
+import { createBookingService } from './modules/booking/booking.service';
 import { createTeachersRouter } from './modules/teachers/teachers.router';
 import { createTeachersService } from './modules/teachers/teachers.service';
 
@@ -20,10 +22,14 @@ const accessTokens = createAccessTokenService({
   ttlSeconds: AUTH_TTL.accessTokenSeconds,
 });
 
+const mailer = createSmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, from: env.MAIL_FROM });
+
+const availability = createAvailabilityService({ prisma });
+
 const auth = createAuthService({
   prisma,
   accessTokens,
-  mailer: createSmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, from: env.MAIL_FROM }),
+  mailer,
   // Links in outgoing mail point at the web app, which is what people can
   // actually open - the API has no pages.
   webOrigin: env.WEB_ORIGIN,
@@ -35,8 +41,14 @@ const app = createApp({
   routers: [
     createAuthRouter({ auth, accessTokens }),
     createTeachersRouter({ teachers: createTeachersService({ prisma }) }),
-    createAvailabilityRouter({
-      availability: createAvailabilityService({ prisma }),
+    createAvailabilityRouter({ availability, accessTokens }),
+    createBookingRouter({
+      booking: createBookingService({
+        prisma,
+        availability,
+        mailer,
+        webOrigin: env.WEB_ORIGIN,
+      }),
       accessTokens,
     }),
   ],

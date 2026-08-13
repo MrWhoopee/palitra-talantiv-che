@@ -59,9 +59,22 @@ export function createAvailabilityService({
     }
   }
 
-  /** Stage 3 replaces this with the teacher's PENDING and CONFIRMED lessons. */
-  async function loadBusyLessons(): Promise<TimeInterval[]> {
-    return Promise.resolve([]);
+  /**
+   * Only PENDING and CONFIRMED lessons hold the teacher's time. A cancelled
+   * one gives the hour back, and a completed one is in the past - the same set
+   * the `lesson_no_overlap` constraint is defined over, deliberately, so what
+   * the calendar offers and what the database accepts cannot disagree.
+   */
+  async function loadBusyLessons(teacherId: string, range: TimeInterval): Promise<TimeInterval[]> {
+    return prisma.lesson.findMany({
+      where: {
+        teacherId,
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        startsAt: { lt: range.endsAt },
+        endsAt: { gt: range.startsAt },
+      },
+      select: { startsAt: true, endsAt: true },
+    });
   }
 
   function ruleData(input: AvailabilityRuleInput) {
@@ -214,7 +227,7 @@ export function createAvailabilityService({
         }),
       ]);
 
-      const busyLessons: TimeInterval[] = await loadBusyLessons();
+      const busyLessons = await loadBusyLessons(teacherId, { startsAt, endsAt });
 
       const slots = computeFreeSlots({
         rules: rules.map((rule) => ({

@@ -127,3 +127,27 @@ export async function createRule(
     },
   });
 }
+
+export async function createPricePlan(
+  prisma: PrismaClient,
+  options: {
+    directionId: string;
+    durationMinutes?: number;
+    lessonsCount?: number;
+    priceUah?: number;
+    format?: 'INDIVIDUAL' | 'GROUP';
+    isActive?: boolean;
+  },
+) {
+  return prisma.pricePlan.create({
+    data: {
+      directionId: options.directionId,
+      name: 'Разове заняття',
+      lessonsCount: options.lessonsCount ?? 1,
+      durationMinutes: options.durationMinutes ?? 60,
+      priceUah: options.priceUah ?? 400,
+      format: options.format ?? 'INDIVIDUAL',
+      isActive: options.isActive ?? true,
+    },
+  });
+}

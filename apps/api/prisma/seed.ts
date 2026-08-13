@@ -22,6 +22,56 @@ const LOCATIONS = [
   { slug: 'shevchenka', name: 'Шевченка', address: 'бул. Шевченка, 276, Черкаси' },
 ];
 
+/**
+ * Every plan the studio sells. `lessonsCount: 1` is a single lesson; the
+ * larger packages become subscriptions in stage 4. The duration lives here
+ * rather than on the booking form because it is the tariff that fixes it.
+ */
+const PRICE_PLANS = [
+  {
+    direction: 'vocal',
+    name: 'Разове заняття',
+    lessonsCount: 1,
+    durationMinutes: 45,
+    priceUah: 400,
+  },
+  {
+    direction: 'vocal',
+    name: 'Абонемент 8 занять',
+    lessonsCount: 8,
+    durationMinutes: 45,
+    priceUah: 2800,
+  },
+  {
+    direction: 'piano',
+    name: 'Разове заняття',
+    lessonsCount: 1,
+    durationMinutes: 45,
+    priceUah: 400,
+  },
+  {
+    direction: 'piano',
+    name: 'Абонемент 8 занять',
+    lessonsCount: 8,
+    durationMinutes: 60,
+    priceUah: 3600,
+  },
+  {
+    direction: 'guitar',
+    name: 'Разове заняття',
+    lessonsCount: 1,
+    durationMinutes: 60,
+    priceUah: 450,
+  },
+  {
+    direction: 'ukulele',
+    name: 'Разове заняття',
+    lessonsCount: 1,
+    durationMinutes: 30,
+    priceUah: 300,
+  },
+];
+
 const DIRECTIONS = [
   { slug: 'vocal', name: 'Вокал', description: 'Естрадний і академічний вокал, постановка голосу' },
   { slug: 'piano', name: 'Фортепіано', description: 'Класика та сучасний репертуар' },
@@ -228,6 +278,31 @@ async function main(): Promise<void> {
       directions.set(direction.slug, row.id);
     }
 
+    for (const [index, plan] of PRICE_PLANS.entries()) {
+      const directionId = required(directions, plan.direction);
+      const existing = await prisma.pricePlan.findFirst({
+        where: { directionId, name: plan.name, durationMinutes: plan.durationMinutes },
+        select: { id: true },
+      });
+
+      const data = {
+        directionId,
+        name: plan.name,
+        lessonsCount: plan.lessonsCount,
+        durationMinutes: plan.durationMinutes,
+        priceUah: plan.priceUah,
+        format: 'INDIVIDUAL' as const,
+        isActive: true,
+        sortOrder: index,
+      };
+
+      if (existing) {
+        await prisma.pricePlan.update({ where: { id: existing.id }, data });
+      } else {
+        await prisma.pricePlan.create({ data });
+      }
+    }
+
     await prisma.user.upsert({
       where: { email: ADMIN.email },
       update: { role: 'ADMIN' },
@@ -310,7 +385,7 @@ async function main(): Promise<void> {
     console.log(
       [
         'Seed complete.',
-        `  ${LOCATIONS.length} locations, ${DIRECTIONS.length} directions`,
+        `  ${LOCATIONS.length} locations, ${DIRECTIONS.length} directions, ${PRICE_PLANS.length} price plans`,
         `  ${TEACHERS.length} teachers with working rules, ${STUDENTS.length} students, 1 admin`,
         `  password for every demo account: ${PASSWORD}`,
         `  admin: ${ADMIN.email}   student: ${STUDENTS[0]?.email}`,

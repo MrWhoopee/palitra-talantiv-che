@@ -1,4 +1,4 @@
-import type { Direction, Location, PublicTeacher } from '@palitra/shared';
+import type { Direction, Location, PricePlan, PublicTeacher } from '@palitra/shared';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { DomainError } from '../../http/error-handler';
 
@@ -11,6 +11,7 @@ export interface TeachersService {
   getTeacher(teacherId: string): Promise<PublicTeacher>;
   listLocations(): Promise<Location[]>;
   listDirections(): Promise<Direction[]>;
+  listPricePlans(): Promise<PricePlan[]>;
 }
 
 /**
@@ -63,6 +64,30 @@ export function createTeachersService({ prisma }: TeachersServiceDeps): Teachers
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       });
       return directions.map(toDirection);
+    },
+
+    /**
+     * Only the active plans leave the API. An inactive one is last season's
+     * price - keeping it visible would let a booking be made against a tariff
+     * the studio no longer sells.
+     */
+    async listPricePlans(): Promise<PricePlan[]> {
+      const plans = await prisma.pricePlan.findMany({
+        where: { isActive: true },
+        include: { direction: true },
+        orderBy: [{ direction: { sortOrder: 'asc' } }, { sortOrder: 'asc' }, { priceUah: 'asc' }],
+      });
+
+      return plans.map((plan) => ({
+        id: plan.id,
+        directionId: plan.directionId,
+        directionName: plan.direction.name,
+        name: plan.name,
+        lessonsCount: plan.lessonsCount,
+        durationMinutes: plan.durationMinutes,
+        format: plan.format,
+        priceUah: plan.priceUah,
+      }));
     },
   };
 }
