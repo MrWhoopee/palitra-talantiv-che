@@ -6,3 +6,5 @@ coverage/
 apps/api/src/generated/
 apps/api/prisma/migrations/
 docs/
+.superpowers/
+apps/web/next-env.d.ts
