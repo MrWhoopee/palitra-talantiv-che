@@ -1,0 +1,208 @@
+/* Layout and controls for the account screens: sign up, sign in, password
+   recovery and the student cabinet. Colours come from tokens.css - note that
+   the tangerine is only ever a fill under near-black text (2.3:1 as text). */
+
+.auth-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--pt-space-6) var(--pt-space-4);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 32rem;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-shadow-md);
+  padding: var(--pt-space-7) var(--pt-space-6);
+}
+
+.auth-eyebrow {
+  margin: 0 0 var(--pt-space-3);
+  color: var(--pt-primary);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  letter-spacing: var(--pt-tracking-wide);
+  text-transform: uppercase;
+}
+
+.auth-title {
+  font-size: var(--pt-text-xl);
+}
+
+.auth-lede {
+  margin: var(--pt-space-3) 0 var(--pt-space-6);
+  color: var(--pt-text-muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: var(--pt-space-4);
+}
+
+/* Two columns on wider screens for the name pair; one on a phone. */
+.auth-row {
+  display: grid;
+  gap: var(--pt-space-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .auth-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field {
+  display: grid;
+  gap: var(--pt-space-2);
+}
+
+.field-label {
+  font-size: var(--pt-text-sm);
+  font-weight: 600;
+}
+
+.field-input {
+  width: 100%;
+  padding: var(--pt-space-3) var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font: inherit;
+  font-size: var(--pt-text-base);
+}
+
+.field-input:focus-visible {
+  border-color: var(--pt-violet);
+}
+
+.field-input[aria-invalid='true'] {
+  border-color: #b3261e;
+}
+
+.field-hint {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.field-error {
+  color: #b3261e;
+  font-size: var(--pt-text-sm);
+}
+
+.auth-submit {
+  justify-self: start;
+  padding: var(--pt-space-3) var(--pt-space-6);
+  border: 0;
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.auth-alert {
+  /* Symmetric so the box never sits against the heading it follows; adjacent
+     margins collapse where a lede already provides the gap. */
+  margin: var(--pt-space-5) 0;
+  padding: var(--pt-space-4);
+  border-radius: var(--pt-radius-md);
+  border: 1px solid currentcolor;
+  font-size: var(--pt-text-sm);
+}
+
+.auth-alert-error {
+  color: #b3261e;
+  background: rgba(179, 38, 30, 0.06);
+}
+
+.auth-alert-ok {
+  color: #2b6127;
+  background: rgba(43, 97, 39, 0.06);
+}
+
+.auth-footnote {
+  margin: var(--pt-space-6) 0 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.auth-footnote a,
+.auth-lede a {
+  color: var(--pt-primary);
+}
+
+/* --- Cabinet ---------------------------------------------------------- */
+
+.cabinet {
+  max-width: var(--pt-container);
+  margin: 0 auto;
+  padding: var(--pt-space-7) var(--pt-space-5) var(--pt-space-9);
+}
+
+.cabinet-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-4);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--pt-space-6);
+}
+
+.cabinet-card {
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-shadow-md);
+  padding: var(--pt-space-6);
+}
+
+.cabinet-empty {
+  margin: var(--pt-space-3) 0 0;
+  color: var(--pt-text-muted);
+}
+
+.cabinet-facts {
+  display: grid;
+  gap: var(--pt-space-3);
+  margin: var(--pt-space-5) 0 0;
+}
+
+.cabinet-fact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2) var(--pt-space-4);
+  justify-content: space-between;
+  border-top: 1px solid var(--pt-line);
+  padding-top: var(--pt-space-3);
+}
+
+.cabinet-fact dt {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.cabinet-fact dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pt-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
