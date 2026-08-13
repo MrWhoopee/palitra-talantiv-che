@@ -5,6 +5,18 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1),
   WEB_ORIGIN: z.string().default('http://localhost:3000'),
+
+  /**
+   * Signs the access tokens. Deliberately without a default: a fallback value
+   * would travel to production unnoticed and let anyone mint a token for any
+   * user. 32 bytes is the HMAC-SHA256 block size - a shorter key adds no
+   * strength but hides how weak it is.
+   */
+  JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
+
+  SMTP_HOST: z.string().default('localhost'),
+  SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  MAIL_FROM: z.string().default('Палітра талантів <no-reply@palitra-talantiv.local>'),
 });
 
 export type Env = z.infer<typeof envSchema>;
