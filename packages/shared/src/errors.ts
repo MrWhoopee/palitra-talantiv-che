@@ -39,3 +39,14 @@ export const apiErrorSchema = z.object({
 });
 
 export type ApiError = z.infer<typeof apiErrorSchema>;
+
+/**
+ * A transport-layer failure - the response could not be understood as a
+ * domain error at all (e.g. its body doesn't match the expected schema).
+ * Deliberately not part of DOMAIN_ERROR_CODES: it does not come from the
+ * API's error envelope, has no HTTP status mapping, and must never appear
+ * in DOMAIN_ERROR_STATUS.
+ */
+export const BAD_RESPONSE_CODE = 'BAD_RESPONSE' as const;
+
+export type BadResponseCode = typeof BAD_RESPONSE_CODE;

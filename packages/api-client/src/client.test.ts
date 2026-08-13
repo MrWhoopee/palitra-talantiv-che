@@ -62,6 +62,19 @@ describe('createApiClient', () => {
     await expect(client.getHealth()).rejects.toBeInstanceOf(ApiClientError);
   });
 
+  it('reports the real response status on a schema mismatch, not a hardcoded 200', async () => {
+    const client = createApiClient({
+      baseUrl: 'http://api.test',
+      fetch: async () => jsonResponse({ status: 'fine', uptimeSeconds: 1, database: 'up' }, 201),
+    });
+
+    await expect(client.getHealth()).rejects.toMatchObject({
+      name: 'ApiClientError',
+      code: 'BAD_RESPONSE',
+      status: 201,
+    });
+  });
+
   it('falls back to BAD_RESPONSE when an error response body does not match apiErrorSchema', async () => {
     const client = createApiClient({
       baseUrl: 'http://api.test',
