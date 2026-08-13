@@ -6,3 +6,82 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+/// The role is a field rather than a table: there are exactly three fixed
+/// roles, so a full RBAC schema would be overengineering (see the design doc).
+model User {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  /// Always stored lower-cased and trimmed - normalisation happens in the
+  /// shared zod schema, which every write path goes through. Without it a
+  /// `Olena@` and an `olena@` would both satisfy this unique index.
+  email           String    @unique
+  passwordHash    String
+  role            UserRole  @default(STUDENT)
+  firstName       String
+  lastName        String
+  phone           String
+  avatarUrl       String?
+  emailVerifiedAt DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+
+  refreshTokens RefreshToken[]
+  oneTimeTokens OneTimeToken[]
+
+  @@index([role])
+}
+
+/// One row per active session. The token itself is never stored - only its
+/// SHA-256 digest, so a leaked database dump cannot be replayed as a login.
+/// SHA-256 rather than bcrypt is deliberate: the token is 32 random bytes, so
+/// there is no dictionary to slow an attacker down, and refresh runs on every
+/// expired access token - a deliberately slow hash would be a self-inflicted
+/// denial of service.
+model RefreshToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  /// Set when rotation issues the successor of this token. A request that
+  /// presents an already-rotated token is either a replay of a stolen one or a
+  /// race, and the whole chain gets revoked.
+  replacedByTokenId String? @db.Uuid
+  userAgent String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum OneTimeTokenKind {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+/// Email verification and password reset share one table because they are the
+/// same object: a single-use, expiring, hashed secret bound to a user. The
+/// `kind` keeps them from being used interchangeably - a verification link
+/// must not be redeemable as a password reset.
+model OneTimeToken {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @db.Uuid
+  kind      OneTimeTokenKind
+  tokenHash String           @unique
+  expiresAt DateTime         @db.Timestamptz(3)
+  usedAt    DateTime?        @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+  @@index([expiresAt])
+}
