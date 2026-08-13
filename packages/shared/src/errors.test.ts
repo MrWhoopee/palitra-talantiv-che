@@ -21,6 +21,17 @@ describe('domain error codes', () => {
   it('reports a taken slot as a conflict', () => {
     expect(DOMAIN_ERROR_STATUS.SLOT_TAKEN).toBe(409);
   });
+
+  it('reports a duplicate registration as a conflict', () => {
+    expect(DOMAIN_ERROR_STATUS.EMAIL_TAKEN).toBe(409);
+  });
+
+  it('answers bad credentials and bad tokens with 401, not 403', () => {
+    // 403 would mean "authenticated but not allowed", which tells a caller
+    // probing for accounts that the password was the only thing missing.
+    expect(DOMAIN_ERROR_STATUS.INVALID_CREDENTIALS).toBe(401);
+    expect(DOMAIN_ERROR_STATUS.INVALID_TOKEN).toBe(401);
+  });
 });
 
 describe('apiErrorSchema', () => {

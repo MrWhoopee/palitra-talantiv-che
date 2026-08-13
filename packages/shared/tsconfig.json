@@ -1,4 +1,10 @@
 {
   "extends": "@palitra/config/tsconfig.base.json",
+  "compilerOptions": {
+    // DOM is here only for the web-standard globals this package relies on
+    // (TextEncoder). The package must stay runnable in Node, React Native and
+    // the browser, so nothing that touches `document` or `window` belongs here.
+    "lib": ["ES2023", "DOM"]
+  },
   "include": ["src/**/*.ts"]
 }
