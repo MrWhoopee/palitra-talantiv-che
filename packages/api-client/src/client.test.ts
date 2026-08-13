@@ -61,4 +61,25 @@ describe('createApiClient', () => {
 
     await expect(client.getHealth()).rejects.toBeInstanceOf(ApiClientError);
   });
+
+  it('falls back to BAD_RESPONSE when an error response body does not match apiErrorSchema', async () => {
+    const client = createApiClient({
+      baseUrl: 'http://api.test',
+      fetch: async () => jsonResponse({ oops: 'not an error shape' }, 502),
+    });
+
+    let caught: unknown;
+    try {
+      await client.getHealth();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(ApiClientError);
+    const error = caught as ApiClientError;
+    expect(error.code).toBe('BAD_RESPONSE');
+    expect(error.status).toBe(502);
+    expect(error).not.toHaveProperty('issues');
+    expect(error.name).not.toBe('ZodError');
+  });
 });
