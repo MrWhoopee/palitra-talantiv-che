@@ -1,0 +1,23 @@
+{
+  "name": "@palitra/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@palitra/config": "workspace:*",
+    "eslint": "10.8.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
