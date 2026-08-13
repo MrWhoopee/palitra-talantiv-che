@@ -7,7 +7,8 @@ export function createDatabaseCheck(client: QueryableClient): () => Promise<bool
     try {
       await client.$queryRaw`SELECT 1`;
       return true;
-    } catch {
+    } catch (err) {
+      console.error('Database check failed', err);
       return false;
     }
   };
