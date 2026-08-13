@@ -7,7 +7,6 @@ services:
       POSTGRES_USER: palitra
       POSTGRES_PASSWORD: palitra
       POSTGRES_DB: palitra
-      TZ: Europe/Kyiv
     ports:
       - '5433:5432'
     volumes:
