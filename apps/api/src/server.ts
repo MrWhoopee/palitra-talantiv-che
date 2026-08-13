@@ -1,14 +1,34 @@
 import 'dotenv/config';
 import { createApp } from './http/app';
+import { createAccessTokenService } from './lib/access-token';
 import { createDatabaseCheck } from './lib/database-check';
 import { loadEnv } from './lib/env';
+import { createSmtpMailer } from './lib/mailer';
 import { prisma } from './lib/prisma';
+import { AUTH_TTL } from './modules/auth/auth.config';
+import { createAuthRouter } from './modules/auth/auth.router';
+import { createAuthService } from './modules/auth/auth.service';
 
 const env = loadEnv();
+
+const accessTokens = createAccessTokenService({
+  secret: env.JWT_SECRET,
+  ttlSeconds: AUTH_TTL.accessTokenSeconds,
+});
+
+const auth = createAuthService({
+  prisma,
+  accessTokens,
+  mailer: createSmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, from: env.MAIL_FROM }),
+  // Links in outgoing mail point at the web app, which is what people can
+  // actually open - the API has no pages.
+  webOrigin: env.WEB_ORIGIN,
+});
 
 const app = createApp({
   checkDatabase: createDatabaseCheck(prisma),
   webOrigin: env.WEB_ORIGIN,
+  routers: [createAuthRouter({ auth, accessTokens })],
 });
 
 const server = app.listen(env.PORT, () => {
