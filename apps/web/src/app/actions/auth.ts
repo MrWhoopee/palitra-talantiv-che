@@ -38,6 +38,16 @@ function parse<S extends ZodType>(
 /** Everything the person typed except the secrets, which are never echoed back. */
 const NEVER_ECHOED = new Set(['password', 'token']);
 
+/**
+ * Where to go after signing in. Only a path on this site is accepted: a `next`
+ * of `https://elsewhere.example` would turn the login screen into an open
+ * redirect, and `//elsewhere.example` is the same thing wearing a slash.
+ */
+function safeNext(formData: FormData): string {
+  const value = String(formData.get('next') ?? '');
+  return value.startsWith('/') && !value.startsWith('//') ? value : '/cabinet';
+}
+
 function submittedValues(formData: FormData): Record<string, string> {
   const values: Record<string, string> = {};
   for (const [name, value] of formData.entries()) {
@@ -66,7 +76,7 @@ export async function registerAction(_previous: FormState, formData: FormData): 
 
   // Outside the try: `redirect` works by throwing, and catching it here would
   // turn a successful registration into an error message.
-  redirect('/cabinet');
+  redirect(safeNext(formData));
 }
 
 export async function loginAction(_previous: FormState, formData: FormData): Promise<FormState> {
@@ -85,7 +95,7 @@ export async function loginAction(_previous: FormState, formData: FormData): Pro
     };
   }
 
-  redirect('/cabinet');
+  redirect(safeNext(formData));
 }
 
 export async function logoutAction(): Promise<never> {

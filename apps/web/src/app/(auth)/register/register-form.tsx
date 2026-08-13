@@ -7,7 +7,7 @@ import { Field } from '@/components/field';
 import { FormAlert } from '@/components/form-alert';
 import { SubmitButton } from '@/components/submit-button';
 
-export function RegisterForm() {
+export function RegisterForm({ next }: { next?: string | undefined }) {
   const [state, action] = useActionState(registerAction, emptyFormState);
   const values = state.values ?? {};
   const errors = state.fieldErrors ?? {};
@@ -17,6 +17,8 @@ export function RegisterForm() {
       {state.error ? <FormAlert tone="error">{state.error}</FormAlert> : null}
 
       <form className="auth-form" action={action} noValidate>
+        {next ? <input type="hidden" name="next" value={next} /> : null}
+
         <div className="auth-row">
           <Field
             label="Ім'я"

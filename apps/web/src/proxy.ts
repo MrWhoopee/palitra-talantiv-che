@@ -4,20 +4,29 @@ import { ACCESS_COOKIE, REFRESH_COOKIE, sessionCookieOptions } from '@/lib/sessi
 
 const REFRESH_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
+/** Paths that make no sense without a session. Everything else may be read anonymously. */
+const PRIVATE_PREFIXES = ['/cabinet'];
+
 /**
- * Keeps the fifteen-minute access token fresh for the pages behind a login.
+ * Keeps the fifteen-minute access token fresh for the pages that read it.
  * Doing it here rather than in each page is what lets a server component
- * simply read the cookie: by the time it runs, the cookie is valid or the
- * visitor has already been sent to the login screen.
+ * simply read the cookie: by the time it runs, the cookie is valid, or the
+ * visitor is anonymous and the page knows it.
+ *
+ * The teacher pages are public but still run through here: someone with a
+ * live refresh token who lands on a booking screen must be recognised, or the
+ * calendar would tell them to sign in while they already are.
  */
 export async function proxy(request: NextRequest) {
+  const isPrivate = PRIVATE_PREFIXES.some((prefix) => request.nextUrl.pathname.startsWith(prefix));
+
   if (request.cookies.get(ACCESS_COOKIE)) {
     return NextResponse.next();
   }
 
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
   if (!refreshToken) {
-    return redirectToLogin(request);
+    return isPrivate ? redirectToLogin(request) : NextResponse.next();
   }
 
   // A prefetch must not spend the refresh token. Rotation invalidates the old
@@ -47,7 +56,7 @@ export async function proxy(request: NextRequest) {
     );
     return response;
   } catch {
-    const response = redirectToLogin(request);
+    const response = isPrivate ? redirectToLogin(request) : NextResponse.next();
     response.cookies.delete(ACCESS_COOKIE);
     response.cookies.delete(REFRESH_COOKIE);
     return response;
@@ -56,9 +65,12 @@ export async function proxy(request: NextRequest) {
 
 function redirectToLogin(request: NextRequest): NextResponse {
   const url = new URL('/login', request.url);
+  // Comes back to the page they were trying to open, so a session that ran
+  // out mid-booking does not cost them their place in the flow.
+  url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(url);
 }
 
 export const config = {
-  matcher: ['/cabinet/:path*'],
+  matcher: ['/cabinet/:path*', '/teachers/:path*'],
 };

@@ -11,9 +11,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+
   if (await getCurrentUser()) {
-    redirect('/cabinet');
+    redirect(safeNext(next));
   }
 
   return (
@@ -24,11 +30,17 @@ export default async function RegisterPage() {
         Кабінет потрібен, щоб бачити свої заняття, переносити й скасовувати їх без дзвінків.
       </p>
 
-      <RegisterForm />
+      <RegisterForm next={next} />
 
       <p className="auth-footnote">
-        Уже маєте кабінет? <Link href="/login">Увійти</Link>
+        Уже маєте кабінет?{' '}
+        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}>Увійти</Link>
       </p>
     </>
   );
+}
+
+/** Only a path on this site: an absolute `next` would be an open redirect. */
+function safeNext(next: string | undefined): string {
+  return next?.startsWith('/') && !next.startsWith('//') ? next : '/cabinet';
 }

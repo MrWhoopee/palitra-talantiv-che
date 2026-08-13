@@ -1,0 +1,461 @@
+/* Teacher browsing, the slot calendar and the lesson lists in the cabinet.
+   Colours come from tokens.css - the tangerine is a fill under near-black
+   text and never a text colour, because it reads 2.3:1 on the cream. */
+
+.page {
+  max-width: var(--pt-container);
+  margin: 0 auto;
+  padding: var(--pt-space-7) var(--pt-space-5) var(--pt-space-9);
+}
+
+.page-head {
+  margin-bottom: var(--pt-space-6);
+}
+
+.eyebrow {
+  margin: 0 0 var(--pt-space-3);
+  color: var(--pt-primary);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  letter-spacing: var(--pt-tracking-wide);
+  text-transform: uppercase;
+}
+
+.eyebrow a {
+  color: inherit;
+}
+
+.page-title {
+  font-size: var(--pt-text-2xl);
+}
+
+.page-lede {
+  max-width: 52ch;
+  margin: var(--pt-space-4) 0 0;
+  color: var(--pt-text-muted);
+}
+
+.empty {
+  margin: var(--pt-space-4) 0 0;
+  color: var(--pt-text-muted);
+}
+
+/* --- Teacher cards ---------------------------------------------------- */
+
+.teacher-grid {
+  display: grid;
+  gap: var(--pt-space-5);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  margin: var(--pt-space-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.teacher-card {
+  display: grid;
+  gap: var(--pt-space-3);
+  align-content: start;
+  height: 100%;
+  padding: var(--pt-space-5);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-shadow-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.teacher-card:hover {
+  border-color: var(--pt-violet);
+  box-shadow: var(--pt-shadow-md);
+}
+
+.teacher-name {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-lg);
+  font-weight: 600;
+}
+
+.teacher-bio,
+.teacher-meta {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.teacher-cta {
+  color: var(--pt-primary);
+  font-weight: 600;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+  margin: var(--pt-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 0.125rem var(--pt-space-3);
+  border-radius: var(--pt-radius-pill);
+  background: rgba(123, 79, 201, 0.1);
+  color: var(--pt-primary);
+  font-size: var(--pt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* --- Panels ------------------------------------------------------------ */
+
+.panel {
+  margin: var(--pt-space-6) 0 0;
+  padding: var(--pt-space-6);
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-lg);
+  box-shadow: var(--pt-shadow-sm);
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: var(--pt-text-lg);
+}
+
+.panel-subtitle {
+  margin: var(--pt-space-6) 0 var(--pt-space-3);
+  font-size: var(--pt-text-base);
+}
+
+.panel-hint,
+.panel-note {
+  margin: var(--pt-space-2) 0 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.panel-note a {
+  color: var(--pt-primary);
+}
+
+/* --- Plan and week selectors ------------------------------------------- */
+
+.plan-chip {
+  display: grid;
+  gap: 0.125rem;
+  padding: var(--pt-space-3) var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-bg);
+  color: inherit;
+  text-decoration: none;
+  font-size: var(--pt-text-sm);
+}
+
+.plan-chip span {
+  color: var(--pt-text-muted);
+}
+
+/* The selected tariff carries a violet edge and weight rather than a fill:
+   at this size a tangerine block would pull the eye off the calendar. */
+.plan-chip-active {
+  border-color: var(--pt-violet);
+  border-width: 2px;
+  background: rgba(123, 79, 201, 0.06);
+}
+
+.week-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+}
+
+.week-link {
+  padding: var(--pt-space-2) var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-pill);
+  color: inherit;
+  text-decoration: none;
+  font-size: var(--pt-text-sm);
+}
+
+.week-link-active {
+  border-color: var(--pt-violet);
+  background: rgba(123, 79, 201, 0.08);
+  font-weight: 700;
+}
+
+/* --- Slot calendar ------------------------------------------------------ */
+
+.kind-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-4);
+  margin: var(--pt-space-5) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.kind-choice legend {
+  padding: 0;
+}
+
+.kind-option {
+  display: flex;
+  gap: var(--pt-space-2);
+  align-items: baseline;
+  font-size: var(--pt-text-sm);
+}
+
+.kind-option em {
+  color: var(--pt-text-muted);
+  font-style: normal;
+}
+
+.day-list {
+  display: grid;
+  gap: var(--pt-space-5);
+  margin: var(--pt-space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day-title {
+  margin: 0 0 var(--pt-space-3);
+  font-family: var(--pt-font-body);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  letter-spacing: var(--pt-tracking-wide);
+  text-transform: uppercase;
+  color: var(--pt-text-muted);
+}
+
+.slot-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+}
+
+.slot {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 5rem;
+  padding: var(--pt-space-2) var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.slot:hover:not(:disabled) {
+  border-color: var(--pt-violet);
+  background: rgba(123, 79, 201, 0.08);
+}
+
+.slot:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.slot-time {
+  font-weight: 700;
+}
+
+.slot-place {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-xs);
+}
+
+/* --- Lessons ------------------------------------------------------------ */
+
+.lesson-list {
+  display: grid;
+  gap: var(--pt-space-4);
+  margin: var(--pt-space-4) 0 0;
+}
+
+.lesson {
+  display: grid;
+  gap: var(--pt-space-3);
+  grid-template-columns: 1fr;
+  padding: var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-bg);
+}
+
+@media (min-width: 44rem) {
+  .lesson {
+    grid-template-columns: 9rem 1fr auto;
+    align-items: start;
+  }
+}
+
+.lesson-when {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.lesson-time {
+  font-weight: 700;
+}
+
+.lesson-duration,
+.lesson-place,
+.lesson-reason,
+.lesson-hint {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.lesson-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+  align-items: baseline;
+  margin: 0 0 var(--pt-space-2);
+}
+
+.lesson-people a {
+  color: var(--pt-primary);
+}
+
+.lesson-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+  align-items: center;
+}
+
+.badge {
+  padding: 0.125rem var(--pt-space-3);
+  border-radius: var(--pt-radius-pill);
+  font-size: var(--pt-text-xs);
+  font-weight: 700;
+}
+
+/* Near-black on a tangerine fill is 8.4:1; the tangerine as text would be
+   2.3:1 and unreadable for part of the audience. */
+.badge-wait {
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+}
+
+.badge-ok {
+  background: rgba(43, 97, 39, 0.12);
+  color: #2b6127;
+}
+
+.badge-done {
+  background: rgba(123, 79, 201, 0.12);
+  color: var(--pt-primary);
+}
+
+.badge-off {
+  background: rgba(28, 27, 34, 0.08);
+  color: var(--pt-text-muted);
+}
+
+.badge-kind {
+  background: transparent;
+  border: 1px solid var(--pt-line);
+  color: var(--pt-text-muted);
+  font-weight: 600;
+}
+
+/* --- Buttons ------------------------------------------------------------ */
+
+.button-primary,
+.button-quiet {
+  display: inline-block;
+  padding: var(--pt-space-2) var(--pt-space-5);
+  border-radius: var(--pt-radius-pill);
+  font: inherit;
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-primary {
+  border: 0;
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+}
+
+.button-quiet {
+  border: 1px solid var(--pt-line);
+  background: transparent;
+  color: var(--pt-primary);
+}
+
+.button-primary:disabled,
+.button-quiet:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.cabinet-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-4);
+  align-items: center;
+}
+
+/* --- Schedule editor ---------------------------------------------------- */
+
+.rule-list {
+  display: grid;
+  gap: var(--pt-space-3);
+  margin: var(--pt-space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2) var(--pt-space-4);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--pt-space-3) var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-bg);
+}
+
+.rule-where,
+.rule-valid {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.schedule-form {
+  display: grid;
+  gap: var(--pt-space-4);
+  max-width: 34rem;
+}
+
+.schedule-row {
+  display: grid;
+  gap: var(--pt-space-4);
+  grid-template-columns: 1fr 1fr;
+}
+
+.schedule-form select.field-input {
+  appearance: auto;
+}
+
+.schedule-form .button-primary {
+  justify-self: start;
+  padding: var(--pt-space-3) var(--pt-space-6);
+}
