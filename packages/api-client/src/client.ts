@@ -1,18 +1,33 @@
 import {
   apiErrorSchema,
   authResponseSchema,
+  availabilityExceptionSchema,
+  availabilityRuleSchema,
+  directionSchema,
   healthResponseSchema,
+  locationSchema,
+  publicTeacherListSchema,
+  publicTeacherSchema,
   publicUserSchema,
+  slotsResponseSchema,
   BAD_RESPONSE_CODE,
   type AuthResponse,
+  type AvailabilityException,
+  type AvailabilityExceptionInput,
+  type AvailabilityRule,
+  type AvailabilityRuleInput,
   type BadResponseCode,
+  type Direction,
   type DomainErrorCode,
   type HealthResponse,
+  type Location,
   type LoginRequest,
+  type PublicTeacher,
   type PublicUser,
   type RegisterRequest,
+  type SlotsResponse,
 } from '@palitra/shared';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 export class ApiClientError extends Error {
   readonly code: DomainErrorCode | BadResponseCode;
@@ -44,6 +59,47 @@ export interface ApiClient {
   requestPasswordReset(email: string): Promise<void>;
   resetPassword(token: string, password: string): Promise<void>;
   getMe(accessToken: string): Promise<PublicUser>;
+
+  getTeachers(): Promise<PublicTeacher[]>;
+  getTeacher(teacherId: string): Promise<PublicTeacher>;
+  getLocations(): Promise<Location[]>;
+  getDirections(): Promise<Direction[]>;
+  getSlots(teacherId: string, query: SlotQueryInput): Promise<SlotsResponse>;
+
+  getAvailabilityRules(teacherId: string, accessToken: string): Promise<AvailabilityRule[]>;
+  createAvailabilityRule(
+    teacherId: string,
+    input: AvailabilityRuleInput,
+    accessToken: string,
+  ): Promise<AvailabilityRule>;
+  updateAvailabilityRule(
+    teacherId: string,
+    ruleId: string,
+    input: AvailabilityRuleInput,
+    accessToken: string,
+  ): Promise<AvailabilityRule>;
+  deleteAvailabilityRule(teacherId: string, ruleId: string, accessToken: string): Promise<void>;
+  getAvailabilityExceptions(
+    teacherId: string,
+    accessToken: string,
+  ): Promise<AvailabilityException[]>;
+  createAvailabilityException(
+    teacherId: string,
+    input: AvailabilityExceptionInput,
+    accessToken: string,
+  ): Promise<AvailabilityException>;
+  deleteAvailabilityException(
+    teacherId: string,
+    exceptionId: string,
+    accessToken: string,
+  ): Promise<void>;
+}
+
+/** The query as the caller writes it - the duration is a number, not text. */
+export interface SlotQueryInput {
+  from: string;
+  to: string;
+  duration: number;
 }
 
 export interface ApiClientOptions {
@@ -52,7 +108,7 @@ export interface ApiClientOptions {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
   accessToken?: string;
   /** Forwarded to the API so a session can be named after the device it runs on. */
@@ -146,7 +202,81 @@ export function createApiClient({
     },
 
     getMe: (accessToken) => requestParsed(publicUserSchema, '/auth/me', { accessToken }),
+
+    getTeachers: () => requestParsed(publicTeacherListSchema, '/teachers'),
+
+    getTeacher: (teacherId) =>
+      requestParsed(publicTeacherSchema, `/teachers/${encodeURIComponent(teacherId)}`),
+
+    getLocations: () => requestParsed(z.array(locationSchema), '/locations'),
+
+    getDirections: () => requestParsed(z.array(directionSchema), '/directions'),
+
+    getSlots: (teacherId, query) =>
+      requestParsed(
+        slotsResponseSchema,
+        `/teachers/${encodeURIComponent(teacherId)}/slots?${new URLSearchParams({
+          from: query.from,
+          to: query.to,
+          duration: String(query.duration),
+        }).toString()}`,
+      ),
+
+    getAvailabilityRules: (teacherId, accessToken) =>
+      requestParsed(z.array(availabilityRuleSchema), rulesPath(teacherId), { accessToken }),
+
+    createAvailabilityRule: (teacherId, input, accessToken) =>
+      requestParsed(availabilityRuleSchema, rulesPath(teacherId), {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    updateAvailabilityRule: (teacherId, ruleId, input, accessToken) =>
+      requestParsed(
+        availabilityRuleSchema,
+        `${rulesPath(teacherId)}/${encodeURIComponent(ruleId)}`,
+        {
+          method: 'PUT',
+          body: input,
+          accessToken,
+        },
+      ),
+
+    async deleteAvailabilityRule(teacherId, ruleId, accessToken) {
+      await request(`${rulesPath(teacherId)}/${encodeURIComponent(ruleId)}`, {
+        method: 'DELETE',
+        accessToken,
+      });
+    },
+
+    getAvailabilityExceptions: (teacherId, accessToken) =>
+      requestParsed(z.array(availabilityExceptionSchema), exceptionsPath(teacherId), {
+        accessToken,
+      }),
+
+    createAvailabilityException: (teacherId, input, accessToken) =>
+      requestParsed(availabilityExceptionSchema, exceptionsPath(teacherId), {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    async deleteAvailabilityException(teacherId, exceptionId, accessToken) {
+      await request(`${exceptionsPath(teacherId)}/${encodeURIComponent(exceptionId)}`, {
+        method: 'DELETE',
+        accessToken,
+      });
+    },
   };
+}
+
+function rulesPath(teacherId: string): string {
+  return `/teachers/${encodeURIComponent(teacherId)}/availability/rules`;
+}
+
+function exceptionsPath(teacherId: string): string {
+  return `/teachers/${encodeURIComponent(teacherId)}/availability/exceptions`;
 }
 
 /**

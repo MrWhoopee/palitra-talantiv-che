@@ -208,3 +208,74 @@ describe('auth requests', () => {
     expect(error.fieldErrors).not.toHaveProperty('notAnArray');
   });
 });
+
+describe('teacher and availability requests', () => {
+  const teacherId = '019880d3-0000-7000-8000-000000000001';
+  const locationId = '019880d3-0000-7000-8000-000000000002';
+
+  it('builds the slot query string', async () => {
+    const { client, calls } = recordingClient(() =>
+      jsonResponse({ teacherId, durationMinutes: 45, slots: [] }),
+    );
+
+    const response = await client.getSlots(teacherId, {
+      from: '2026-09-01',
+      to: '2026-09-28',
+      duration: 45,
+    });
+
+    expect(calls[0]?.url).toBe(
+      `http://api.test/teachers/${teacherId}/slots?from=2026-09-01&to=2026-09-28&duration=45`,
+    );
+    expect(response.durationMinutes).toBe(45);
+  });
+
+  it('sends the access token when writing a working rule', async () => {
+    const rule = {
+      id: '019880d3-0000-7000-8000-000000000003',
+      teacherId,
+      locationId,
+      weekday: 2,
+      startTime: '10:00',
+      endTime: '18:00',
+      validFrom: '2026-09-01',
+      validTo: null,
+    };
+    const { client, calls } = recordingClient(() => jsonResponse(rule, 201));
+
+    await client.createAvailabilityRule(
+      teacherId,
+      {
+        locationId,
+        weekday: 2,
+        startTime: '10:00',
+        endTime: '18:00',
+        validFrom: '2026-09-01',
+      },
+      'an-access-token',
+    );
+
+    expect(calls[0]?.url).toBe(`http://api.test/teachers/${teacherId}/availability/rules`);
+    expect(calls[0]?.method).toBe('POST');
+    expect(calls[0]?.headers['authorization']).toBe('Bearer an-access-token');
+  });
+
+  it('deletes a rule without expecting a body back', async () => {
+    const { client, calls } = recordingClient(() => new Response(null, { status: 204 }));
+
+    await expect(
+      client.deleteAvailabilityRule(teacherId, 'rule-id', 'an-access-token'),
+    ).resolves.toBeUndefined();
+
+    expect(calls[0]?.method).toBe('DELETE');
+    expect(calls[0]?.url).toBe(`http://api.test/teachers/${teacherId}/availability/rules/rule-id`);
+  });
+
+  it('rejects a slots payload that does not match the contract', async () => {
+    const { client } = recordingClient(() => jsonResponse({ teacherId, slots: 'nope' }));
+
+    await expect(
+      client.getSlots(teacherId, { from: '2026-09-01', to: '2026-09-02', duration: 60 }),
+    ).rejects.toBeInstanceOf(ApiClientError);
+  });
+});

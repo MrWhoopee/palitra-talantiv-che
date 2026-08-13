@@ -31,8 +31,9 @@ model User {
   createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
 
-  refreshTokens RefreshToken[]
-  oneTimeTokens OneTimeToken[]
+  refreshTokens  RefreshToken[]
+  oneTimeTokens  OneTimeToken[]
+  teacherProfile TeacherProfile?
 
   @@index([role])
 }
@@ -44,17 +45,17 @@ model User {
 /// expired access token - a deliberately slow hash would be a self-inflicted
 /// denial of service.
 model RefreshToken {
-  id        String    @id @default(uuid(7)) @db.Uuid
-  userId    String    @db.Uuid
-  tokenHash String    @unique
-  expiresAt DateTime  @db.Timestamptz(3)
-  revokedAt DateTime? @db.Timestamptz(3)
+  id                String    @id @default(uuid(7)) @db.Uuid
+  userId            String    @db.Uuid
+  tokenHash         String    @unique
+  expiresAt         DateTime  @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
   /// Set when rotation issues the successor of this token. A request that
   /// presents an already-rotated token is either a replay of a stolen one or a
   /// race, and the whole chain gets revoked.
-  replacedByTokenId String? @db.Uuid
-  userAgent String?
-  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  replacedByTokenId String?   @db.Uuid
+  userAgent         String?
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -84,4 +85,134 @@ model OneTimeToken {
 
   @@index([userId, kind])
   @@index([expiresAt])
+}
+
+/// Where lessons happen. Two addresses today, so this is a small reference
+/// table rather than a free-text field on the teacher: the public site puts
+/// them on a map, and availability rules point at one.
+model Location {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  address   String
+  mapUrl    String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  teachers TeacherLocation[]
+  rules    AvailabilityRule[]
+}
+
+/// What the studio teaches: vocals, piano, guitar, ukulele.
+///
+/// A reference table rather than an enum on the teacher, because "show
+/// everyone who teaches guitar" and "list the directions with their prices"
+/// would otherwise read from two different places that can disagree.
+model Direction {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  teachers TeacherDirection[]
+}
+
+/// The teaching side of a user account. Keyed by `userId` rather than by an id
+/// of its own, so a teacher has exactly one identity across the system: every
+/// `teacherId` in the schema is a user id, and the ownership checks in the
+/// services compare it directly against the token's `userId`.
+model TeacherProfile {
+  userId          String   @id @db.Uuid
+  bio             String?
+  experienceYears Int?
+  photoUrl        String?
+  /// Unpublished profiles exist for teachers who have not sent a photo yet -
+  /// they can already be scheduled, they are simply not on the public site.
+  isPublished     Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locations  TeacherLocation[]
+  directions TeacherDirection[]
+  rules      AvailabilityRule[]
+  exceptions AvailabilityException[]
+}
+
+model TeacherLocation {
+  teacherId  String @db.Uuid
+  locationId String @db.Uuid
+
+  teacher  TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  location Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([teacherId, locationId])
+  @@index([locationId])
+}
+
+model TeacherDirection {
+  teacherId   String @db.Uuid
+  directionId String @db.Uuid
+
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  direction Direction      @relation(fields: [directionId], references: [id], onDelete: Cascade)
+
+  @@id([teacherId, directionId])
+  @@index([directionId])
+}
+
+/// A recurring working window: "Tuesdays, 10:00-18:00 on Blahovisna".
+///
+/// The time of day is stored as minutes since local midnight and the weekday
+/// as a number, not as an instant. That is the whole point: the same rule has
+/// to mean 17:00 in Kyiv in January and 17:00 in Kyiv in July, which are
+/// different moments in UTC. Expanding a rule into real dates happens in
+/// `computeFreeSlots`, in the studio's zone.
+model AvailabilityRule {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  teacherId   String    @db.Uuid
+  locationId  String    @db.Uuid
+  /// 0 = Sunday, matching `Date.prototype.getUTCDay`.
+  weekday     Int       @db.SmallInt
+  /// Minutes since local midnight, 0-1439 for the start and 1-1440 for the end.
+  startMinute Int       @db.SmallInt
+  endMinute   Int       @db.SmallInt
+  /// A calendar date, not an instant: changing the timetable from the first of
+  /// September must not depend on where the reader is standing. `validTo` lets
+  /// a schedule change without deleting the history behind it.
+  validFrom   DateTime  @db.Date
+  validTo     DateTime? @db.Date
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+
+  teacher  TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  location Location       @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
+  @@index([teacherId, weekday])
+}
+
+enum AvailabilityExceptionKind {
+  VACATION
+  SICK
+  BLOCKED
+}
+
+/// Time cut out of the working rules: a holiday, an illness, an afternoon
+/// blocked for a concert. Stored as a range of instants rather than a mark on
+/// a day, because a holiday can start halfway through one.
+model AvailabilityException {
+  id        String                    @id @default(uuid(7)) @db.Uuid
+  teacherId String                    @db.Uuid
+  startsAt  DateTime                  @db.Timestamptz(3)
+  endsAt    DateTime                  @db.Timestamptz(3)
+  kind      AvailabilityExceptionKind
+  note      String?
+  createdAt DateTime                  @default(now()) @db.Timestamptz(3)
+
+  teacher TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+
+  @@index([teacherId, startsAt])
 }

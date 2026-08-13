@@ -19,11 +19,9 @@ export const weekdaySchema = z.number().int().min(0).max(6);
  * statement about the calendar, and turning it into an instant would make it
  * mean something slightly different in every zone that reads it.
  */
-export const localDateSchema = z
-  .string()
-  .refine((value) => parseLocalDate(value) !== null, {
-    message: 'Очікується дата у форматі РРРР-ММ-ДД',
-  });
+export const localDateSchema = z.string().refine((value) => parseLocalDate(value) !== null, {
+  message: 'Очікується дата у форматі РРРР-ММ-ДД',
+});
 
 /** Local time of day, `HH:MM` in the studio's zone. */
 export const timeOfDaySchema = z

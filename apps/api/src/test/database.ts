@@ -39,9 +39,13 @@ export function createTestPrisma(url: URL = testDatabaseUrl()): PrismaClient {
 
 /**
  * Truncating beats re-running migrations between tests: it is a single
- * statement, and `CASCADE` reaches the token tables through their foreign
- * keys, so new tables are covered without touching this list.
+ * statement, and `CASCADE` reaches everything downstream through the foreign
+ * keys. Only the roots are listed - a table is added here when nothing points
+ * at it from above (tokens, profiles, rules and lessons all hang off `User`;
+ * price plans hang off `Direction`).
  */
+const ROOT_TABLES = ['"User"', '"Location"', '"Direction"'].join(', ');
+
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "User" RESTART IDENTITY CASCADE');
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${ROOT_TABLES} RESTART IDENTITY CASCADE`);
 }

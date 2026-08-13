@@ -8,6 +8,10 @@ import { prisma } from './lib/prisma';
 import { AUTH_TTL } from './modules/auth/auth.config';
 import { createAuthRouter } from './modules/auth/auth.router';
 import { createAuthService } from './modules/auth/auth.service';
+import { createAvailabilityRouter } from './modules/availability/availability.router';
+import { createAvailabilityService } from './modules/availability/availability.service';
+import { createTeachersRouter } from './modules/teachers/teachers.router';
+import { createTeachersService } from './modules/teachers/teachers.service';
 
 const env = loadEnv();
 
@@ -28,7 +32,14 @@ const auth = createAuthService({
 const app = createApp({
   checkDatabase: createDatabaseCheck(prisma),
   webOrigin: env.WEB_ORIGIN,
-  routers: [createAuthRouter({ auth, accessTokens })],
+  routers: [
+    createAuthRouter({ auth, accessTokens }),
+    createTeachersRouter({ teachers: createTeachersService({ prisma }) }),
+    createAvailabilityRouter({
+      availability: createAvailabilityService({ prisma }),
+      accessTokens,
+    }),
+  ],
 });
 
 const server = app.listen(env.PORT, () => {
