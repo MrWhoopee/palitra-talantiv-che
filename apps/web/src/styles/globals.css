@@ -1,0 +1,48 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font-family: var(--pt-font-body);
+  font-size: var(--pt-text-base);
+  line-height: var(--pt-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--pt-font-display);
+  font-weight: 600;
+  line-height: var(--pt-leading-tight);
+  letter-spacing: var(--pt-tracking-display);
+}
+
+:focus-visible {
+  outline: 3px solid var(--pt-violet);
+  outline-offset: 3px;
+  border-radius: var(--pt-radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

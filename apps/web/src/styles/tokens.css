@@ -1,0 +1,74 @@
+:root {
+  /* --- Колір -------------------------------------------------------
+     Значення взяті з брендингу студії (див. спеку, розділ 7).
+     Контрасти перевірені за WCAG 2.1 на тлі --pt-cream:
+       ink        15.5:1   основний текст
+       ink-soft    6.9:1   другорядний текст
+       violet      5.0:1   можна як текст
+       violet-deep 8.1:1   текст і кнопки
+       tangerine   2.3:1   ТІЛЬКИ заливка, ніколи не текст
+       leaf        1.8:1   ТІЛЬКИ декор
+  ------------------------------------------------------------------ */
+  --pt-cream: #f7f3ea;
+  --pt-paper: #fffdf8;
+  --pt-violet: #7b4fc9;
+  --pt-violet-deep: #5b2e9e;
+  --pt-tangerine: #f08a2c;
+  --pt-leaf: #93c83e;
+  --pt-ink: #1c1b22;
+  --pt-ink-soft: #55525e;
+  --pt-line: rgba(28, 27, 34, 0.12);
+
+  /* --- Ролі --------------------------------------------------------- */
+  --pt-bg: var(--pt-cream);
+  --pt-surface: var(--pt-paper);
+  --pt-text: var(--pt-ink);
+  --pt-text-muted: var(--pt-ink-soft);
+  --pt-primary: var(--pt-violet-deep);
+  --pt-on-primary: #ffffff;
+  --pt-accent-fill: var(--pt-tangerine);
+  --pt-on-accent: var(--pt-ink);
+
+  /* --- Типографіка --------------------------------------------------- */
+  --pt-font-display: var(--pt-font-display-loaded, system-ui), sans-serif;
+  --pt-font-body: var(--pt-font-body-loaded, system-ui), sans-serif;
+
+  --pt-text-xs: 0.75rem;
+  --pt-text-sm: 0.875rem;
+  --pt-text-base: 1.0625rem;
+  --pt-text-lg: 1.25rem;
+  --pt-text-xl: clamp(1.5rem, 1.25rem + 1.2vw, 2rem);
+  --pt-text-2xl: clamp(2rem, 1.5rem + 2.4vw, 3rem);
+  --pt-text-3xl: clamp(2.5rem, 1.6rem + 4.4vw, 4.5rem);
+
+  --pt-leading-tight: 1.1;
+  --pt-leading-snug: 1.3;
+  --pt-leading-normal: 1.6;
+
+  --pt-tracking-display: -0.02em;
+  --pt-tracking-wide: 0.08em;
+
+  /* --- Відступи: крок 4px -------------------------------------------- */
+  --pt-space-1: 0.25rem;
+  --pt-space-2: 0.5rem;
+  --pt-space-3: 0.75rem;
+  --pt-space-4: 1rem;
+  --pt-space-5: 1.5rem;
+  --pt-space-6: 2rem;
+  --pt-space-7: 3rem;
+  --pt-space-8: 4rem;
+  --pt-space-9: 6rem;
+  --pt-space-10: 8rem;
+
+  /* --- Радіуси: округлі, під органіку мазків ------------------------- */
+  --pt-radius-sm: 0.5rem;
+  --pt-radius-md: 0.875rem;
+  --pt-radius-lg: 1.5rem;
+  --pt-radius-pill: 999px;
+
+  /* --- Тіні: підфарбовані фіолетовим, не сірим ----------------------- */
+  --pt-shadow-sm: 0 1px 2px rgba(28, 27, 34, 0.06);
+  --pt-shadow-md: 0 1px 2px rgba(28, 27, 34, 0.06), 0 8px 24px -12px rgba(91, 46, 158, 0.22);
+
+  --pt-container: 72rem;
+}
