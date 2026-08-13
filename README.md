@@ -4,6 +4,14 @@
 гітара, укулеле). Turborepo-монорепозиторій: Next.js фронтенд, Express API
 на Prisma/PostgreSQL і спільні пакети з типами та валідацією.
 
+## Документація
+
+- [Дизайн системи](docs/superpowers/specs/2026-08-13-palitra-talantiv-design.md) —
+  архітектура, модель даних, бізнес-правила, етапи 0–8
+- [Етап 0: каркас](docs/superpowers/plans/2026-08-13-etap-0-karkas.md) — план
+- [Етап 1: авторизація](docs/reports/2026-08-13-etap-1-avtoryzatsiya.md) — звіт
+  про реалізацію, рішення й точки розширення
+
 ## Передумови
 
 - Node.js **>= 22.12**
