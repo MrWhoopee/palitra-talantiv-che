@@ -1,13 +1,13 @@
 :root {
-  /* --- Колір -------------------------------------------------------
-     Значення взяті з брендингу студії (див. спеку, розділ 7).
-     Контрасти перевірені за WCAG 2.1 на тлі --pt-cream:
-       ink        15.5:1   основний текст
-       ink-soft    6.9:1   другорядний текст
-       violet      5.0:1   можна як текст
-       violet-deep 8.1:1   текст і кнопки
-       tangerine   2.3:1   ТІЛЬКИ заливка, ніколи не текст
-       leaf        1.8:1   ТІЛЬКИ декор
+  /* --- Color ---------------------------------------------------------
+     Values taken from the studio's branding (see spec, section 7).
+     Contrasts checked against WCAG 2.1 on the --pt-cream background:
+       ink        15.5:1   primary text
+       ink-soft    6.9:1   secondary text
+       violet      5.0:1   usable as text
+       violet-deep 8.1:1   text and buttons
+       tangerine   2.3:1   FILL ONLY, never text
+       leaf        1.8:1   DECORATION ONLY
   ------------------------------------------------------------------ */
   --pt-cream: #f7f3ea;
   --pt-paper: #fffdf8;
@@ -19,7 +19,7 @@
   --pt-ink-soft: #55525e;
   --pt-line: rgba(28, 27, 34, 0.12);
 
-  /* --- Ролі --------------------------------------------------------- */
+  /* --- Roles ----------------------------------------------------------- */
   --pt-bg: var(--pt-cream);
   --pt-surface: var(--pt-paper);
   --pt-text: var(--pt-ink);
@@ -29,7 +29,7 @@
   --pt-accent-fill: var(--pt-tangerine);
   --pt-on-accent: var(--pt-ink);
 
-  /* --- Типографіка --------------------------------------------------- */
+  /* --- Typography ------------------------------------------------------ */
   --pt-font-display: var(--pt-font-display-loaded, system-ui), sans-serif;
   --pt-font-body: var(--pt-font-body-loaded, system-ui), sans-serif;
 
@@ -48,7 +48,7 @@
   --pt-tracking-display: -0.02em;
   --pt-tracking-wide: 0.08em;
 
-  /* --- Відступи: крок 4px -------------------------------------------- */
+  /* --- Spacing: 4px step through --pt-space-4, then a widening curve -- */
   --pt-space-1: 0.25rem;
   --pt-space-2: 0.5rem;
   --pt-space-3: 0.75rem;
@@ -60,13 +60,13 @@
   --pt-space-9: 6rem;
   --pt-space-10: 8rem;
 
-  /* --- Радіуси: округлі, під органіку мазків ------------------------- */
+  /* --- Radii: rounded, to match the organic brush strokes ------------- */
   --pt-radius-sm: 0.5rem;
   --pt-radius-md: 0.875rem;
   --pt-radius-lg: 1.5rem;
   --pt-radius-pill: 999px;
 
-  /* --- Тіні: підфарбовані фіолетовим, не сірим ----------------------- */
+  /* --- Shadows: tinted violet, not gray -------------------------------- */
   --pt-shadow-sm: 0 1px 2px rgba(28, 27, 34, 0.06);
   --pt-shadow-md: 0 1px 2px rgba(28, 27, 34, 0.06), 0 8px 24px -12px rgba(91, 46, 158, 0.22);
 
