@@ -30,20 +30,28 @@
    cp apps/web/.env.example apps/web/.env
    ```
 
-3. Підняти PostgreSQL і Mailpit у Docker:
+3. Згенерувати `JWT_SECRET` і вписати його в `apps/api/.env` замість
+   заглушки. Дефолту в нього немає навмисно: секрет із прикладу поїхав би
+   у продакшн непоміченим, і тоді будь-хто зміг би підробити токен доступу.
+
+   ```sh
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+   ```
+
+4. Підняти PostgreSQL і Mailpit у Docker:
 
    ```sh
    pnpm db:up
    ```
 
-4. Згенерувати Prisma Client (каталог `apps/api/src/generated/` не
+5. Згенерувати Prisma Client (каталог `apps/api/src/generated/` не
    комітиться в git — без цього кроку `pnpm typecheck` не пройде):
 
    ```sh
    pnpm --filter @palitra/api db:generate
    ```
 
-5. Накотити міграції на базу:
+6. Накотити міграції на базу:
 
    ```sh
    pnpm --filter @palitra/api db:deploy
@@ -67,6 +75,25 @@ pnpm test           # усі тести (vitest)
 pnpm format:check    # перевірка форматування Prettier
 pnpm db:down         # зупинити Docker-контейнери
 ```
+
+## Авторизація
+
+Реєстрація, вхід і відновлення пароля живуть на сторінках `/register`,
+`/login`, `/forgot-password`; листи з посиланнями ведуть на `/verify-email`
+і `/reset-password`. Кабінет — `/cabinet`, закритий для неавторизованих.
+
+Листи в розробці нікуди не йдуть — їх перехоплює Mailpit, дивитися на
+<http://localhost:8025>.
+
+**Токени.** API віддає пару «access (15 хв) + refresh (30 днів)» у тілі
+відповіді, бо майбутньому застосунку на React Native потрібні саме токени.
+Веб їх у JavaScript не тримає: `proxy.ts` кладе обидва в httpOnly-кукі, тож
+XSS до них не дістанеться. Refresh ротується при кожному оновленні, а
+повторне використання вже обміняного токена гасить усі сесії користувача.
+
+**Тестова база.** Інтеграційні тести працюють на справжньому Postgres — на
+базі `palitra_test`, яку `pnpm test` створює й мігрує сам. Її ім'я
+виводиться з `DATABASE_URL`, тому окремої змінної не потрібно.
 
 ## Порти
 
