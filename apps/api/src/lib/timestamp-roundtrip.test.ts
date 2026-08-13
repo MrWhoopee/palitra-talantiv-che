@@ -19,9 +19,7 @@ describe('timestamptz round-trip', () => {
     const trueInstant = new Date('2026-08-13T18:18:26.210Z');
     const epochSeconds = trueInstant.getTime() / 1000;
 
-    const rows = await prisma.$queryRaw<
-      { ts: Date }[]
-    >`SELECT to_timestamp(${epochSeconds}) AS ts`;
+    const rows = await prisma.$queryRaw<{ ts: Date }[]>`SELECT to_timestamp(${epochSeconds}) AS ts`;
 
     expect(rows[0]?.ts.getTime()).toBe(trueInstant.getTime());
   });
