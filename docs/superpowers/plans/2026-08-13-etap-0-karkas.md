@@ -741,6 +741,7 @@ git commit -m "feat(shared): add domain error codes and health response schema"
 - Create: `apps/api/vitest.config.ts`
 - Create: `apps/api/src/lib/env.ts`
 - Create: `apps/api/src/http/error-handler.ts`
+- Create: `apps/api/src/http/error-handler.test.ts`
 - Create: `apps/api/src/http/app.ts`
 - Create: `apps/api/src/modules/health/health.service.ts`
 - Create: `apps/api/src/modules/health/health.router.ts`
@@ -843,6 +844,86 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
 ```
 
 Валідація оточення на старті — щоб застосунок падав одразу з внятним повідомленням, а не через годину на першому запиті до БД із `undefined` у рядку з'єднання.
+
+- [ ] **Step 4a: Написати падаючий тест на обробник помилок**
+
+Створити `apps/api/src/http/error-handler.test.ts`:
+
+```ts
+import type { Response } from 'express';
+import { describe, expect, it, vi } from 'vitest';
+import { DomainError, errorHandler } from './error-handler.js';
+
+function fakeResponse() {
+  const captured: { status?: number; body?: unknown } = {};
+  const res = {
+    status(code: number) {
+      captured.status = code;
+      return res;
+    },
+    json(body: unknown) {
+      captured.body = body;
+      return res;
+    },
+  };
+  return { res: res as unknown as Response, captured };
+}
+
+describe('errorHandler', () => {
+  it('maps a domain error to its configured status and code', () => {
+    const { res, captured } = fakeResponse();
+
+    errorHandler(new DomainError('SLOT_TAKEN', 'Слот щойно зайняли'), {} as never, res, vi.fn());
+
+    expect(captured.status).toBe(409);
+    expect(captured.body).toEqual({ code: 'SLOT_TAKEN', message: 'Слот щойно зайняли' });
+  });
+
+  it('includes details when the domain error carries them', () => {
+    const { res, captured } = fakeResponse();
+
+    errorHandler(
+      new DomainError('VALIDATION_FAILED', 'Invalid body', { field: 'email' }),
+      {} as never,
+      res,
+      vi.fn(),
+    );
+
+    expect(captured.body).toEqual({
+      code: 'VALIDATION_FAILED',
+      message: 'Invalid body',
+      details: { field: 'email' },
+    });
+  });
+
+  it('hides the message of an unexpected error behind a 500', () => {
+    const { res, captured } = fakeResponse();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    errorHandler(
+      new Error('connect ECONNREFUSED postgres://palitra:palitra@localhost'),
+      {} as never,
+      res,
+      vi.fn(),
+    );
+
+    expect(captured.status).toBe(500);
+    expect(captured.body).toEqual({ code: 'INTERNAL_ERROR', message: 'Unexpected server error' });
+    expect(JSON.stringify(captured.body)).not.toContain('palitra');
+    consoleSpy.mockRestore();
+  });
+});
+```
+
+Третій тест — не формальність. `errorHandler` віддає відповідь і неавторизованим запитам, тому текст системного винятку, який може містити рядок з'єднання з паролем, назовні потрапляти не повинен.
+
+- [ ] **Step 4b: Запустити тест і переконатися, що він падає**
+
+```bash
+pnpm --filter @palitra/api test
+```
+
+Очікується: FAIL — `Failed to resolve import "./error-handler.js"`
 
 - [ ] **Step 5: Створити `apps/api/src/http/error-handler.ts`**
 
@@ -1037,7 +1118,7 @@ Express 5 сам перехоплює помилки з async-обробникі
 pnpm --filter @palitra/api test
 ```
 
-Очікується: PASS, 4 тести.
+Очікується: PASS, 7 тестів (3 на обробник помилок, 4 на `/health`).
 
 - [ ] **Step 12: Створити `apps/api/src/server.ts`**
 
@@ -1372,7 +1453,7 @@ export function createDatabaseCheck(client: QueryableClient): () => Promise<bool
 pnpm --filter @palitra/api test
 ```
 
-Очікується: PASS, 7 тестів (4 з Task 4 плюс 3 нові).
+Очікується: PASS, 10 тестів (7 з Task 4 плюс 3 нові).
 
 - [ ] **Step 12: Створити `apps/api/src/lib/prisma.ts`**
 
@@ -1861,8 +1942,8 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
   --pt-on-accent: var(--pt-ink);
 
   /* --- Типографіка --------------------------------------------------- */
-  --pt-font-display: 'Unbounded', system-ui, sans-serif;
-  --pt-font-body: 'Onest', system-ui, sans-serif;
+  --pt-font-display: system-ui, sans-serif;
+  --pt-font-body: system-ui, sans-serif;
 
   --pt-text-xs: 0.75rem;
   --pt-text-sm: 0.875rem;
@@ -2013,11 +2094,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 У `apps/web/src/styles/tokens.css` замінити два рядки в блоці типографіки на:
 
 ```css
-  --pt-font-display: var(--pt-font-display-loaded), system-ui, sans-serif;
-  --pt-font-body: var(--pt-font-body-loaded), system-ui, sans-serif;
+  --pt-font-display: var(--pt-font-display-loaded, system-ui), sans-serif;
+  --pt-font-body: var(--pt-font-body-loaded, system-ui), sans-serif;
 ```
 
 `next/font` сам створює змінні `--pt-font-*-loaded` із реальними іменами сімейств і локальними резервними метриками, тому імена шрифтів у CSS вручну не пишуться.
+
+Резервне значення стоїть **усередині** `var()`, а не після коми, і це не косметика. Якщо написати `var(--x), system-ui`, то за відсутності `--x` уся декларація стає недійсною на етапі обчислення значення — браузер не «перескочить» на `system-ui`, а відкине правило цілком і візьме успадкований шрифт. Форма `var(--x, system-ui)` дає справжній резерв.
 
 - [ ] **Step 11: Створити `apps/web/src/app/page.tsx`**
 
