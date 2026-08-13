@@ -25,14 +25,14 @@
 
 Перевірено в цьому середовищі:
 
-| Інструмент | Версія | Стан |
-|---|---|---|
-| Node.js | v22.19.0 | ок |
-| pnpm | 11.21.0 | ок |
-| Docker CLI | 29.2.1 | ок |
-| Docker Compose | v5.0.2 | ок |
-| Docker daemon | — | **не запущений**, треба стартувати Docker Desktop перед Task 5 |
-| git | 2.51.0 | ок |
+| Інструмент     | Версія   | Стан                                                           |
+| -------------- | -------- | -------------------------------------------------------------- |
+| Node.js        | v22.19.0 | ок                                                             |
+| pnpm           | 11.21.0  | ок                                                             |
+| Docker CLI     | 29.2.1   | ок                                                             |
+| Docker Compose | v5.0.2   | ок                                                             |
+| Docker daemon  | —        | **не запущений**, треба стартувати Docker Desktop перед Task 5 |
+| git            | 2.51.0   | ок                                                             |
 
 ## Структура файлів
 
@@ -69,6 +69,7 @@ palitra-talantiv-che/
 ### Task 1: Корінь монорепо
 
 **Files:**
+
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 - Create: `turbo.json`
@@ -77,6 +78,7 @@ palitra-talantiv-che/
 - Create: `.gitattributes`
 
 **Interfaces:**
+
 - Consumes: нічого
 - Produces: workspace-скоуп `@palitra/*`; кореневі скрипти `pnpm dev`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`; turbo-задачі `dev`, `lint`, `typecheck`, `test`, `build`
 
@@ -142,8 +144,8 @@ engine-strict=true
 
 ```yaml
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
 ```
 
 - [ ] **Step 5: Створити кореневий `package.json`**
@@ -235,6 +237,7 @@ git commit -m "chore: bootstrap pnpm workspace and turborepo"
 ### Task 2: Спільна конфігурація — `packages/config`
 
 **Files:**
+
 - Create: `packages/config/package.json`
 - Create: `packages/config/tsconfig.base.json`
 - Create: `packages/config/tsconfig.node.json`
@@ -247,6 +250,7 @@ git commit -m "chore: bootstrap pnpm workspace and turborepo"
 - Modify: `package.json` (корінь) — додати `@palitra/config` і `eslint` у devDependencies
 
 **Interfaces:**
+
 - Consumes: workspace із Task 1
 - Produces: пакет `@palitra/config` з експортами `./tsconfig.base.json`, `./tsconfig.node.json`, `./tsconfig.react.json`, `./eslint`, `./prettier`
 
@@ -461,6 +465,7 @@ git commit -m "chore: add shared tsconfig, eslint and prettier config package"
 ### Task 3: Домен — `packages/shared`
 
 **Files:**
+
 - Create: `packages/shared/package.json`
 - Create: `packages/shared/eslint.config.js`
 - Create: `packages/shared/tsconfig.json`
@@ -472,6 +477,7 @@ git commit -m "chore: add shared tsconfig, eslint and prettier config package"
 - Create: `packages/shared/src/index.ts`
 
 **Interfaces:**
+
 - Consumes: `@palitra/config`
 - Produces: пакет `@palitra/shared`, експортує:
   - `DOMAIN_ERROR_CODES` — readonly-масив кодів
@@ -735,6 +741,7 @@ git commit -m "feat(shared): add domain error codes and health response schema"
 ### Task 4: Каркас API — Express 5 і `/health`
 
 **Files:**
+
 - Create: `apps/api/package.json`
 - Create: `apps/api/eslint.config.js`
 - Create: `apps/api/tsconfig.json`
@@ -749,6 +756,7 @@ git commit -m "feat(shared): add domain error codes and health response schema"
 - Create: `apps/api/src/server.ts`
 
 **Interfaces:**
+
 - Consumes: `@palitra/shared` — `healthResponseSchema`, `DOMAIN_ERROR_STATUS`, `type DomainErrorCode`
 - Produces:
   - `createApp(deps: { checkDatabase: () => Promise<boolean> }): Express` — фабрика застосунку
@@ -1161,11 +1169,13 @@ git commit -m "feat(api): add express app skeleton with health endpoint"
 ### Task 5: Docker Compose — Postgres і перехоплювач пошти
 
 **Files:**
+
 - Create: `docker-compose.yml`
 - Create: `.env.example`
 - Create: `apps/api/.env.example`
 
 **Interfaces:**
+
 - Consumes: нічого з попередніх задач
 - Produces: Postgres на `localhost:5432` (база `palitra`, користувач `palitra`, пароль `palitra`), Mailpit SMTP на `localhost:1025` і його веб-інтерфейс на `http://localhost:8025`
 
@@ -1279,6 +1289,7 @@ git commit -m "chore: add postgres and mailpit via docker compose"
 ### Task 6: Prisma 7 і реальна перевірка БД
 
 **Files:**
+
 - Create: `apps/api/prisma/schema.prisma`
 - Create: `apps/api/prisma/migrations/20260813000000_enable_btree_gist/migration.sql`
 - Create: `apps/api/prisma/migrations/migration_lock.toml`
@@ -1289,6 +1300,7 @@ git commit -m "chore: add postgres and mailpit via docker compose"
 - Modify: `apps/api/package.json`
 
 **Interfaces:**
+
 - Consumes: `createApp` із Task 4, Postgres із Task 5
 - Produces:
   - `prisma` — синглтон `PrismaClient`
@@ -1548,6 +1560,7 @@ git commit -m "feat(api): wire prisma and add real database health check"
 ### Task 7: Типізований клієнт — `packages/api-client`
 
 **Files:**
+
 - Create: `packages/api-client/package.json`
 - Create: `packages/api-client/eslint.config.js`
 - Create: `packages/api-client/tsconfig.json`
@@ -1557,6 +1570,7 @@ git commit -m "feat(api): wire prisma and add real database health check"
 - Create: `packages/api-client/src/index.ts`
 
 **Interfaces:**
+
 - Consumes: `@palitra/shared` — `healthResponseSchema`, `apiErrorSchema`, `type HealthResponse`
 - Produces:
   - `createApiClient(options: { baseUrl: string; fetch?: typeof globalThis.fetch }): ApiClient`
@@ -1800,6 +1814,7 @@ git commit -m "feat(api-client): add typed client with schema-validated health c
 ### Task 8: Веб-застосунок і шар дизайн-токенів
 
 **Files:**
+
 - Create: `apps/web/package.json`
 - Create: `apps/web/eslint.config.js`
 - Create: `apps/web/tsconfig.json`
@@ -1813,6 +1828,7 @@ git commit -m "feat(api-client): add typed client with schema-validated health c
 - Create: `apps/web/.env.example`
 
 **Interfaces:**
+
 - Consumes: `@palitra/api-client` — `createApiClient`; `@palitra/shared` — `type HealthResponse`
 - Produces: шар CSS-змінних `--pt-*` (колір, типографіка, відступи, радіуси, тіні), доступний усім наступним етапам
 
@@ -1980,8 +1996,7 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 
   /* --- Тіні: підфарбовані фіолетовим, не сірим ----------------------- */
   --pt-shadow-sm: 0 1px 2px rgba(28, 27, 34, 0.06);
-  --pt-shadow-md:
-    0 1px 2px rgba(28, 27, 34, 0.06), 0 8px 24px -12px rgba(91, 46, 158, 0.22);
+  --pt-shadow-md: 0 1px 2px rgba(28, 27, 34, 0.06), 0 8px 24px -12px rgba(91, 46, 158, 0.22);
 
   --pt-container: 72rem;
 }
@@ -2093,6 +2108,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
 У `apps/web/src/styles/tokens.css` замінити два рядки в блоці типографіки на:
 
+Ці два рядки замінюються **всередині** блоку `:root { … }`, зі збереженням відступу у два пробіли:
+
+<!-- prettier-ignore -->
 ```css
   --pt-font-display: var(--pt-font-display-loaded, system-ui), sans-serif;
   --pt-font-body: var(--pt-font-body-loaded, system-ui), sans-serif;
@@ -2226,10 +2244,12 @@ git commit -m "feat(web): add next.js app with brand design tokens and status pa
 ### Task 9: Безперервна інтеграція
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 - Modify: `apps/api/package.json` (додати скрипт `test:ci`)
 
 **Interfaces:**
+
 - Consumes: скрипти `lint`, `typecheck`, `test`, `build` з усіх пакетів
 - Produces: workflow, що проганяє перевірки на кожен push і pull request
 

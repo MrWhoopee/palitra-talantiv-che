@@ -26,17 +26,17 @@
 
 ## 2. Технологічні рішення
 
-| Рішення | Вибір | Обґрунтування |
-|---|---|---|
-| Структура репозиторію | Монорепо на Turborepo | Три клієнти (веб, майбутня мобілка, API) ділять типи домену |
-| Package manager | pnpm | Строга ізоляція залежностей, швидший install, дефолт у доках Turborepo |
-| Фронтенд | Next.js, App Router | Публічний сайт потребує SSR/SSG заради SEO |
-| Бекенд | Express + TypeScript | Окремий сервіс, бо мобілка потребує того самого API |
-| БД | PostgreSQL | Розклад і броні — реляційні дані з обмеженнями перетинів |
-| ORM | Prisma | Зріла система міграцій, типи зі схеми, Prisma Studio |
-| Авторизація | Власна: bcrypt + JWT | Не зав'язуємось на платформу; RN потребує токенів, не cookie-сесій |
-| Розробка | Docker Compose | Postgres + MailHog локально; хостинг обираємо перед релізом |
-| Файли | Інтерфейс `StorageAdapter` | Локально диск, у проді S3-сумісне сховище. ~30 рядків, знімає прив'язку |
+| Рішення               | Вибір                      | Обґрунтування                                                           |
+| --------------------- | -------------------------- | ----------------------------------------------------------------------- |
+| Структура репозиторію | Монорепо на Turborepo      | Три клієнти (веб, майбутня мобілка, API) ділять типи домену             |
+| Package manager       | pnpm                       | Строга ізоляція залежностей, швидший install, дефолт у доках Turborepo  |
+| Фронтенд              | Next.js, App Router        | Публічний сайт потребує SSR/SSG заради SEO                              |
+| Бекенд                | Express + TypeScript       | Окремий сервіс, бо мобілка потребує того самого API                     |
+| БД                    | PostgreSQL                 | Розклад і броні — реляційні дані з обмеженнями перетинів                |
+| ORM                   | Prisma                     | Зріла система міграцій, типи зі схеми, Prisma Studio                    |
+| Авторизація           | Власна: bcrypt + JWT       | Не зав'язуємось на платформу; RN потребує токенів, не cookie-сесій      |
+| Розробка              | Docker Compose             | Postgres + MailHog локально; хостинг обираємо перед релізом             |
+| Файли                 | Інтерфейс `StorageAdapter` | Локально диск, у проді S3-сумісне сховище. ~30 рядків, знімає прив'язку |
 
 ### Хостинг
 
@@ -129,15 +129,15 @@ computeFreeSlots({
 
 ### Користувачі та ролі
 
-| Модель | Ключові поля |
-|---|---|
-| `User` | email, passwordHash, role (`ADMIN`/`TEACHER`/`STUDENT`), firstName, lastName, phone, avatarUrl, emailVerifiedAt, createdAt |
-| `RefreshToken` | userId, tokenHash, expiresAt, revokedAt, userAgent |
-| `TeacherProfile` | userId (1:1), bio, experienceYears, photoUrl, isPublished, sortOrder |
-| `StudentProfile` | userId (1:1), birthDate, guardianName, guardianPhone, adminNotes |
-| `Location` | name, address, mapUrl |
-| `TeacherLocation` | teacherId, locationId (M:N) |
-| `TeacherDirection` | teacherId, directionId (M:N) |
+| Модель             | Ключові поля                                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `User`             | email, passwordHash, role (`ADMIN`/`TEACHER`/`STUDENT`), firstName, lastName, phone, avatarUrl, emailVerifiedAt, createdAt |
+| `RefreshToken`     | userId, tokenHash, expiresAt, revokedAt, userAgent                                                                         |
+| `TeacherProfile`   | userId (1:1), bio, experienceYears, photoUrl, isPublished, sortOrder                                                       |
+| `StudentProfile`   | userId (1:1), birthDate, guardianName, guardianPhone, adminNotes                                                           |
+| `Location`         | name, address, mapUrl                                                                                                      |
+| `TeacherLocation`  | teacherId, locationId (M:N)                                                                                                |
+| `TeacherDirection` | teacherId, directionId (M:N)                                                                                               |
 
 Роль — поле в `User`, а не окрема таблиця: ролей три й вони фіксовані, повноцінна RBAC була б
 оверінжинірингом. `guardianName`/`guardianPhone` закривають дітей від 4 років без окремої ролі.
@@ -148,24 +148,24 @@ computeFreeSlots({
 
 ### Доступність викладача
 
-| Модель | Ключові поля |
-|---|---|
-| `AvailabilityRule` | teacherId, locationId, weekday (0–6), startTime, endTime, validFrom, validTo? |
-| `AvailabilityException` | teacherId, startsAt, endsAt, kind (`VACATION`/`SICK`/`BLOCKED`), note |
+| Модель                  | Ключові поля                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `AvailabilityRule`      | teacherId, locationId, weekday (0–6), startTime, endTime, validFrom, validTo? |
+| `AvailabilityException` | teacherId, startsAt, endsAt, kind (`VACATION`/`SICK`/`BLOCKED`), note         |
 
 `validFrom`/`validTo` дозволяють змінити графік із дати без втрати історії. Винятки — діапазони
 дат-часу, а не позначки на днях, бо відпустка може починатись з середини дня.
 
 ### Заняття, абонементи, групи
 
-| Модель | Ключові поля |
-|---|---|
-| `Lesson` | teacherId, **studentId?**, **groupId?**, locationId, startsAt, endsAt, durationMinutes, kind (`TRIAL`/`SINGLE`/`SUBSCRIPTION`), status, subscriptionId?, cancelledById?, cancelReason? |
-| `Subscription` | studentId, teacherId, lessonsTotal, lessonsUsed, priceUah, validFrom, validTo, paidAt?, status |
-| `Group` | name, teacherId, directionId, locationId, capacity, durationMinutes, isOpenForEnrollment, startsOn, endsOn? |
-| `GroupSchedule` | groupId, weekday, startTime |
-| `GroupEnrollment` | groupId, studentId, status (`PENDING`/`ACTIVE`/`LEFT`), joinedAt, leftAt? |
-| `LessonAttendance` | lessonId, studentId, status (`PRESENT`/`ABSENT`/`EXCUSED`) |
+| Модель             | Ключові поля                                                                                                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Lesson`           | teacherId, **studentId?**, **groupId?**, locationId, startsAt, endsAt, durationMinutes, kind (`TRIAL`/`SINGLE`/`SUBSCRIPTION`), status, subscriptionId?, cancelledById?, cancelReason? |
+| `Subscription`     | studentId, teacherId, lessonsTotal, lessonsUsed, priceUah, validFrom, validTo, paidAt?, status                                                                                         |
+| `Group`            | name, teacherId, directionId, locationId, capacity, durationMinutes, isOpenForEnrollment, startsOn, endsOn?                                                                            |
+| `GroupSchedule`    | groupId, weekday, startTime                                                                                                                                                            |
+| `GroupEnrollment`  | groupId, studentId, status (`PENDING`/`ACTIVE`/`LEFT`), joinedAt, leftAt?                                                                                                              |
+| `LessonAttendance` | lessonId, studentId, status (`PRESENT`/`ABSENT`/`EXCUSED`)                                                                                                                             |
 
 Статуси заняття: `PENDING` → `CONFIRMED` → `COMPLETED` / `CANCELLED` / `NO_SHOW`.
 
@@ -213,22 +213,22 @@ constraint працює з `tstzrange("startsAt", "endsAt")`, а обчислю�
 
 ### Контент публічного сайту
 
-| Модель | Ключові поля |
-|---|---|
+| Модель        | Ключові поля                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `StudioEvent` | title, slug, description, startsAt, endsAt, locationId, coverUrl, kind (`CONCERT`/`OPEN_LESSON`/`COMPETITION`/`OTHER`), isPublished |
-| `Direction` | slug, name, description, icon |
-| `PricePlan` | directionId, name, lessonsCount, **durationMinutes**, format (`INDIVIDUAL`/`GROUP`), priceUah, isActive |
-| `GalleryItem` | kind (`PHOTO`/`VIDEO`), url, thumbUrl, caption, eventId?, sortOrder |
-| `Testimonial` | authorName, text, isPublished |
-| `Achievement` | title, description, year, imageUrl |
+| `Direction`   | slug, name, description, icon                                                                                                       |
+| `PricePlan`   | directionId, name, lessonsCount, **durationMinutes**, format (`INDIVIDUAL`/`GROUP`), priceUah, isActive                             |
+| `GalleryItem` | kind (`PHOTO`/`VIDEO`), url, thumbUrl, caption, eventId?, sortOrder                                                                 |
+| `Testimonial` | authorName, text, isPublished                                                                                                       |
+| `Achievement` | title, description, year, imageUrl                                                                                                  |
 
 `StudioEvent` — ті самі події, що видно і в публічній афіші, і в календарі кабінету.
 
 ### Сповіщення
 
-| Модель | Ключові поля |
-|---|---|
-| `Notification` | userId, type, payload (json), readAt, createdAt |
+| Модель                 | Ключові поля                                                             |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `Notification`         | userId, type, payload (json), readAt, createdAt                          |
 | `NotificationDelivery` | notificationId, channel (`IN_APP`/`EMAIL`/`PUSH`), status, sentAt, error |
 
 Розділення на дві таблиці — щоб push для мобілки додався значенням в enum, а не переписуванням
@@ -305,16 +305,16 @@ Email підтверджується листом, але **перше брон�
 
 ### Матриця прав
 
-| Дія | Учень | Викладач | Адмін |
-|---|:--:|:--:|:--:|
-| Бачити вільні слоти | ✓ | ✓ | ✓ |
-| Бронювати собі | ✓ | — | ✓ (будь-кому) |
-| Підтверджувати заняття | — | свої | ✓ |
-| Скасувати | своє, >24 год | свої | ✓ |
-| Правила розкладу й відпустки | — | свої | ✓ |
-| Групи: склад, заявки, відвідуваність | заявка | свої | ✓ |
-| Абонементи, позначка «оплачено» | перегляд свого | перегляд своїх учнів | ✓ |
-| Контент сайту й події | — | — | ✓ |
+| Дія                                  |     Учень      |       Викладач       |     Адмін     |
+| ------------------------------------ | :------------: | :------------------: | :-----------: |
+| Бачити вільні слоти                  |       ✓        |          ✓           |       ✓       |
+| Бронювати собі                       |       ✓        |          —           | ✓ (будь-кому) |
+| Підтверджувати заняття               |       —        |         свої         |       ✓       |
+| Скасувати                            | своє, >24 год  |         свої         |       ✓       |
+| Правила розкладу й відпустки         |       —        |         свої         |       ✓       |
+| Групи: склад, заявки, відвідуваність |     заявка     |         свої         |       ✓       |
+| Абонементи, позначка «оплачено»      | перегляд свого | перегляд своїх учнів |       ✓       |
+| Контент сайту й події                |       —        |          —           |       ✓       |
 
 Реалізація: middleware `requireRole(...)` для грубої перевірки **плюс** перевірка володіння в сервісі
 (`lesson.teacherId === user.id`). Друге критичніше: без нього викладач A підтверджує заняття
@@ -367,13 +367,13 @@ SEO: сторінки викладачів, напрямів і подій ре�
 дрібні дудли — зірочки, сердечка, нотний стан. Лого існує у двох версіях: суворій («PALITRA»
 капітеллю з розрідженим «TALANTIV») і теплій рукописній («Palitra talantiv, музична студія»).
 
-| Токен | Приблизне значення | Призначення |
-|---|---|---|
-| `--color-primary` | `#7B4FC9` | Фіолетовий: текст, кнопки, акценти |
-| `--color-accent` | `#F08A2C` | Помаранчевий: заклики до дії, плями-заголовки |
-| `--color-support` | `#93C83E` | Зелений: декор, ілюстративні мазки |
-| `--color-bg` | `#F7F3EA` | Кремове тло |
-| `--color-ink` | `#1C1B22` | Основний текст |
+| Токен             | Приблизне значення | Призначення                                   |
+| ----------------- | ------------------ | --------------------------------------------- |
+| `--color-primary` | `#7B4FC9`          | Фіолетовий: текст, кнопки, акценти            |
+| `--color-accent`  | `#F08A2C`          | Помаранчевий: заклики до дії, плями-заголовки |
+| `--color-support` | `#93C83E`          | Зелений: декор, ілюстративні мазки            |
+| `--color-bg`      | `#F7F3EA`          | Кремове тло                                   |
+| `--color-ink`     | `#1C1B22`          | Основний текст                                |
 
 Значення зняті з JPEG-скріншота й підлягають уточненню за оригіналами логотипу.
 
@@ -403,17 +403,17 @@ SEO: сторінки викладачів, напрямів і подій ре�
 
 ## 8. Етапи
 
-| Етап | Зміст | Критерій готовності |
-|---|---|---|
-| **0. Каркас** | Turborepo + pnpm, три пакети, docker-compose (Postgres + MailHog), Prisma, лінтери, CI | `pnpm dev` піднімає обидва застосунки, `/health` відповідає, CI зелений |
-| **1. Авторизація** | Реєстрація, логін, JWT access (15 хв) + refresh (30 д, з ротацією), підтвердження email, скидання пароля, middleware `auth` і `requireRole` | Учень реєструється й заходить у порожній кабінет |
-| **2. Викладачі й доступність** | Профілі, локації, правила, винятки, `computeFreeSlots`, публічний ендпоінт слотів | `GET /teachers/:id/slots?from&to&duration` віддає коректні вікна |
-| **3. Бронювання** | Exclusion constraint, пробне й разове, кабінет учня, підтвердження викладачем, скасування | Наскрізний сценарій: бронь → підтвердження → проведено |
-| **4. Абонементи й групи** | `Subscription` зі списанням, групи, заявки на вступ, відвідуваність | Викладач веде групу й відмічає відвідуваність |
-| **5. Публічний сайт** | Усі секції розділу 7, SEO, OG, sitemap | Lighthouse ≥ 90 |
-| **6. Адмінка** | Керування викладачами, контент-моделі, події, `StorageAdapter` | Студія наповнює сайт без розробника |
-| **7. Сповіщення** | Центр сповіщень, email-шаблони, cron нагадувань | Нагадування приходять за 24 год і за 2 год |
-| **8. Деплой** | Dockerfile, змінні оточення, вибір платформи, бекапи БД | Сайт живе на домені |
+| Етап                           | Зміст                                                                                                                                       | Критерій готовності                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **0. Каркас**                  | Turborepo + pnpm, три пакети, docker-compose (Postgres + MailHog), Prisma, лінтери, CI                                                      | `pnpm dev` піднімає обидва застосунки, `/health` відповідає, CI зелений |
+| **1. Авторизація**             | Реєстрація, логін, JWT access (15 хв) + refresh (30 д, з ротацією), підтвердження email, скидання пароля, middleware `auth` і `requireRole` | Учень реєструється й заходить у порожній кабінет                        |
+| **2. Викладачі й доступність** | Профілі, локації, правила, винятки, `computeFreeSlots`, публічний ендпоінт слотів                                                           | `GET /teachers/:id/slots?from&to&duration` віддає коректні вікна        |
+| **3. Бронювання**              | Exclusion constraint, пробне й разове, кабінет учня, підтвердження викладачем, скасування                                                   | Наскрізний сценарій: бронь → підтвердження → проведено                  |
+| **4. Абонементи й групи**      | `Subscription` зі списанням, групи, заявки на вступ, відвідуваність                                                                         | Викладач веде групу й відмічає відвідуваність                           |
+| **5. Публічний сайт**          | Усі секції розділу 7, SEO, OG, sitemap                                                                                                      | Lighthouse ≥ 90                                                         |
+| **6. Адмінка**                 | Керування викладачами, контент-моделі, події, `StorageAdapter`                                                                              | Студія наповнює сайт без розробника                                     |
+| **7. Сповіщення**              | Центр сповіщень, email-шаблони, cron нагадувань                                                                                             | Нагадування приходять за 24 год і за 2 год                              |
+| **8. Деплой**                  | Dockerfile, змінні оточення, вибір платформи, бекапи БД                                                                                     | Сайт живе на домені                                                     |
 
 Публічний сайт стоїть п'ятим свідомо: до нього потрібен брендинг, якого ще немає. Етапи 0–4 від
 дизайну не залежать, тож поки збирається візуальна частина, робота не стоїть.
@@ -447,13 +447,13 @@ SEO: сторінки викладачів, напрямів і подій ре�
 
 ## 10. Ризики
 
-| Ризик | Пом'якшення |
-|---|---|
-| Часові пояси й DST — тихі баги в розкладі | Чиста функція `computeFreeSlots` плюс табличні тести на переходи |
-| Гонки при бронюванні | Exclusion constraint у БД плюс обов'язковий інтеграційний тест на паралельні запити |
-| Розповзання скоупу через адмінку | Тримаємо в межах моделей, які реально виводяться на сайт |
-| Брендинг блокує розробку | Публічний сайт винесено на етап 5; етапи 0–4 від дизайну не залежать |
-| Прив'язка до хостингу | 12-factor конфіг, Dockerfile, `StorageAdapter`; вибір платформи на етапі 8 |
+| Ризик                                     | Пом'якшення                                                                         |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| Часові пояси й DST — тихі баги в розкладі | Чиста функція `computeFreeSlots` плюс табличні тести на переходи                    |
+| Гонки при бронюванні                      | Exclusion constraint у БД плюс обов'язковий інтеграційний тест на паралельні запити |
+| Розповзання скоупу через адмінку          | Тримаємо в межах моделей, які реально виводяться на сайт                            |
+| Брендинг блокує розробку                  | Публічний сайт винесено на етап 5; етапи 0–4 від дизайну не залежать                |
+| Прив'язка до хостингу                     | 12-factor конфіг, Dockerfile, `StorageAdapter`; вибір платформи на етапі 8          |
 
 ## 11. Відкладено
 
