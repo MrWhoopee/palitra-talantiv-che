@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: palitra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: palitra
+      POSTGRES_PASSWORD: palitra
+      POSTGRES_DB: palitra
+      TZ: Europe/Kyiv
+    ports:
+      - '5432:5432'
+    volumes:
+      - palitra-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U palitra -d palitra']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: palitra-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  palitra-pgdata:
