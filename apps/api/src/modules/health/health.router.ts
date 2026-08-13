@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { buildHealthReport } from './health.service.js';
+import { buildHealthReport } from './health.service';
 
 export function createHealthRouter(checkDatabase: () => Promise<boolean>): Router {
   const router = Router();

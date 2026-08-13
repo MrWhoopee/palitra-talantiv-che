@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DOMAIN_ERROR_CODES, DOMAIN_ERROR_STATUS, apiErrorSchema } from './errors.js';
+import { DOMAIN_ERROR_CODES, DOMAIN_ERROR_STATUS, apiErrorSchema } from './errors';
 
 describe('domain error codes', () => {
   it('maps every code to an http error status', () => {

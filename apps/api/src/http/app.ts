@@ -2,8 +2,8 @@ import type { ApiError } from '@palitra/shared';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
-import { createHealthRouter } from '../modules/health/health.router.js';
-import { errorHandler } from './error-handler.js';
+import { createHealthRouter } from '../modules/health/health.router';
+import { errorHandler } from './error-handler';
 
 export interface AppDeps {
   checkDatabase: () => Promise<boolean>;

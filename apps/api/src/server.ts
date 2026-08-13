@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { createApp } from './http/app.js';
-import { createDatabaseCheck } from './lib/database-check.js';
-import { loadEnv } from './lib/env.js';
-import { prisma } from './lib/prisma.js';
+import { createApp } from './http/app';
+import { createDatabaseCheck } from './lib/database-check';
+import { loadEnv } from './lib/env';
+import { prisma } from './lib/prisma';
 
 const env = loadEnv();
 

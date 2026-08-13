@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
-import { DomainError, errorHandler } from './error-handler.js';
+import { DomainError, errorHandler } from './error-handler';
 
 function fakeResponse() {
   const captured: { status?: number; body?: unknown } = {};

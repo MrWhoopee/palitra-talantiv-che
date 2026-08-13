@@ -1,7 +1,7 @@
 import { healthResponseSchema } from '@palitra/shared';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../http/app.js';
+import { createApp } from '../../http/app';
 
 describe('GET /health', () => {
   it('reports ok when the database is reachable', async () => {

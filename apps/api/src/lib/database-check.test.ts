@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDatabaseCheck } from './database-check.js';
+import { createDatabaseCheck } from './database-check';
 
 describe('createDatabaseCheck', () => {
   it('returns true when the query succeeds', async () => {
