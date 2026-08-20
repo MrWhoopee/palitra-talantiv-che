@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
 import { dateKey, longDate, shiftDays, timeOf, today, toDateKey } from '@/lib/studio-time';
 import { BookingForm } from './booking-form';
-import '../../../styles/booking.css';
+import '@/styles/booking.css';
 
 /** The calendar shows one week at a time, up to the four-week booking horizon. */
 const WEEKS_AHEAD = 4;
@@ -41,6 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${teacher.firstName} ${teacher.lastName} — Палітра талантів`,
     description: teacher.bio ?? 'Запис на заняття у студії «Палітра талантів».',
+    alternates: { canonical: `/teachers/${teacher.id}` },
   };
 }
 

@@ -7,8 +7,8 @@ import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
 import { lessonMoment } from '@/lib/studio-time';
 import { RegisterForm } from './register-form';
-import '../../../../../styles/auth.css';
-import '../../../../../styles/booking.css';
+import '@/styles/auth.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Журнал — Палітра талантів',

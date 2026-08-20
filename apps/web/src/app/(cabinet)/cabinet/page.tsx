@@ -8,9 +8,8 @@ import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
 import { describeGroupSchedule } from '@/lib/studio-time';
 import { LessonCard } from './lesson-card';
-import { LogoutButton } from './logout-button';
-import '../../styles/auth.css';
-import '../../styles/booking.css';
+import '@/styles/auth.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Кабінет — Палітра талантів',
@@ -64,23 +63,16 @@ export default async function CabinetPage({
             Вітаємо, {user.firstName} {user.lastName}
           </h1>
         </div>
-        <div className="cabinet-header-actions">
-          {teaching ? (
-            <>
-              <Link href="/cabinet/schedule" className="button-quiet">
-                Мій графік
-              </Link>
-              <Link href="/cabinet/groups" className="button-quiet">
-                Мої групи
-              </Link>
-            </>
-          ) : (
+        {/* Navigation between cabinet sections, and logging out, moved to the
+            strip in the shell. What stays here is the one thing a student comes
+            to this screen to do. */}
+        {teaching ? null : (
+          <div className="cabinet-header-actions">
             <Link href="/teachers" className="button-primary">
               Записатися на заняття
             </Link>
-          )}
-          <LogoutButton />
-        </div>
+          </div>
+        )}
       </header>
 
       {booked ? (

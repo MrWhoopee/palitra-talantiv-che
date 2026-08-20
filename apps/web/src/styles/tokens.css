@@ -1,33 +1,39 @@
 :root {
   /* --- Color ---------------------------------------------------------
-     Values taken from the studio's branding (see spec, section 7).
-     Contrasts checked against WCAG 2.1 on the --pt-cream background:
-       ink        15.5:1   primary text
-       ink-soft    6.9:1   secondary text
-       violet      5.0:1   usable as text
-       violet-deep 8.1:1   text and buttons
+     Measured off the studio's own logo, pixel by pixel, rather than read
+     off a screenshot of the feed: the avatar is the only original artifact
+     we have. Where the two disagree, the logo wins - see
+     docs/superpowers/specs/2026-08-20-etap-5-publichnyi-sait.md, section 2.
+
+     Contrasts checked against WCAG 2.1 on the --pt-paper background:
+       ink        16.0:1   primary text
+       ink-soft    7.0:1   secondary text
+       pine        6.7:1   time and data, usable as text
+       violet      5.3:1   headings, links, accents
        tangerine   2.3:1   FILL ONLY, never text
-       leaf        1.8:1   DECORATION ONLY
   ------------------------------------------------------------------ */
-  --pt-cream: #f7f3ea;
-  --pt-paper: #fffdf8;
-  --pt-violet: #7b4fc9;
-  --pt-violet-deep: #5b2e9e;
+  --pt-paper: #f1f1f9;
+  --pt-white: #ffffff;
+  --pt-violet: #7546d0;
+  --pt-violet-deep: #5b33a8;
+  --pt-pine: #3a5b4a;
   --pt-tangerine: #f08a2c;
-  --pt-leaf: #93c83e;
   --pt-ink: #1c1b22;
   --pt-ink-soft: #55525e;
   --pt-line: rgba(28, 27, 34, 0.12);
 
   /* --- Roles ----------------------------------------------------------- */
-  --pt-bg: var(--pt-cream);
-  --pt-surface: var(--pt-paper);
+  --pt-bg: var(--pt-paper);
+  --pt-surface: var(--pt-white);
   --pt-text: var(--pt-ink);
   --pt-text-muted: var(--pt-ink-soft);
-  --pt-primary: var(--pt-violet-deep);
+  --pt-primary: var(--pt-violet);
+  --pt-primary-strong: var(--pt-violet-deep);
   --pt-on-primary: #ffffff;
   --pt-accent-fill: var(--pt-tangerine);
   --pt-on-accent: var(--pt-ink);
+  /* Everything that measures time: durations, schedules, progress. */
+  --pt-data: var(--pt-pine);
 
   /* --- Typography ------------------------------------------------------ */
   --pt-font-display: var(--pt-font-display-loaded, system-ui), sans-serif;
@@ -47,6 +53,10 @@
 
   --pt-tracking-display: -0.02em;
   --pt-tracking-wide: 0.08em;
+  /* The spacing of "T A L A N T I V" in the logo, measured off the original.
+     Small uppercase text set with it reads as the studio's own without any
+     extra graphics - which is why there is no third typeface. */
+  --pt-tracking-mark: 0.077em;
 
   /* --- Spacing: 4px step through --pt-space-4, then a widening curve -- */
   --pt-space-1: 0.25rem;
@@ -68,7 +78,7 @@
 
   /* --- Shadows: tinted violet, not gray -------------------------------- */
   --pt-shadow-sm: 0 1px 2px rgba(28, 27, 34, 0.06);
-  --pt-shadow-md: 0 1px 2px rgba(28, 27, 34, 0.06), 0 8px 24px -12px rgba(91, 46, 158, 0.22);
+  --pt-shadow-md: 0 1px 2px rgba(28, 27, 34, 0.05), 0 12px 30px -18px rgba(117, 70, 208, 0.35);
 
   --pt-container: 72rem;
 }

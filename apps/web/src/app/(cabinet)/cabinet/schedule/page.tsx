@@ -9,8 +9,8 @@ import { readAccessToken } from '@/lib/session';
 import { dateKey, lessonMoment, today, WEEKDAY_LABELS } from '@/lib/studio-time';
 import { ExceptionForm } from './exception-form';
 import { RuleForm } from './rule-form';
-import '../../../styles/auth.css';
-import '../../../styles/booking.css';
+import '@/styles/auth.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Мій графік — Палітра талантів',

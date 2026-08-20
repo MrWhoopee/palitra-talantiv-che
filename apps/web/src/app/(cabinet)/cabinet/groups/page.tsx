@@ -7,8 +7,8 @@ import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
 import { dateKey, describeGroupSchedule, today } from '@/lib/studio-time';
 import { GroupForm } from './group-form';
-import '../../../styles/auth.css';
-import '../../../styles/booking.css';
+import '@/styles/auth.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Мої групи — Палітра талантів',
