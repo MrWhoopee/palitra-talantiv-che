@@ -3,11 +3,16 @@ import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
 import type { UserModel } from '../../generated/prisma/models';
 import { DomainError } from '../../http/error-handler';
 import type { AccessTokenService } from '../../lib/access-token';
-import type { Mailer } from '../../lib/mailer';
+import type { Mailer, OutgoingMail } from '../../lib/mailer';
 import { DEFAULT_BCRYPT_COST, hashPassword, verifyPassword } from '../../lib/password';
 import { createOpaqueToken, hashOpaqueToken } from '../../lib/tokens';
 import { AUTH_TTL } from './auth.config';
-import { buildPasswordResetMail, buildVerificationMail } from './auth.emails';
+import {
+  buildInviteMail,
+  buildPasswordResetMail,
+  buildVerificationMail,
+  type MailContext,
+} from './auth.emails';
 
 const UNIQUE_VIOLATION = 'P2002';
 
@@ -18,6 +23,31 @@ const UNIQUE_VIOLATION = 'P2002';
  * a client of the studio?".
  */
 const ABSENT_USER_HASH = '$2b$12$aV1rBhlidZctzvqyR9Dep.s4SkNl0Tyd0msn4Cg8GJxBrT0CGAvFK';
+
+/**
+ * Everything that differs between the three kinds of one-time link, in one
+ * table: how long it lives, where on the site it lands, and which letter
+ * carries it. Adding a fourth kind is adding a row here, not another ternary
+ * in the middle of the sending code.
+ */
+const LINKS = {
+  EMAIL_VERIFICATION: {
+    seconds: 'emailVerificationSeconds',
+    path: '/verify-email',
+    build: buildVerificationMail,
+  },
+  PASSWORD_RESET: {
+    seconds: 'passwordResetSeconds',
+    path: '/reset-password',
+    build: buildPasswordResetMail,
+  },
+  INVITE: { seconds: 'inviteSeconds', path: '/accept-invite', build: buildInviteMail },
+} as const satisfies Record<
+  string,
+  { seconds: keyof typeof AUTH_TTL; path: string; build: (context: MailContext) => OutgoingMail }
+>;
+
+type OneTimeTokenKind = keyof typeof LINKS;
 
 export interface SessionMeta {
   userAgent?: string | undefined;
@@ -42,6 +72,13 @@ export interface AuthService {
   verifyEmail(token: string): Promise<PublicUser>;
   requestPasswordReset(email: string): Promise<void>;
   resetPassword(token: string, password: string): Promise<void>;
+  /**
+   * Mails a fresh invitation to an account that has no password yet. Creating
+   * that account belongs to whoever owns the person - the teachers module -
+   * so this takes a user rather than the fields to make one.
+   */
+  sendInvite(user: UserModel): Promise<void>;
+  acceptInvite(token: string, password: string, meta?: SessionMeta): Promise<AuthResponse>;
   getUser(userId: string): Promise<PublicUser>;
 }
 
@@ -83,34 +120,67 @@ export function createAuthService({
    * successful registration into a 500 the visitor reads as "the studio is
    * broken". The failure is logged; the user can ask for a new link.
    */
-  async function sendOneTimeLink(
-    user: UserModel,
-    kind: 'EMAIL_VERIFICATION' | 'PASSWORD_RESET',
-  ): Promise<void> {
+  async function sendOneTimeLink(user: UserModel, kind: OneTimeTokenKind): Promise<void> {
     const { token, tokenHash } = createOpaqueToken();
-    const seconds =
-      kind === 'EMAIL_VERIFICATION' ? ttl.emailVerificationSeconds : ttl.passwordResetSeconds;
+    const { seconds, path, build } = LINKS[kind];
 
     await prisma.oneTimeToken.create({
-      data: { userId: user.id, kind, tokenHash, expiresAt: expiryFrom(seconds) },
+      data: { userId: user.id, kind, tokenHash, expiresAt: expiryFrom(ttl[seconds]) },
     });
 
-    const path = kind === 'EMAIL_VERIFICATION' ? '/verify-email' : '/reset-password';
     const link = `${webOrigin.replace(/\/+$/, '')}${path}?token=${encodeURIComponent(token)}`;
-    const context = { to: user.email, firstName: user.firstName, link };
 
     try {
-      await mailer.send(
-        kind === 'EMAIL_VERIFICATION'
-          ? buildVerificationMail(context)
-          : buildPasswordResetMail(context),
-      );
+      await mailer.send(build({ to: user.email, firstName: user.firstName, link }));
     } catch (error) {
       console.error(`Failed to send ${kind} mail`, error);
     }
   }
 
-  async function findUsableToken(token: string, kind: 'EMAIL_VERIFICATION' | 'PASSWORD_RESET') {
+  /**
+   * Spends a link and puts a password behind it. A reset and an invitation are
+   * the same three writes - burn the token, set the hash, drop every session -
+   * and differ only in which kind of link is accepted, so they share this and
+   * cannot drift apart in what they leave behind.
+   */
+  async function redeemForPassword(
+    token: string,
+    kind: 'PASSWORD_RESET' | 'INVITE',
+    password: string,
+  ): Promise<UserModel> {
+    const record = await findUsableToken(token, kind);
+    if (!record) {
+      throw new DomainError('INVALID_TOKEN', 'Посилання недійсне або застаріле');
+    }
+
+    const passwordHash = await hashPassword(password, bcryptCost);
+    const at = now();
+
+    const [, user] = await prisma.$transaction([
+      prisma.oneTimeToken.update({ where: { id: record.id }, data: { usedAt: at } }),
+      prisma.user.update({
+        where: { id: record.userId },
+        data: {
+          passwordHash,
+          // Following the link proves control of the mailbox, which is exactly
+          // what verification asks for. Leaving it unconfirmed would strand
+          // accounts that never opened the first letter.
+          emailVerifiedAt: record.user.emailVerifiedAt ?? at,
+        },
+      }),
+      // A reset is what someone does when the account may be compromised, so
+      // every existing session goes with the old password. An invitation has
+      // no sessions to drop, and the statement costs nothing on an empty set.
+      prisma.refreshToken.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: at },
+      }),
+    ]);
+
+    return user;
+  }
+
+  async function findUsableToken(token: string, kind: OneTimeTokenKind) {
     const record = await prisma.oneTimeToken.findUnique({
       where: { tokenHash: hashOpaqueToken(token) },
       include: { user: true },
@@ -284,33 +354,32 @@ export function createAuthService({
     },
 
     async resetPassword(token: string, password: string): Promise<void> {
-      const record = await findUsableToken(token, 'PASSWORD_RESET');
-      if (!record) {
-        throw new DomainError('INVALID_TOKEN', 'Посилання недійсне або застаріле');
-      }
+      await redeemForPassword(token, 'PASSWORD_RESET', password);
+    },
 
-      const passwordHash = await hashPassword(password, bcryptCost);
-      const at = now();
+    async sendInvite(user: UserModel): Promise<void> {
+      // Only the newest invitation may work, for the same reason a reset link
+      // supersedes the previous one: a re-invite usually means the first
+      // letter went astray, and the astray one must stop being a key.
+      await prisma.oneTimeToken.updateMany({
+        where: { userId: user.id, kind: 'INVITE', usedAt: null },
+        data: { usedAt: now() },
+      });
 
-      await prisma.$transaction([
-        prisma.oneTimeToken.update({ where: { id: record.id }, data: { usedAt: at } }),
-        prisma.user.update({
-          where: { id: record.userId },
-          data: {
-            passwordHash,
-            // Following the link proves control of the mailbox, which is
-            // exactly what verification asks for. Leaving it unconfirmed
-            // would strand accounts that never opened the first letter.
-            emailVerifiedAt: record.user.emailVerifiedAt ?? at,
-          },
-        }),
-        // A reset is what someone does when the account may be compromised,
-        // so every existing session goes with the old password.
-        prisma.refreshToken.updateMany({
-          where: { userId: record.userId, revokedAt: null },
-          data: { revokedAt: at },
-        }),
-      ]);
+      await sendOneTimeLink(user, 'INVITE');
+    },
+
+    async acceptInvite(
+      token: string,
+      password: string,
+      meta: SessionMeta = {},
+    ): Promise<AuthResponse> {
+      const user = await redeemForPassword(token, 'INVITE', password);
+
+      // Signed in on the spot, unlike a reset: the person has just proved they
+      // hold the mailbox and chosen the password themselves, so bouncing them
+      // to a login form would ask for it again for no reason.
+      return issueSession(user, meta);
     },
 
     async getUser(userId: string): Promise<PublicUser> {

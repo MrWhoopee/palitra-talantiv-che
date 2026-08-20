@@ -16,4 +16,11 @@ export const AUTH_TTL = {
   emailVerificationSeconds: 24 * HOUR,
   /** Password resets are answered within minutes or not at all. */
   passwordResetSeconds: 1 * HOUR,
+  /**
+   * An invitation is the opposite case: it is sent to someone who is not
+   * waiting for it and may be on holiday, and until they open it they have no
+   * account at all. A week costs little - the link sets a password on an
+   * account that has none, so there is nothing behind it to steal.
+   */
+  inviteSeconds: 7 * DAY,
 } as const;

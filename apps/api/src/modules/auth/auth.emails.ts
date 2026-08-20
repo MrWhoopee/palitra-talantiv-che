@@ -43,3 +43,22 @@ export function buildPasswordResetMail({ to, firstName, link }: MailContext): Ou
     }),
   };
 }
+
+export function buildInviteMail({ to, firstName, link }: MailContext): OutgoingMail {
+  const subject = `${STUDIO_NAME}: запрошення до кабінету викладача`;
+  const intro = `Вітаємо, ${firstName}! Для вас створено кабінет викладача в студії «Палітра талантів». Залишилось придумати пароль — і можна складати свій графік.`;
+
+  return {
+    to,
+    subject,
+    text: `${intro}\n\n${link}\n\nПосилання дійсне 7 днів. Якщо ви не очікували цього листа, просто проігноруйте його — без пароля в кабінет ніхто не зайде.`,
+    html: mailLayout({
+      heading: 'Ваш кабінет готовий',
+      intro,
+      link,
+      buttonLabel: 'Придумати пароль',
+      footer:
+        'Посилання дійсне 7 днів. Якщо ви не очікували цього листа, проігноруйте його — без пароля в кабінет ніхто не зайде.',
+    }),
+  };
+}

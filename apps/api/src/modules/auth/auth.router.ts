@@ -88,6 +88,17 @@ export function createAuthRouter({
     }),
   );
 
+  // The body is a token and a new password - the same pair the reset endpoint
+  // takes, under the same rules - so it is validated by the same schema rather
+  // than a copy of it that could later disagree about password length.
+  router.post(
+    '/auth/accept-invite',
+    rateLimit,
+    withBody(passwordResetSchema, async ({ token, password }, req, res) => {
+      res.status(200).json(await auth.acceptInvite(token, password, sessionMeta(req)));
+    }),
+  );
+
   router.get('/auth/me', requireAuth, async (req, res) => {
     if (!req.auth) {
       throw new DomainError('UNAUTHENTICATED', 'Потрібна авторизація');

@@ -21,7 +21,11 @@ model User {
   /// shared zod schema, which every write path goes through. Without it a
   /// `Olena@` and an `olena@` would both satisfy this unique index.
   email           String    @unique
-  passwordHash    String
+  /// Null until the person sets one. An invited teacher has an account before
+  /// they have a password, and until then there is no way to sign in as them:
+  /// every login path checks for null *before* reaching the hash comparison,
+  /// rather than trusting bcrypt to reject an empty digest.
+  passwordHash    String?
   role            UserRole  @default(STUDENT)
   firstName       String
   lastName        String
@@ -71,12 +75,14 @@ model RefreshToken {
 enum OneTimeTokenKind {
   EMAIL_VERIFICATION
   PASSWORD_RESET
+  INVITE
 }
 
-/// Email verification and password reset share one table because they are the
-/// same object: a single-use, expiring, hashed secret bound to a user. The
-/// `kind` keeps them from being used interchangeably - a verification link
-/// must not be redeemable as a password reset.
+/// Email verification, password reset and teacher invitations share one table
+/// because they are the same object: a single-use, expiring, hashed secret
+/// bound to a user. The `kind` keeps them from being used interchangeably - a
+/// verification link must not be redeemable as a password reset, and an
+/// invitation must not be redeemable as either.
 model OneTimeToken {
   id        String           @id @default(uuid(7)) @db.Uuid
   userId    String           @db.Uuid
@@ -141,6 +147,11 @@ model TeacherProfile {
   /// Unpublished profiles exist for teachers who have not sent a photo yet -
   /// they can already be scheduled, they are simply not on the public site.
   isPublished     Boolean  @default(false)
+  /// A teacher who has left. Deleting them is not an option: their finished
+  /// lessons refer to them, and history is not rewritten to tidy a list. This
+  /// is the scheduling half of the pair - `isPublished` hides them from the
+  /// site, `isActive` keeps them out of new bookings and free-slot search.
+  isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
   createdAt       DateTime @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @db.Timestamptz(3)
@@ -548,4 +559,41 @@ model Achievement {
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([year])
+}
+
+// ---------------------------------------------------------------------------
+// Site copy the studio edits for itself. Everything above is a thing with a
+// time, a place or a person attached; these two are words on a page, and they
+// live in the database for one reason - so that changing the studio's rules
+// does not require a developer and a deploy.
+// ---------------------------------------------------------------------------
+
+/// The prose of a page: "Про нас", "Правила студії".
+///
+/// Keyed by a slug the code knows, not by an id, because these are not
+/// arbitrary pages: the set of keys is fixed in `packages/shared`, the admin
+/// edits the ones that exist and cannot invent new ones. A page whose row is
+/// missing falls back to the copy in the code, so an empty table renders a
+/// complete site rather than a blank one.
+model SiteText {
+  key       String   @id
+  title     String
+  /// Markdown, rendered by a pure function into React elements - never into
+  /// an HTML string, so there is no `dangerouslySetInnerHTML` anywhere on the
+  /// path from this column to the page.
+  body      String
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+/// Facts about the studio that fit on one line: the phone, the Instagram, the
+/// working hours.
+///
+/// A key-value table rather than a single-row settings model: the fields it
+/// holds are exactly the ones the studio has not sent yet, so the set will
+/// grow, and growing it should not cost a migration each time. `studio.ts` on
+/// the web side stays the default; these rows are laid over it.
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }
