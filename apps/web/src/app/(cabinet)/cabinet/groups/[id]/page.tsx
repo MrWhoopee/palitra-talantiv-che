@@ -8,8 +8,8 @@ import { api } from '@/lib/api';
 import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
 import { describeGroupSchedule, lessonMoment } from '@/lib/studio-time';
-import '../../../../styles/auth.css';
-import '../../../../styles/booking.css';
+import '@/styles/auth.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Група — Палітра талантів',

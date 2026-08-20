@@ -82,6 +82,35 @@ export function lessonMoment(instant: Date): string {
   return `${date.day} ${MONTHS[date.month - 1] ?? ''}, ${timeOf(instant)}`;
 }
 
+/**
+ * `"13 серпня 2026, 18:00"` - an event, which unlike a lesson can be far
+ * enough away that the year stops being obvious.
+ */
+export function formatEventDate(iso: string): string {
+  const instant = new Date(iso);
+  const date = toLocalDate(instant);
+  return `${date.day} ${MONTHS[date.month - 1] ?? ''} ${date.year}, ${timeOf(instant)}`;
+}
+
+/**
+ * `"13 вересня 2026, 18:00 – 20:00"`, and the same without the tail when the
+ * studio has not said when the event ends. A concert that runs past midnight
+ * gets both dates written out, because "18:00 – 01:00" on one date is a lie.
+ */
+export function formatEventRange(startsAt: string, endsAt: string | null): string {
+  const start = new Date(startsAt);
+  const opening = formatEventDate(startsAt);
+
+  if (endsAt === null) {
+    return opening;
+  }
+
+  const end = new Date(endsAt);
+  const sameDay = toDateKey(start) === toDateKey(end);
+
+  return sameDay ? `${opening} – ${timeOf(end)}` : `${opening} – ${formatEventDate(endsAt)}`;
+}
+
 export function fromDateKey(value: string): LocalDate {
   return parseLocalDate(value) ?? today();
 }

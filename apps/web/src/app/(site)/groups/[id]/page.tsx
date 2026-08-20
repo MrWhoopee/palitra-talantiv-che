@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
 import { describeGroupSchedule, fromDateKey, longDate } from '@/lib/studio-time';
 import { ApplyForm } from './apply-form';
-import '../../../styles/booking.css';
+import '@/styles/booking.css';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${group.name} — Палітра талантів`,
     description: `${group.direction.name}, ${describeGroupSchedule(group.schedule)}, ${group.location.name}.`,
+    alternates: { canonical: `/groups/${group.id}` },
   };
 }
 

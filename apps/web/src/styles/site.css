@@ -1,0 +1,515 @@
+/* The shell every page sits in: header, footer, page rhythm, and the two
+   devices the brand is built on - the eyebrow set at the logo's own tracking,
+   and the player track.
+
+   Loaded by all three shells, so anything shared across the site belongs here
+   and anything specific to one screen does not. */
+
+/* --- Page rhythm --------------------------------------------------------- */
+
+.container {
+  width: 100%;
+  max-width: var(--pt-container);
+  margin-inline: auto;
+  padding-inline: var(--pt-space-5);
+}
+
+.site-body {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+.site-body > main {
+  flex: 1;
+}
+
+.section {
+  padding-block: var(--pt-space-8);
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pt-space-4);
+  margin-bottom: var(--pt-space-6);
+}
+
+/* Small uppercase text at the spacing measured off "T A L A N T I V" in the
+   logo. This is what makes labels read as the studio's, and it is the reason
+   the site needs no third typeface. */
+.eyebrow {
+  margin: 0;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xs);
+  font-weight: 500;
+  letter-spacing: var(--pt-tracking-mark);
+  line-height: var(--pt-leading-snug);
+  text-transform: uppercase;
+  color: var(--pt-data);
+}
+
+.lead {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-lg);
+}
+
+/* A content page: one column, its own breathing room. */
+.page {
+  max-width: var(--pt-container);
+  margin: 0 auto;
+  padding: var(--pt-space-7) var(--pt-space-5) var(--pt-space-9);
+}
+
+.page-head {
+  margin-bottom: var(--pt-space-6);
+}
+
+.page-title {
+  font-size: var(--pt-text-2xl);
+}
+
+.page-lede {
+  max-width: 52ch;
+  margin: var(--pt-space-4) 0 0;
+  color: var(--pt-text-muted);
+}
+
+.eyebrow a {
+  color: inherit;
+}
+
+/* --- Buttons -------------------------------------------------------------
+   Shared across the public site, the cabinet and the auth screens, so they
+   live here rather than in booking.css where they started. */
+
+.button-primary,
+.button-quiet {
+  display: inline-block;
+  padding: var(--pt-space-2) var(--pt-space-5);
+  border-radius: var(--pt-radius-pill);
+  font: inherit;
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-primary {
+  border: 0;
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+}
+
+.button-quiet {
+  border: 1px solid var(--pt-line);
+  background: transparent;
+  color: var(--pt-primary);
+}
+
+.button-primary:disabled,
+.button-quiet:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* --- Header --------------------------------------------------------------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--pt-line);
+  background: color-mix(in srgb, var(--pt-paper) 90%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--pt-space-5);
+  padding-block: var(--pt-space-3);
+}
+
+.site-header__logo {
+  flex: none;
+  display: block;
+  line-height: 0;
+}
+
+.site-header__logo svg {
+  display: block;
+  width: auto;
+  height: 30px;
+}
+
+.site-nav {
+  flex: 1;
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav a {
+  color: var(--pt-text);
+  font-size: var(--pt-text-sm);
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current='page'] {
+  color: var(--pt-primary);
+}
+
+.site-header__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--pt-space-4);
+}
+
+.site-header__actions a:not([class]) {
+  color: var(--pt-primary);
+  font-size: var(--pt-text-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* The mobile menu is a <details>, not a client component: six links do not
+   justify shipping JavaScript, and the element brings focus handling and
+   keyboard support with it. */
+.site-menu {
+  display: none;
+  flex: none;
+  margin-left: auto;
+}
+
+.site-menu > summary {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.site-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-menu > summary span {
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--pt-text);
+}
+
+/* The sticky header is the containing block, so the panel drops out of its
+   bottom edge across the full width rather than out of the summary button. */
+.site-menu__panel {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  padding: var(--pt-space-5);
+  border-bottom: 1px solid var(--pt-line);
+  background: var(--pt-surface);
+  box-shadow: var(--pt-shadow-md);
+}
+
+.site-menu__panel ul {
+  display: grid;
+  gap: var(--pt-space-4);
+  margin: 0 0 var(--pt-space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.site-menu__panel a {
+  color: var(--pt-text);
+  text-decoration: none;
+}
+
+@media (max-width: 62rem) {
+  .site-nav,
+  .site-header__actions {
+    display: none;
+  }
+
+  .site-menu {
+    display: block;
+  }
+}
+
+/* --- Cabinet strip -------------------------------------------------------- */
+
+.cabinet-nav {
+  border-bottom: 1px solid var(--pt-line);
+  background: var(--pt-surface);
+}
+
+.cabinet-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-5);
+  margin: 0;
+  padding-block: var(--pt-space-3);
+  list-style: none;
+}
+
+.cabinet-nav a {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+  text-decoration: none;
+}
+
+.cabinet-nav a:hover {
+  color: var(--pt-primary);
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+.site-footer {
+  margin-top: var(--pt-space-9);
+  border-top: 1px solid var(--pt-line);
+  background: var(--pt-surface);
+  padding-block: var(--pt-space-7) var(--pt-space-5);
+}
+
+.site-footer__cols {
+  display: grid;
+  gap: var(--pt-space-6);
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.site-footer h2 {
+  margin-bottom: var(--pt-space-3);
+  font-size: var(--pt-text-sm);
+  font-weight: 500;
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+  color: var(--pt-data);
+}
+
+.site-footer ul {
+  display: grid;
+  gap: var(--pt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--pt-text-sm);
+}
+
+.site-footer a {
+  color: var(--pt-text);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--pt-primary);
+}
+
+.site-footer__logo svg {
+  display: block;
+  width: auto;
+  height: 34px;
+  margin-bottom: var(--pt-space-3);
+}
+
+/* A link inside a sentence must be tellable from the sentence by more than its
+   colour, so the one in the footer note is underlined while the lists of links
+   above it are not. */
+.site-footer__note a {
+  text-decoration: underline;
+}
+
+.site-footer__note {
+  margin: var(--pt-space-7) 0 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-xs);
+}
+
+/* --- The track -----------------------------------------------------------
+   The studio's own mark, reused as a component. It appears only where there
+   is time to show: a lesson duration, a teacher's day, an event, the four
+   directions in the hero. Anywhere else it would be a rule under a heading
+   and the mark would stop meaning anything. */
+
+.track {
+  position: relative;
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--pt-data) 16%, transparent);
+}
+
+.track__fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: var(--track-fill, 0%);
+  border-radius: 2px;
+  background: var(--pt-data);
+}
+
+.track__knob {
+  position: absolute;
+  top: 50%;
+  left: var(--track-fill, 0%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pt-data);
+  translate: -50% -50%;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pt-space-3);
+}
+
+.track-row .track {
+  flex: 1;
+  min-width: 4rem;
+}
+
+/* --- Cards ---------------------------------------------------------------- */
+
+.card {
+  display: block;
+  padding: var(--pt-space-5);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-lg);
+  background: var(--pt-surface);
+  box-shadow: var(--pt-shadow-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.card:hover {
+  border-color: color-mix(in srgb, var(--pt-primary) 40%, transparent);
+  box-shadow: var(--pt-shadow-md);
+}
+
+/* A list of cards is still a list: the markup keeps the <ul>, this takes the
+   bullets off it. */
+.card-grid--plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card__title {
+  margin: var(--pt-space-2) 0 0;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-lg);
+  font-weight: 500;
+}
+
+.card__text {
+  margin: var(--pt-space-2) 0 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.section-head a {
+  color: var(--pt-primary);
+  font-size: var(--pt-text-sm);
+  text-decoration: none;
+}
+
+.card-grid {
+  display: grid;
+  gap: var(--pt-space-5);
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+/* --- Facts ---------------------------------------------------------------
+   Counted from the database rather than written into the markup, so the line
+   cannot quietly go stale the way "8 викладачів" in a paragraph would. */
+
+.facts {
+  display: grid;
+  gap: var(--pt-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.fact {
+  display: grid;
+  gap: var(--pt-space-1);
+}
+
+.fact__value {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xl);
+  font-weight: 500;
+  color: var(--pt-primary);
+  line-height: 1;
+}
+
+.fact__label {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+/* --- Empty states --------------------------------------------------------
+   A section with nothing in it is not rendered at all. This is for the pages
+   that live in the menu and cannot disappear. */
+
+/* A line inside a panel that would otherwise be blank. */
+.empty {
+  margin: var(--pt-space-4) 0 0;
+  color: var(--pt-text-muted);
+}
+
+/* A whole page that has nothing to show yet. Sections that can disappear are
+   simply not rendered; this is for the ones that live in the menu. */
+.empty-state {
+  padding: var(--pt-space-7) var(--pt-space-5);
+  border: 1px dashed var(--pt-line);
+  border-radius: var(--pt-radius-lg);
+  text-align: center;
+  color: var(--pt-text-muted);
+}
+
+/* The way out of an empty page keeps its underline - it sits inside a
+   sentence - and takes the studio's colour instead of the browser's blue. */
+.empty-state a {
+  color: var(--pt-primary);
+}
+
+/* A button that has to look like a link, because what it does is navigate away
+   from the session. Shared with the auth screens, so it lives with the shell. */
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pt-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cabinet-nav__end {
+  margin-left: auto;
+}
+
+.auth-logo {
+  display: block;
+  margin-bottom: var(--pt-space-5);
+  line-height: 0;
+}

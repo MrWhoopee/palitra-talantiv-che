@@ -1,44 +1,9 @@
 /* Teacher browsing, the slot calendar and the lesson lists in the cabinet.
    Colours come from tokens.css - the tangerine is a fill under near-black
-   text and never a text colour, because it reads 2.3:1 on the cream. */
+   text and never a text colour, because it reads 2.3:1 on the paper.
 
-.page {
-  max-width: var(--pt-container);
-  margin: 0 auto;
-  padding: var(--pt-space-7) var(--pt-space-5) var(--pt-space-9);
-}
-
-.page-head {
-  margin-bottom: var(--pt-space-6);
-}
-
-.eyebrow {
-  margin: 0 0 var(--pt-space-3);
-  color: var(--pt-primary);
-  font-size: var(--pt-text-sm);
-  font-weight: 700;
-  letter-spacing: var(--pt-tracking-wide);
-  text-transform: uppercase;
-}
-
-.eyebrow a {
-  color: inherit;
-}
-
-.page-title {
-  font-size: var(--pt-text-2xl);
-}
-
-.page-lede {
-  max-width: 52ch;
-  margin: var(--pt-space-4) 0 0;
-  color: var(--pt-text-muted);
-}
-
-.empty {
-  margin: var(--pt-space-4) 0 0;
-  color: var(--pt-text-muted);
-}
+   Page primitives - .page, .eyebrow, .empty and friends - live in site.css:
+   they belong to every screen, not to booking. */
 
 /* --- Teacher cards ---------------------------------------------------- */
 
@@ -370,38 +335,6 @@
   border: 1px solid var(--pt-line);
   color: var(--pt-text-muted);
   font-weight: 600;
-}
-
-/* --- Buttons ------------------------------------------------------------ */
-
-.button-primary,
-.button-quiet {
-  display: inline-block;
-  padding: var(--pt-space-2) var(--pt-space-5);
-  border-radius: var(--pt-radius-pill);
-  font: inherit;
-  font-size: var(--pt-text-sm);
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.button-primary {
-  border: 0;
-  background: var(--pt-accent-fill);
-  color: var(--pt-on-accent);
-}
-
-.button-quiet {
-  border: 1px solid var(--pt-line);
-  background: transparent;
-  color: var(--pt-primary);
-}
-
-.button-primary:disabled,
-.button-quiet:disabled {
-  opacity: 0.6;
-  cursor: progress;
 }
 
 .cabinet-header-actions {

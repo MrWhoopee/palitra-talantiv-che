@@ -3,11 +3,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { describeGroupSchedule } from '@/lib/studio-time';
-import '../../styles/booking.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Групи — Палітра талантів',
   description: 'Ансамблі та групові заняття студії «Палітра талантів» у Черкасах.',
+  alternates: { canonical: '/groups' },
 };
 
 export const dynamic = 'force-dynamic';

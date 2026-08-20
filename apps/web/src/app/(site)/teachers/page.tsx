@@ -2,11 +2,12 @@ import type { PublicTeacher } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import '../../styles/booking.css';
+import '@/styles/booking.css';
 
 export const metadata: Metadata = {
   title: 'Викладачі — Палітра талантів',
   description: 'Викладачі вокалу, фортепіано, гітари та укулеле студії «Палітра талантів».',
+  alternates: { canonical: '/teachers' },
 };
 
 export const dynamic = 'force-dynamic';

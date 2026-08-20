@@ -1,0 +1,88 @@
+/* The home page. Everything here exists because the studio has no photographs
+   yet: the hero is built from type and from its own mark, not from an image
+   we do not have. */
+
+.hero {
+  padding-block: var(--pt-space-9) var(--pt-space-8);
+}
+
+.hero__title {
+  max-width: 16ch;
+  margin: var(--pt-space-4) 0 0;
+  font-size: var(--pt-text-3xl);
+}
+
+.hero__lead {
+  max-width: 44ch;
+  margin: var(--pt-space-5) 0 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-lg);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pt-space-4);
+  margin: var(--pt-space-7) 0 0;
+}
+
+.hero__note {
+  color: var(--pt-data);
+  font-size: var(--pt-text-sm);
+}
+
+/* The four directions as four tracks. The bar is not decoration: it is the
+   length of a lesson in that direction against the hour, which is the first
+   thing a parent asks and the last thing a price table answers clearly. */
+.hero-track {
+  display: grid;
+  gap: var(--pt-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  margin: var(--pt-space-9) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-track__item {
+  display: grid;
+  gap: var(--pt-space-3);
+  padding-top: var(--pt-space-3);
+  border-top: 1px solid var(--pt-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.hero-track__name {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-lg);
+  font-weight: 500;
+}
+
+.hero-track__time {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+  color: var(--pt-data);
+}
+
+.hero-track__item .track__knob {
+  transition: left 220ms ease;
+}
+
+.hero-track__item .track__fill {
+  transition: width 220ms ease;
+}
+
+/* The one moving thing on the site: the playhead runs to the end of the bar
+   when you consider a direction. */
+.hero-track__item:hover .track,
+.hero-track__item:focus-visible .track {
+  --track-fill: 100%;
+}
+
+.hero-track__item:hover .hero-track__name,
+.hero-track__item:focus-visible .hero-track__name {
+  color: var(--pt-primary);
+}

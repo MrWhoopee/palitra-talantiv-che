@@ -196,13 +196,3 @@
   margin: 0;
   font-weight: 600;
 }
-
-.link-button {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--pt-primary);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
