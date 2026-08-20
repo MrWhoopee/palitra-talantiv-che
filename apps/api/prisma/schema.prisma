@@ -34,8 +34,11 @@ model User {
   refreshTokens    RefreshToken[]
   oneTimeTokens    OneTimeToken[]
   teacherProfile   TeacherProfile?
-  lessons          Lesson[]        @relation("StudentLessons")
-  cancelledLessons Lesson[]        @relation("CancelledLessons")
+  lessons          Lesson[]           @relation("StudentLessons")
+  cancelledLessons Lesson[]           @relation("CancelledLessons")
+  subscriptions    Subscription[]     @relation("StudentSubscriptions")
+  enrollments      GroupEnrollment[]
+  attendance       LessonAttendance[]
 
   @@index([role])
 }
@@ -103,6 +106,7 @@ model Location {
   teachers TeacherLocation[]
   rules    AvailabilityRule[]
   lessons  Lesson[]
+  groups   Group[]
 }
 
 /// What the studio teaches: vocals, piano, guitar, ukulele.
@@ -121,6 +125,7 @@ model Direction {
 
   teachers   TeacherDirection[]
   pricePlans PricePlan[]
+  groups     Group[]
 }
 
 /// The teaching side of a user account. Keyed by `userId` rather than by an id
@@ -139,12 +144,14 @@ model TeacherProfile {
   createdAt       DateTime @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
-  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  locations  TeacherLocation[]
-  directions TeacherDirection[]
-  rules      AvailabilityRule[]
-  exceptions AvailabilityException[]
-  lessons    Lesson[]
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locations     TeacherLocation[]
+  directions    TeacherDirection[]
+  rules         AvailabilityRule[]
+  exceptions    AvailabilityException[]
+  lessons       Lesson[]
+  groups        Group[]
+  subscriptions Subscription[]
 }
 
 model TeacherLocation {
@@ -244,8 +251,9 @@ model PricePlan {
   sortOrder       Int          @default(0)
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
 
-  direction Direction @relation(fields: [directionId], references: [id], onDelete: Cascade)
-  lessons   Lesson[]
+  direction     Direction      @relation(fields: [directionId], references: [id], onDelete: Cascade)
+  lessons       Lesson[]
+  subscriptions Subscription[]
 
   @@index([directionId])
 }
@@ -286,11 +294,17 @@ enum LessonStatus {
 model Lesson {
   id              String       @id @default(uuid(7)) @db.Uuid
   teacherId       String       @db.Uuid
-  /// Stage 4 makes this nullable and adds `groupId` alongside it, with a check
-  /// constraint requiring exactly one of the two.
-  studentId       String       @db.Uuid
+  /// Exactly one of `studentId` and `groupId` is set - `lesson_owner_xor` in
+  /// `20260820...add_groups_and_attendance` is what enforces it, because a
+  /// lesson with neither owner would be invisible in both cabinets and one
+  /// with both would be counted twice.
+  studentId       String?      @db.Uuid
+  groupId         String?      @db.Uuid
   locationId      String       @db.Uuid
   pricePlanId     String?      @db.Uuid
+  /// Set when this lesson is drawn from a package. The draw itself happens
+  /// when the lesson is marked completed or missed, not when it is booked.
+  subscriptionId  String?      @db.Uuid
   startsAt        DateTime     @db.Timestamptz(3)
   endsAt          DateTime     @db.Timestamptz(3)
   durationMinutes Int          @db.SmallInt
@@ -301,13 +315,149 @@ model Lesson {
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
 
-  teacher     TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Restrict)
-  student     User           @relation("StudentLessons", fields: [studentId], references: [id], onDelete: Cascade)
-  location    Location       @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  pricePlan   PricePlan?     @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
-  cancelledBy User?          @relation("CancelledLessons", fields: [cancelledById], references: [id], onDelete: SetNull)
+  teacher      TeacherProfile     @relation(fields: [teacherId], references: [userId], onDelete: Restrict)
+  student      User?              @relation("StudentLessons", fields: [studentId], references: [id], onDelete: Cascade)
+  group        Group?             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  location     Location           @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  pricePlan    PricePlan?         @relation(fields: [pricePlanId], references: [id], onDelete: SetNull)
+  subscription Subscription?      @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  cancelledBy  User?              @relation("CancelledLessons", fields: [cancelledById], references: [id], onDelete: SetNull)
+  attendance   LessonAttendance[]
 
   @@index([teacherId, startsAt])
   @@index([studentId, startsAt])
+  @@index([groupId, startsAt])
+  @@index([subscriptionId])
   @@index([status])
+}
+
+/// `ACTIVE` and `CANCELLED` are the only two states a person decides on. There
+/// is deliberately no `EXHAUSTED` or `EXPIRED`: both follow from the row
+/// itself - `lessonsUsed` against `lessonsTotal`, `validTo` against today - and
+/// a stored copy of a derived fact needs a nightly job to stay true.
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+}
+
+/// A package of lessons bought from one teacher.
+///
+/// The count and the price come from the `PricePlan` it was sold against, so a
+/// plan of eight lessons cannot be recorded as a package of six. `lessonsUsed`
+/// only ever grows, and only when a lesson is marked completed or missed.
+model Subscription {
+  id           String             @id @default(uuid(7)) @db.Uuid
+  studentId    String             @db.Uuid
+  teacherId    String             @db.Uuid
+  pricePlanId  String             @db.Uuid
+  lessonsTotal Int                @db.SmallInt
+  lessonsUsed  Int                @default(0) @db.SmallInt
+  priceUah     Int
+  validFrom    DateTime           @db.Date
+  validTo      DateTime           @db.Date
+  /// Payment is recorded by the studio, not by an integration - stage 4 has no
+  /// online payments, and a package can be used before the cash arrives.
+  paidAt       DateTime?          @db.Timestamptz(3)
+  status       SubscriptionStatus @default(ACTIVE)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
+
+  student   User           @relation("StudentSubscriptions", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Restrict)
+  pricePlan PricePlan      @relation(fields: [pricePlanId], references: [id], onDelete: Restrict)
+  lessons   Lesson[]
+
+  @@index([studentId, status])
+  @@index([teacherId])
+}
+
+/// A standing course: "Вокальний ансамбль, вівторок і четвер о 17:00".
+///
+/// The lessons themselves are real `Lesson` rows generated from `schedule`,
+/// not something derived at read time - only real rows can block the teacher's
+/// individual slots and give attendance somewhere to hang.
+model Group {
+  id                  String    @id @default(uuid(7)) @db.Uuid
+  name                String
+  teacherId           String    @db.Uuid
+  directionId         String    @db.Uuid
+  locationId          String    @db.Uuid
+  capacity            Int       @db.SmallInt
+  durationMinutes     Int       @db.SmallInt
+  isOpenForEnrollment Boolean   @default(true)
+  startsOn            DateTime  @db.Date
+  /// Open-ended courses generate a rolling window of lessons instead.
+  endsOn              DateTime? @db.Date
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
+
+  teacher     TeacherProfile    @relation(fields: [teacherId], references: [userId], onDelete: Restrict)
+  direction   Direction         @relation(fields: [directionId], references: [id], onDelete: Restrict)
+  location    Location          @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  schedule    GroupSchedule[]
+  enrollments GroupEnrollment[]
+  lessons     Lesson[]
+
+  @@index([teacherId])
+  @@index([directionId])
+}
+
+/// When the group meets, as a weekday and a local time of day - the same shape
+/// as an availability rule, and for the same reason: "Tuesdays at 17:00" has
+/// to stay 17:00 in Kyiv on both sides of a daylight-saving change.
+model GroupSchedule {
+  id          String @id @default(uuid(7)) @db.Uuid
+  groupId     String @db.Uuid
+  /// 0 = Sunday, matching `Date.prototype.getUTCDay` and `weekdayOf`.
+  weekday     Int    @db.SmallInt
+  startMinute Int    @db.SmallInt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, weekday, startMinute])
+}
+
+enum GroupEnrollmentStatus {
+  PENDING
+  ACTIVE
+  LEFT
+}
+
+/// One row per person per group, for good. Someone who leaves and comes back
+/// reuses their row rather than getting a second one, so the group's history
+/// stays readable and the unique index keeps a double application impossible.
+model GroupEnrollment {
+  id        String                @id @default(uuid(7)) @db.Uuid
+  groupId   String                @db.Uuid
+  studentId String                @db.Uuid
+  status    GroupEnrollmentStatus @default(PENDING)
+  joinedAt  DateTime              @default(now()) @db.Timestamptz(3)
+  leftAt    DateTime?             @db.Timestamptz(3)
+
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, studentId])
+  @@index([studentId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
+/// The register for one group lesson. Keyed by the pair, so marking a child
+/// twice overwrites the mark instead of adding a second one.
+model LessonAttendance {
+  lessonId  String           @db.Uuid
+  studentId String           @db.Uuid
+  status    AttendanceStatus
+  markedAt  DateTime         @default(now()) @db.Timestamptz(3)
+
+  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, studentId])
+  @@index([studentId])
 }

@@ -1,9 +1,19 @@
 import 'dotenv/config';
-import { parseLocalDate, parseTimeOfDay, weekdayOf } from '@palitra/shared';
+import {
+  addLocalDays,
+  formatLocalDate,
+  parseLocalDate,
+  parseTimeOfDay,
+  toLocalDate,
+  weekdayOf,
+} from '@palitra/shared';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import type { Actor } from '../src/http/actor';
 import { toDbDate } from '../src/lib/calendar-date';
 import { hashPassword } from '../src/lib/password';
+import { createGroupsService } from '../src/modules/groups/groups.service';
+import { createSubscriptionService } from '../src/modules/subscriptions/subscriptions.service';
 
 /**
  * Realistic development data: without it neither the interface nor a bug
@@ -23,9 +33,10 @@ const LOCATIONS = [
 ];
 
 /**
- * Every plan the studio sells. `lessonsCount: 1` is a single lesson; the
- * larger packages become subscriptions in stage 4. The duration lives here
- * rather than on the booking form because it is the tariff that fixes it.
+ * Every plan the studio sells. `lessonsCount: 1` is a single lesson, a larger
+ * one is what a subscription is sold against, and a `GROUP` plan prices a
+ * course rather than an hour. The duration lives here rather than on the
+ * booking form because it is the tariff that fixes it.
  */
 const PRICE_PLANS = [
   {
@@ -69,6 +80,22 @@ const PRICE_PLANS = [
     lessonsCount: 1,
     durationMinutes: 30,
     priceUah: 300,
+  },
+  {
+    direction: 'vocal',
+    name: 'Ансамбль, місяць',
+    lessonsCount: 4,
+    durationMinutes: 60,
+    priceUah: 1400,
+    format: 'GROUP' as const,
+  },
+  {
+    direction: 'guitar',
+    name: 'Ансамбль, місяць',
+    lessonsCount: 4,
+    durationMinutes: 60,
+    priceUah: 1400,
+    format: 'GROUP' as const,
   },
 ];
 
@@ -236,6 +263,51 @@ const STUDENTS = [
   },
 ];
 
+/**
+ * Two standing courses, one per address the studio uses most. Their meetings
+ * are generated through the same service the interface calls, so the demo data
+ * cannot drift from what a teacher would get by filling in the form.
+ */
+const GROUPS = [
+  {
+    name: 'Вокальний ансамбль',
+    teacher: 'iryna@palitra-talantiv.local',
+    direction: 'vocal',
+    location: 'blahovisna',
+    capacity: 8,
+    durationMinutes: 60,
+    /** Wednesdays at five, inside Iryna's working window. */
+    schedule: [{ on: WEEK.wednesday, at: '17:00' }],
+    /** Two active members and nobody waiting. */
+    members: ['student@palitra-talantiv.local', 'taras@palitra-talantiv.local'],
+    applicants: [] as string[],
+  },
+  {
+    name: 'Гітарний ансамбль',
+    teacher: 'andrii@palitra-talantiv.local',
+    direction: 'guitar',
+    location: 'blahovisna',
+    capacity: 6,
+    durationMinutes: 60,
+    /** Saturdays at noon, inside Andrii's window. */
+    schedule: [{ on: WEEK.saturday, at: '12:00' }],
+    members: ['nadiia@palitra-talantiv.local'],
+    /** One application waiting, so the teacher's cabinet has something to do. */
+    applicants: ['taras@palitra-talantiv.local'],
+  },
+];
+
+/** One package in flight, so the cabinet shows a counter that moves. */
+const SUBSCRIPTIONS = [
+  {
+    student: 'student@palitra-talantiv.local',
+    teacher: 'iryna@palitra-talantiv.local',
+    direction: 'vocal',
+    planName: 'Абонемент 8 занять',
+    paid: true,
+  },
+];
+
 const ADMIN = {
   email: 'admin@palitra-talantiv.local',
   firstName: 'Адміністратор',
@@ -291,7 +363,7 @@ async function main(): Promise<void> {
         lessonsCount: plan.lessonsCount,
         durationMinutes: plan.durationMinutes,
         priceUah: plan.priceUah,
-        format: 'INDIVIDUAL' as const,
+        format: plan.format ?? ('INDIVIDUAL' as const),
         isActive: true,
         sortOrder: index,
       };
@@ -382,11 +454,92 @@ async function main(): Promise<void> {
       });
     }
 
+    const today = toLocalDate(new Date());
+    const groupsService = createGroupsService({ prisma });
+    const subscriptionsService = createSubscriptionService({ prisma });
+
+    for (const group of GROUPS) {
+      const teacherId = await userIdByEmail(prisma, group.teacher);
+      const actor: Actor = { userId: teacherId, role: 'TEACHER' };
+
+      const input = {
+        name: group.name,
+        directionId: required(directions, group.direction),
+        locationId: required(locations, group.location),
+        capacity: group.capacity,
+        durationMinutes: group.durationMinutes,
+        isOpenForEnrollment: true,
+        // Starting today keeps the demo calendar full however long after the
+        // seed was written the database is created.
+        startsOn: formatLocalDate(today),
+        endsOn: null,
+        schedule: group.schedule.map((meeting) => ({
+          weekday: weekdayOf(requireDate(meeting.on)),
+          startTime: meeting.at,
+        })),
+      };
+
+      const existing = await prisma.group.findFirst({
+        where: { teacherId, name: group.name },
+        select: { id: true },
+      });
+
+      const saved = existing
+        ? await groupsService.update(actor, existing.id, input)
+        : await groupsService.create(actor, input);
+
+      for (const [email, approve] of [
+        ...group.members.map((email) => [email, true] as const),
+        ...group.applicants.map((email) => [email, false] as const),
+      ]) {
+        const studentId = await userIdByEmail(prisma, email);
+        const enrollment = await groupsService
+          .apply({ userId: studentId, role: 'STUDENT' }, saved.group.id)
+          // Running the seed twice finds the person already in the group,
+          // which is the state it wanted in the first place.
+          .catch(() => null);
+
+        if (enrollment && approve) {
+          await groupsService.approve(actor, enrollment.id);
+        }
+      }
+    }
+
+    for (const subscription of SUBSCRIPTIONS) {
+      const studentId = await userIdByEmail(prisma, subscription.student);
+      const teacherId = await userIdByEmail(prisma, subscription.teacher);
+      const plan = await prisma.pricePlan.findFirst({
+        where: { directionId: required(directions, subscription.direction), name: subscription.planName },
+        select: { id: true },
+      });
+
+      if (!plan) {
+        throw new Error(`Seed refers to an unknown price plan: ${subscription.planName}`);
+      }
+
+      const already = await prisma.subscription.findFirst({
+        where: { studentId, teacherId, pricePlanId: plan.id },
+        select: { id: true },
+      });
+
+      if (!already) {
+        await subscriptionsService.issue({
+          studentId,
+          teacherId,
+          pricePlanId: plan.id,
+          validFrom: formatLocalDate(today),
+          validTo: formatLocalDate(addLocalDays(today, 90)),
+          paid: subscription.paid,
+        });
+      }
+    }
+
     console.log(
       [
         'Seed complete.',
         `  ${LOCATIONS.length} locations, ${DIRECTIONS.length} directions, ${PRICE_PLANS.length} price plans`,
         `  ${TEACHERS.length} teachers with working rules, ${STUDENTS.length} students, 1 admin`,
+        `  ${GROUPS.length} groups with members, ${SUBSCRIPTIONS.length} subscription`,
         `  password for every demo account: ${PASSWORD}`,
         `  admin: ${ADMIN.email}   student: ${STUDENTS[0]?.email}`,
       ].join('\n'),
@@ -404,6 +557,14 @@ async function main(): Promise<void> {
 async function idOfLocation(prisma: PrismaClient, name: string): Promise<string> {
   const existing = await prisma.location.findFirst({ where: { name }, select: { id: true } });
   return existing?.id ?? '00000000-0000-7000-8000-000000000000';
+}
+
+async function userIdByEmail(prisma: PrismaClient, email: string): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!user) {
+    throw new Error(`Seed refers to an unknown account: ${email}`);
+  }
+  return user.id;
 }
 
 function required(map: Map<string, string>, key: string): string {

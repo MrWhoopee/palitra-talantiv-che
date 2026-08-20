@@ -12,6 +12,10 @@ import { createAvailabilityRouter } from './modules/availability/availability.ro
 import { createAvailabilityService } from './modules/availability/availability.service';
 import { createBookingRouter } from './modules/booking/booking.router';
 import { createBookingService } from './modules/booking/booking.service';
+import { createGroupsRouter } from './modules/groups/groups.router';
+import { createGroupsService } from './modules/groups/groups.service';
+import { createSubscriptionsRouter } from './modules/subscriptions/subscriptions.router';
+import { createSubscriptionService } from './modules/subscriptions/subscriptions.service';
 import { createTeachersRouter } from './modules/teachers/teachers.router';
 import { createTeachersService } from './modules/teachers/teachers.service';
 
@@ -25,6 +29,7 @@ const accessTokens = createAccessTokenService({
 const mailer = createSmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, from: env.MAIL_FROM });
 
 const availability = createAvailabilityService({ prisma });
+const subscriptions = createSubscriptionService({ prisma });
 
 const auth = createAuthService({
   prisma,
@@ -46,11 +51,14 @@ const app = createApp({
       booking: createBookingService({
         prisma,
         availability,
+        subscriptions,
         mailer,
         webOrigin: env.WEB_ORIGIN,
       }),
       accessTokens,
     }),
+    createSubscriptionsRouter({ subscriptions, accessTokens }),
+    createGroupsRouter({ groups: createGroupsService({ prisma }), accessTokens }),
   ],
 });
 

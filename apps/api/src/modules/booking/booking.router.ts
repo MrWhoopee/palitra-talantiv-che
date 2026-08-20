@@ -1,10 +1,10 @@
 import { bookingRequestSchema, cancelLessonSchema } from '@palitra/shared';
-import { Router, type Request } from 'express';
-import { DomainError } from '../../http/error-handler';
+import { Router } from 'express';
+import { actorOf } from '../../http/actor';
 import { createRequireAuth } from '../../http/middleware/auth';
 import { pathUuid, withBody } from '../../http/middleware/validate';
 import type { AccessTokenService } from '../../lib/access-token';
-import type { Actor, BookingService } from './booking.service';
+import type { BookingService } from './booking.service';
 
 export interface BookingRouterDeps {
   booking: BookingService;
@@ -35,7 +35,7 @@ export function createBookingRouter({ booking, accessTokens }: BookingRouterDeps
     '/lessons/:id/cancel',
     requireAuth,
     withBody(cancelLessonSchema, async (input, req, res) => {
-      res.status(200).json(await booking.cancel(actorOf(req), pathUuid(req, 'id'), input.reason));
+      res.status(200).json(await booking.cancel(actorOf(req), pathUuid(req, 'id'), input));
     }),
   );
 
@@ -48,11 +48,4 @@ export function createBookingRouter({ booking, accessTokens }: BookingRouterDeps
   });
 
   return router;
-}
-
-function actorOf(req: Request): Actor {
-  if (!req.auth) {
-    throw new DomainError('UNAUTHENTICATED', 'Потрібна авторизація');
-  }
-  return { userId: req.auth.userId, role: req.auth.role };
 }

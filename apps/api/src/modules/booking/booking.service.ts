@@ -3,15 +3,17 @@ import {
   isSellableDuration,
   toLocalDate,
   type BookingRequest,
+  type CancelLesson,
   type Lesson,
   type LessonDuration,
-  type UserRole,
 } from '@palitra/shared';
 import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import type { Actor } from '../../http/actor';
 import { DomainError } from '../../http/error-handler';
 import type { Mailer } from '../../lib/mailer';
 import { SCHEDULING } from '../availability/availability.config';
 import type { AvailabilityService } from '../availability/availability.service';
+import type { SubscriptionService } from '../subscriptions/subscriptions.service';
 import { BOOKING } from './booking.config';
 import {
   buildBookingCancelledMail,
@@ -22,15 +24,10 @@ import {
 
 const EXCLUSION_VIOLATION = '23P01';
 
-/** Who is asking. The role comes from the token, the id from the same claims. */
-export interface Actor {
-  userId: string;
-  role: UserRole;
-}
-
 export interface BookingServiceDeps {
   prisma: PrismaClient;
   availability: AvailabilityService;
+  subscriptions: SubscriptionService;
   mailer: Mailer;
   /** Where the links in outgoing mail point - the web app, not the API. */
   webOrigin: string;
@@ -43,20 +40,29 @@ export interface BookingService {
   book(actor: Actor, input: BookingRequest): Promise<Lesson>;
   listMyLessons(userId: string): Promise<Lesson[]>;
   confirm(actor: Actor, lessonId: string): Promise<Lesson>;
-  cancel(actor: Actor, lessonId: string, reason?: string): Promise<Lesson>;
+  cancel(actor: Actor, lessonId: string, input?: CancelLesson): Promise<Lesson>;
   markOutcome(actor: Actor, lessonId: string, status: 'COMPLETED' | 'NO_SHOW'): Promise<Lesson>;
 }
 
 const lessonInclude = {
   teacher: { include: { user: true } },
   student: true,
+  group: true,
   location: true,
   pricePlan: { include: { direction: true } },
 } as const;
 
+/** What fixes a lesson's length and who pays for it. */
+interface LessonCharge {
+  pricePlanId: string;
+  subscriptionId: string | null;
+  durationMinutes: LessonDuration;
+}
+
 export function createBookingService({
   prisma,
   availability,
+  subscriptions,
   mailer,
   webOrigin,
   now = () => new Date(),
@@ -113,12 +119,13 @@ export function createBookingService({
   function mailContextFor(
     lesson: LoadedLesson,
     recipient: { email: string; firstName: string },
+    studentName: string,
   ): LessonMailContext {
     return {
       to: recipient.email,
       firstName: recipient.firstName,
       teacherName: `${lesson.teacher.user.firstName} ${lesson.teacher.user.lastName}`,
-      studentName: `${lesson.student.firstName} ${lesson.student.lastName}`,
+      studentName,
       startsAt: lesson.startsAt,
       durationMinutes: lesson.durationMinutes,
       locationName: lesson.location.name,
@@ -132,17 +139,6 @@ export function createBookingService({
       const student = await prisma.user.findUnique({ where: { id: actor.userId } });
       if (!student) {
         throw new DomainError('NOT_FOUND', 'Користувача не знайдено');
-      }
-
-      const plan = await prisma.pricePlan.findUnique({ where: { id: input.pricePlanId } });
-      if (!plan || !plan.isActive) {
-        throw new DomainError('NOT_FOUND', 'Тариф не знайдено');
-      }
-      if (plan.format !== 'INDIVIDUAL') {
-        throw new DomainError('VALIDATION_FAILED', 'Запис у групу відкриється на наступному етапі');
-      }
-      if (!isSellableDuration(plan.durationMinutes)) {
-        throw new DomainError('VALIDATION_FAILED', 'Тариф має некоректну тривалість заняття');
       }
 
       const moment = now();
@@ -191,26 +187,38 @@ export function createBookingService({
         }
       }
 
-      await assertSlotIsOffered(input, plan.durationMinutes as LessonDuration, startsAt);
-
-      const endsAt = new Date(startsAt.getTime() + plan.durationMinutes * 60_000);
-
-      let created;
+      let lessonId: string;
       try {
-        created = await prisma.lesson.create({
-          data: {
-            teacherId: input.teacherId,
-            studentId: student.id,
-            locationId: input.locationId,
-            pricePlanId: plan.id,
-            startsAt,
-            endsAt,
-            durationMinutes: plan.durationMinutes,
-            kind: input.kind,
-            status: 'PENDING',
-          },
-          include: lessonInclude,
+        // Everything that decides whether this booking may exist happens in
+        // one transaction: a package with one lesson left, opened in two tabs,
+        // is settled by the row lock inside `reserve`, and a slot two families
+        // want is settled by the exclusion constraint on the insert.
+        //
+        // Nothing inside reads relations. Prisma answers an `include` with
+        // several queries at once, and a transaction has a single connection
+        // to answer them on - the presentation read happens afterwards.
+        const created = await prisma.$transaction(async (tx) => {
+          const charge = await resolveCharge(tx, input, student.id, startsAt);
+          await assertSlotIsOffered(input, charge.durationMinutes, startsAt);
+
+          return tx.lesson.create({
+            data: {
+              teacherId: input.teacherId,
+              studentId: student.id,
+              locationId: input.locationId,
+              pricePlanId: charge.pricePlanId,
+              subscriptionId: charge.subscriptionId,
+              startsAt,
+              endsAt: new Date(startsAt.getTime() + charge.durationMinutes * 60_000),
+              durationMinutes: charge.durationMinutes,
+              kind: input.kind,
+              status: 'PENDING',
+            },
+            select: { id: true },
+          });
         });
+
+        lessonId = created.id;
       } catch (error) {
         // The exclusion constraint is what actually decides who got the slot;
         // the check above only saves the loser a wasted round trip.
@@ -220,12 +228,18 @@ export function createBookingService({
         throw error;
       }
 
+      const created = await loadLesson(lessonId);
+
       await notify(
         buildBookingRequestedMail(
-          mailContextFor(created, {
-            email: created.teacher.user.email,
-            firstName: created.teacher.user.firstName,
-          }),
+          mailContextFor(
+            created,
+            {
+              email: created.teacher.user.email,
+              firstName: created.teacher.user.firstName,
+            },
+            `${student.firstName} ${student.lastName}`,
+          ),
         ),
       );
 
@@ -235,8 +249,16 @@ export function createBookingService({
     async listMyLessons(userId: string): Promise<Lesson[]> {
       const lessons = await prisma.lesson.findMany({
         // One query for both cabinets: a person sees the lessons they are a
-        // party to, whichever side of them they are on.
-        where: { OR: [{ studentId: userId }, { teacherId: userId }] },
+        // party to, whichever side of them they are on. The third arm is what
+        // puts a group's meetings into the cabinets of the people in it -
+        // those lessons name the group, not the student.
+        where: {
+          OR: [
+            { studentId: userId },
+            { teacherId: userId },
+            { group: { enrollments: { some: { studentId: userId, status: 'ACTIVE' } } } },
+          ],
+        },
         include: lessonInclude,
         orderBy: { startsAt: 'asc' },
         take: 500,
@@ -262,19 +284,22 @@ export function createBookingService({
         include: lessonInclude,
       });
 
-      await notify(
-        buildBookingConfirmedMail(
-          mailContextFor(updated, {
-            email: updated.student.email,
-            firstName: updated.student.firstName,
-          }),
-        ),
-      );
+      if (updated.student) {
+        await notify(
+          buildBookingConfirmedMail(
+            mailContextFor(
+              updated,
+              { email: updated.student.email, firstName: updated.student.firstName },
+              `${updated.student.firstName} ${updated.student.lastName}`,
+            ),
+          ),
+        );
+      }
 
       return toLesson(updated);
     },
 
-    async cancel(actor: Actor, lessonId: string, reason?: string): Promise<Lesson> {
+    async cancel(actor: Actor, lessonId: string, input: CancelLesson = {}): Promise<Lesson> {
       const lesson = await loadLesson(lessonId);
       assertParty(lesson, actor);
 
@@ -287,40 +312,62 @@ export function createBookingService({
         lesson.studentId === actor.userId &&
         lesson.teacherId !== actor.userId;
 
+      const isLate = lesson.startsAt.getTime() - now().getTime() < booking.cancellationWindowMs;
+
       // The 24-hour rule is enforced here rather than by hiding the button:
       // the button is not the only way to reach this, and for the mobile
       // client the server is the only guard there is.
-      if (
-        isStudentCancelling &&
-        lesson.startsAt.getTime() - now().getTime() < booking.cancellationWindowMs
-      ) {
+      if (isStudentCancelling && isLate) {
         throw new DomainError(
           'TOO_LATE_TO_CANCEL',
           'Скасувати самостійно можна не пізніше ніж за 24 години. Зателефонуйте викладачу.',
         );
       }
 
-      const updated = await prisma.lesson.update({
-        where: { id: lesson.id },
-        data: {
-          status: 'CANCELLED',
-          cancelledById: actor.userId,
-          cancelReason: reason?.trim() ? reason.trim() : null,
-        },
-        include: lessonInclude,
+      // A lesson called off inside the last day is still the teacher's held
+      // hour, so it comes out of the package - that is the rule the 24 hours
+      // exist to express. `waiveCharge` is its other half: a late cancellation
+      // now goes through the teacher, and the teacher is the one who knows
+      // whether it was the child who fell ill or the studio.
+      const chargesPackage = lesson.subscriptionId !== null && isLate && input.waiveCharge !== true;
+
+      await prisma.$transaction(async (tx) => {
+        await tx.lesson.update({
+          where: { id: lesson.id },
+          data: {
+            status: 'CANCELLED',
+            cancelledById: actor.userId,
+            cancelReason: input.reason?.trim() ? input.reason.trim() : null,
+          },
+          select: { id: true },
+        });
+
+        if (chargesPackage && lesson.subscriptionId) {
+          await subscriptions.draw(tx, lesson.subscriptionId);
+        }
       });
 
-      // The other side is told; whoever pressed the button already knows.
-      const recipient = isStudentCancelling
-        ? { email: updated.teacher.user.email, firstName: updated.teacher.user.firstName }
-        : { email: updated.student.email, firstName: updated.student.firstName };
+      const updated = await loadLesson(lesson.id);
 
-      await notify(
-        buildBookingCancelledMail({
-          ...mailContextFor(updated, recipient),
-          reason: updated.cancelReason,
-        }),
-      );
+      // The other side is told; whoever pressed the button already knows. A
+      // group meeting has no single student to write to - reaching a whole
+      // register is what stage 7's queue is for.
+      if (updated.student) {
+        const recipient = isStudentCancelling
+          ? { email: updated.teacher.user.email, firstName: updated.teacher.user.firstName }
+          : { email: updated.student.email, firstName: updated.student.firstName };
+
+        await notify(
+          buildBookingCancelledMail({
+            ...mailContextFor(
+              updated,
+              recipient,
+              `${updated.student.firstName} ${updated.student.lastName}`,
+            ),
+            reason: updated.cancelReason,
+          }),
+        );
+      }
 
       return toLesson(updated);
     },
@@ -340,21 +387,97 @@ export function createBookingService({
         );
       }
 
-      // This mark is what will draw a lesson from a subscription in stage 4,
-      // so it must not be reachable before the lesson has actually begun.
+      // This mark draws a lesson from the package, so it must not be
+      // reachable before the lesson has actually begun.
       if (lesson.startsAt > now()) {
         throw new DomainError('INVALID_LESSON_STATUS', 'Заняття ще не почалося');
       }
 
-      const updated = await prisma.lesson.update({
-        where: { id: lesson.id },
-        data: { status },
-        include: lessonInclude,
+      // "Nobody came" is not something a group does: the register says who was
+      // there, one child at a time.
+      if (lesson.groupId && status === 'NO_SHOW') {
+        throw new DomainError(
+          'INVALID_LESSON_STATUS',
+          'У груповому занятті відсутність відмічається в журналі',
+        );
+      }
+
+      await prisma.$transaction(async (tx) => {
+        // The status is part of the filter, not only of the data: two clicks
+        // arriving together would otherwise both succeed and draw the lesson
+        // from the package twice.
+        const changed = await tx.lesson.updateMany({
+          where: { id: lesson.id, status: 'CONFIRMED' },
+          data: { status },
+        });
+
+        if (changed.count === 0) {
+          throw new DomainError('INVALID_LESSON_STATUS', 'Результат уже позначено');
+        }
+
+        // A missed lesson is charged exactly like an attended one: the hour
+        // was held and the teacher was there.
+        if (lesson.subscriptionId) {
+          await subscriptions.draw(tx, lesson.subscriptionId);
+        }
       });
 
-      return toLesson(updated);
+      return toLesson(await loadLesson(lesson.id));
     },
   };
+
+  /**
+   * What the lesson costs and how long it runs. A trial or a single lesson
+   * names a price plan; a subscription lesson names the package, and both the
+   * length and the plan come from what that package was sold against - so the
+   * two can never disagree.
+   */
+  async function resolveCharge(
+    tx: Prisma.TransactionClient,
+    input: BookingRequest,
+    studentId: string,
+    startsAt: Date,
+  ): Promise<LessonCharge> {
+    if (input.kind === 'SUBSCRIPTION') {
+      if (!input.subscriptionId) {
+        throw new DomainError('VALIDATION_FAILED', 'Не вказано абонемент');
+      }
+
+      const reserved = await subscriptions.reserve(tx, {
+        subscriptionId: input.subscriptionId,
+        studentId,
+        teacherId: input.teacherId,
+        startsAt,
+      });
+
+      return {
+        pricePlanId: reserved.pricePlanId,
+        subscriptionId: input.subscriptionId,
+        durationMinutes: reserved.durationMinutes as LessonDuration,
+      };
+    }
+
+    if (!input.pricePlanId) {
+      throw new DomainError('VALIDATION_FAILED', 'Не вказано тариф');
+    }
+
+    const plan = await tx.pricePlan.findUnique({ where: { id: input.pricePlanId } });
+    if (!plan || !plan.isActive) {
+      throw new DomainError('NOT_FOUND', 'Тариф не знайдено');
+    }
+    if (plan.format !== 'INDIVIDUAL') {
+      throw new DomainError('VALIDATION_FAILED', 'До групи записуються заявкою, а не на слот');
+    }
+    if (!isSellableDuration(plan.durationMinutes)) {
+      throw new DomainError('VALIDATION_FAILED', 'Тариф має некоректну тривалість заняття');
+    }
+
+    return {
+      pricePlanId: plan.id,
+      subscriptionId: null,
+      durationMinutes: plan.durationMinutes as LessonDuration,
+    };
+  }
 
   /**
    * The requested instant has to be one the slot endpoint actually offered -
@@ -402,18 +525,22 @@ function toLesson(lesson: LessonRow): Lesson {
       firstName: lesson.teacher.user.firstName,
       lastName: lesson.teacher.user.lastName,
     },
-    student: {
-      id: lesson.studentId,
-      firstName: lesson.student.firstName,
-      lastName: lesson.student.lastName,
-      phone: lesson.student.phone,
-    },
+    student: lesson.student
+      ? {
+          id: lesson.student.id,
+          firstName: lesson.student.firstName,
+          lastName: lesson.student.lastName,
+          phone: lesson.student.phone,
+        }
+      : null,
+    group: lesson.group ? { id: lesson.group.id, name: lesson.group.name } : null,
     location: {
       id: lesson.locationId,
       name: lesson.location.name,
       address: lesson.location.address,
     },
     directionName: lesson.pricePlan?.direction.name ?? null,
+    subscriptionId: lesson.subscriptionId,
   };
 }
 
@@ -423,7 +550,7 @@ function toLesson(lesson: LessonRow): Lesson {
  * matched alongside the constraint name so a future exclusion constraint on
  * another table cannot be mistaken for this one.
  */
-function isOverlapViolation(error: unknown): boolean {
+export function isOverlapViolation(error: unknown): boolean {
   const text = serialise(error);
   return text.includes(EXCLUSION_VIOLATION) || text.includes('lesson_no_overlap');
 }

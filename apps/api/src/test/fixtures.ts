@@ -151,3 +151,41 @@ export async function createPricePlan(
     },
   });
 }
+
+export async function createSubscription(
+  prisma: PrismaClient,
+  options: {
+    studentId: string;
+    teacherId: string;
+    pricePlanId: string;
+    lessonsTotal?: number;
+    lessonsUsed?: number;
+    priceUah?: number;
+    validFrom?: string;
+    validTo?: string;
+    status?: 'ACTIVE' | 'CANCELLED';
+    paid?: boolean;
+  },
+) {
+  const validFrom = parseLocalDate(options.validFrom ?? '2026-01-01');
+  const validTo = parseLocalDate(options.validTo ?? '2026-12-31');
+
+  if (!validFrom || !validTo) {
+    throw new Error('Fixture needs valid dates');
+  }
+
+  return prisma.subscription.create({
+    data: {
+      studentId: options.studentId,
+      teacherId: options.teacherId,
+      pricePlanId: options.pricePlanId,
+      lessonsTotal: options.lessonsTotal ?? 8,
+      lessonsUsed: options.lessonsUsed ?? 0,
+      priceUah: options.priceUah ?? 3000,
+      validFrom: toDbDate(validFrom),
+      validTo: toDbDate(validTo),
+      status: options.status ?? 'ACTIVE',
+      paidAt: options.paid === false ? null : new Date('2026-01-02T10:00:00Z'),
+    },
+  });
+}

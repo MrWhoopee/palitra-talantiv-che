@@ -6,6 +6,7 @@ import { createApp } from '../../http/app';
 import { createAccessTokenService } from '../../lib/access-token';
 import { createMemoryMailer } from '../../lib/mailer';
 import { createAvailabilityService } from '../availability/availability.service';
+import { createSubscriptionService } from '../subscriptions/subscriptions.service';
 import { createTestPrisma, resetDatabase } from '../../test/database';
 import {
   createDirection,
@@ -27,6 +28,7 @@ const NOW = new Date('2026-09-01T06:00:00Z');
 let clock = NOW;
 
 const availability = createAvailabilityService({ prisma, now: () => clock });
+const subscriptions = createSubscriptionService({ prisma, now: () => clock });
 
 const app: Express = createApp({
   checkDatabase: async () => true,
@@ -35,6 +37,7 @@ const app: Express = createApp({
       booking: createBookingService({
         prisma,
         availability,
+        subscriptions,
         mailer,
         webOrigin: 'http://localhost:3000',
         now: () => clock,
