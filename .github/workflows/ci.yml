@@ -13,92 +13,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The sequence itself lives in MrWhoopee/gh-workflows so every project runs
+  # the same checks in the same order. What stays here is what this project
+  # owns: the services it needs, its environment, its migrations.
+  #
+  # A job that calls a reusable workflow may not declare `services` or `steps`,
+  # so Postgres is started inside `setup` from the project's own
+  # docker-compose.yml - which also means CI and local development cannot drift
+  # onto two different database definitions.
+  #
+  # This job used to skip itself for pull requests whose head is main or dev,
+  # on the grounds that the push trigger had already covered that commit. That
+  # is now a trap: the branch ruleset requires the check `verify / checks`, and
+  # a caller job that skips never reports one at all, which would leave a
+  # dev -> main pull request unmergeable forever. One duplicated run is the
+  # cheaper mistake.
   verify:
-    runs-on: ubuntu-latest
-    # The push trigger above only fires for main/dev, so a same-repo PR
-    # whose head branch is main or dev (a dev -> main promotion) already
-    # gets its own push run for that exact commit -- running it again here
-    # would just duplicate that signal. Every other PR (an ordinary
-    # feature-branch PR, or any PR from a fork) has no push run to rely on,
-    # so it still needs to run here. Hence: always run on push; on
-    # pull_request, run unless this is a same-repo PR whose head branch is
-    # main or dev.
-    if: >
-      github.event_name == 'push' ||
-      github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name ||
-      (github.event.pull_request.head.ref != 'main' && github.event.pull_request.head.ref != 'dev')
+    uses: MrWhoopee/gh-workflows/.github/workflows/node-verify.yml@main
+    with:
+      pnpm-version: 11.21.0
+      node-version: 22.19.0
+      setup: |
+        export DATABASE_URL="postgresql://palitra:palitra@localhost:5433/palitra?schema=public"
+        # Test-only value. The integration tests need a secret of the right
+        # shape, not a real one - production reads it from the deployment.
+        export JWT_SECRET="ci-only-secret-not-used-anywhere-else-0123456789"
+        export NEXT_PUBLIC_API_URL="http://localhost:4000"
+        {
+          echo "DATABASE_URL=$DATABASE_URL"
+          echo "JWT_SECRET=$JWT_SECRET"
+          echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
+        } >> "$GITHUB_ENV"
 
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: palitra
-          POSTGRES_PASSWORD: palitra
-          POSTGRES_DB: palitra
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U palitra -d palitra"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      DATABASE_URL: postgresql://palitra:palitra@localhost:5432/palitra?schema=public
-      NEXT_PUBLIC_API_URL: http://localhost:4000
-      # Test-only value. The integration tests need a secret of the right
-      # shape, not a real one - production reads it from the deployment.
-      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.21.0
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22.19.0
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # Two audits, because they answer two different questions.
-      #
-      # The first is a gate: a critical advisory in something the studio
-      # actually ships is a reason to stop the line.
-      #
-      # The second is a report, and it must not block. Today it flags
-      # deepmerge-ts, reached only through Prisma's CLI - a tool that runs at
-      # build time and never serves a request. We cannot patch it without
-      # Prisma releasing first, so a red build over it would teach everyone
-      # here to ignore red builds, which costs more than the advisory does.
-      - name: Audit production dependencies
-        run: pnpm run audit
-
-      - name: Report all known advisories
-        run: pnpm audit --audit-level=low
-        continue-on-error: true
-
-      - name: Apply database migrations
-        run: pnpm --filter @palitra/api db:deploy
-
-      - name: Generate prisma client
-        run: pnpm --filter @palitra/api db:generate
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Check formatting
-        run: pnpm format:check
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
+        docker compose up -d --wait postgres
+        pnpm --filter @palitra/api db:deploy
+        pnpm --filter @palitra/api db:generate
