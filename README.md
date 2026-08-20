@@ -16,6 +16,8 @@
 - [Етап 5: публічний сайт](docs/superpowers/specs/2026-08-20-etap-5-publichnyi-sait.md) —
   спека: бренд, палітра, каркас, контентні моделі
 - [Етап 5: публічний сайт](docs/reports/2026-08-20-etap-5-publichnyi-sait.md) — звіт
+- [Етап 6: кабінет адміна](docs/superpowers/specs/2026-08-20-etap-6-kabinet-admina.md) —
+  спека: модель даних, поверхня API, `StorageAdapter`, екрани
 
 ## Передумови
 
