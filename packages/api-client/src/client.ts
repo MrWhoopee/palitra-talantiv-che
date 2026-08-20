@@ -1,10 +1,17 @@
 import {
   apiErrorSchema,
+  attendanceUpdateSchema,
   authResponseSchema,
   availabilityExceptionSchema,
   availabilityRuleSchema,
   directionSchema,
+  groupEnrollmentListSchema,
+  groupEnrollmentSchema,
+  groupListSchema,
+  groupSaveResultSchema,
+  groupSchema,
   healthResponseSchema,
+  lessonAttendanceSchema,
   lessonListSchema,
   lessonSchema,
   locationSchema,
@@ -13,18 +20,27 @@ import {
   publicTeacherSchema,
   publicUserSchema,
   slotsResponseSchema,
+  subscriptionListSchema,
+  subscriptionSchema,
   BAD_RESPONSE_CODE,
   type AuthResponse,
   type AvailabilityException,
   type AvailabilityExceptionInput,
   type AvailabilityRule,
   type AvailabilityRuleInput,
+  type AttendanceUpdate,
   type BadResponseCode,
   type BookingRequest,
+  type CancelLesson,
   type Direction,
   type DomainErrorCode,
+  type Group,
+  type GroupEnrollment,
+  type GroupInput,
+  type GroupSaveResult,
   type HealthResponse,
   type Lesson,
+  type LessonAttendance,
   type Location,
   type LoginRequest,
   type PricePlan,
@@ -32,6 +48,8 @@ import {
   type PublicUser,
   type RegisterRequest,
   type SlotsResponse,
+  type Subscription,
+  type SubscriptionInput,
 } from '@palitra/shared';
 import { z, type ZodType } from 'zod';
 
@@ -104,9 +122,39 @@ export interface ApiClient {
   createBooking(input: BookingRequest, accessToken: string): Promise<Lesson>;
   getMyLessons(accessToken: string): Promise<Lesson[]>;
   confirmLesson(lessonId: string, accessToken: string): Promise<Lesson>;
-  cancelLesson(lessonId: string, reason: string | undefined, accessToken: string): Promise<Lesson>;
+  cancelLesson(lessonId: string, input: CancelLesson, accessToken: string): Promise<Lesson>;
   completeLesson(lessonId: string, accessToken: string): Promise<Lesson>;
   markNoShow(lessonId: string, accessToken: string): Promise<Lesson>;
+
+  getMySubscriptions(accessToken: string): Promise<Subscription[]>;
+  createSubscription(input: SubscriptionInput, accessToken: string): Promise<Subscription>;
+  markSubscriptionPaid(subscriptionId: string, accessToken: string): Promise<Subscription>;
+  cancelSubscription(subscriptionId: string, accessToken: string): Promise<Subscription>;
+
+  getGroups(): Promise<Group[]>;
+  getGroup(groupId: string): Promise<Group>;
+  getMyGroups(accessToken: string): Promise<Group[]>;
+  createGroup(input: GroupInput, accessToken: string): Promise<GroupSaveResult>;
+  updateGroup(groupId: string, input: GroupInput, accessToken: string): Promise<GroupSaveResult>;
+  getGroupEnrollments(groupId: string, accessToken: string): Promise<GroupEnrollment[]>;
+  applyToGroup(groupId: string, accessToken: string): Promise<GroupEnrollment>;
+  approveEnrollment(
+    groupId: string,
+    enrollmentId: string,
+    accessToken: string,
+  ): Promise<GroupEnrollment>;
+  removeEnrollment(
+    groupId: string,
+    enrollmentId: string,
+    accessToken: string,
+  ): Promise<GroupEnrollment>;
+
+  getAttendance(lessonId: string, accessToken: string): Promise<LessonAttendance>;
+  saveAttendance(
+    lessonId: string,
+    input: AttendanceUpdate,
+    accessToken: string,
+  ): Promise<LessonAttendance>;
 }
 
 /** The query as the caller writes it - the duration is a number, not text. */
@@ -296,10 +344,10 @@ export function createApiClient({
         accessToken,
       }),
 
-    cancelLesson: (lessonId, reason, accessToken) =>
+    cancelLesson: (lessonId, input, accessToken) =>
       requestParsed(lessonSchema, `${lessonPath(lessonId)}/cancel`, {
         method: 'POST',
-        body: reason ? { reason } : {},
+        body: input,
         accessToken,
       }),
 
@@ -314,7 +362,102 @@ export function createApiClient({
         method: 'POST',
         accessToken,
       }),
+
+    getMySubscriptions: (accessToken) =>
+      requestParsed(subscriptionListSchema, '/me/subscriptions', { accessToken }),
+
+    createSubscription: (input, accessToken) =>
+      requestParsed(subscriptionSchema, '/subscriptions', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    markSubscriptionPaid: (subscriptionId, accessToken) =>
+      requestParsed(subscriptionSchema, `${subscriptionPath(subscriptionId)}/paid`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    cancelSubscription: (subscriptionId, accessToken) =>
+      requestParsed(subscriptionSchema, `${subscriptionPath(subscriptionId)}/cancel`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    getGroups: () => requestParsed(groupListSchema, '/groups'),
+
+    getGroup: (groupId) => requestParsed(groupSchema, groupPath(groupId)),
+
+    getMyGroups: (accessToken) => requestParsed(groupListSchema, '/me/groups', { accessToken }),
+
+    createGroup: (input, accessToken) =>
+      requestParsed(groupSaveResultSchema, '/groups', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    updateGroup: (groupId, input, accessToken) =>
+      requestParsed(groupSaveResultSchema, groupPath(groupId), {
+        method: 'PUT',
+        body: input,
+        accessToken,
+      }),
+
+    getGroupEnrollments: (groupId, accessToken) =>
+      requestParsed(groupEnrollmentListSchema, `${groupPath(groupId)}/enrollments`, {
+        accessToken,
+      }),
+
+    applyToGroup: (groupId, accessToken) =>
+      requestParsed(groupEnrollmentSchema, `${groupPath(groupId)}/enrollments`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    approveEnrollment: (groupId, enrollmentId, accessToken) =>
+      requestParsed(groupEnrollmentSchema, `${enrollmentPath(groupId, enrollmentId)}/approve`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    removeEnrollment: (groupId, enrollmentId, accessToken) =>
+      requestParsed(groupEnrollmentSchema, `${enrollmentPath(groupId, enrollmentId)}/remove`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    getAttendance: (lessonId, accessToken) =>
+      requestParsed(lessonAttendanceSchema, attendancePath(lessonId), { accessToken }),
+
+    saveAttendance: (lessonId, input, accessToken) =>
+      requestParsed(lessonAttendanceSchema, attendancePath(lessonId), {
+        method: 'PUT',
+        body: attendanceUpdateSchema.parse(input),
+        accessToken,
+      }),
   };
+}
+
+function subscriptionPath(subscriptionId: string): string {
+  return `/subscriptions/${encodeURIComponent(subscriptionId)}`;
+}
+
+function groupPath(groupId: string): string {
+  return `/groups/${encodeURIComponent(groupId)}`;
+}
+
+function enrollmentPath(groupId: string, enrollmentId: string): string {
+  return `${groupPath(groupId)}/enrollments/${encodeURIComponent(enrollmentId)}`;
+}
+
+/**
+ * The register hangs off the teacher's own lessons rather than off `/lessons`:
+ * only the teacher of the group keeps it, and the path says so.
+ */
+function attendancePath(lessonId: string): string {
+  return `/me/lessons/${encodeURIComponent(lessonId)}/attendance`;
 }
 
 function lessonPath(lessonId: string): string {

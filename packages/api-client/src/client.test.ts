@@ -305,7 +305,9 @@ describe('booking requests', () => {
       name: 'Благовісна',
       address: 'вул. Благовісна, 170',
     },
+    group: null,
     directionName: 'Вокал',
+    subscriptionId: null,
   };
 
   it('posts a booking with the session token', async () => {
@@ -332,9 +334,160 @@ describe('booking requests', () => {
       jsonResponse({ ...lesson, status: 'CANCELLED' }),
     );
 
-    await client.cancelLesson(lesson.id, undefined, 'an-access-token');
+    await client.cancelLesson(lesson.id, {}, 'an-access-token');
 
     expect(calls[0]?.url).toBe(`http://api.test/lessons/${lesson.id}/cancel`);
     expect(calls[0]?.body).toEqual({});
+  });
+
+  it('passes a waived charge through to the api', async () => {
+    const { client, calls } = recordingClient(() =>
+      jsonResponse({ ...lesson, status: 'CANCELLED' }),
+    );
+
+    await client.cancelLesson(lesson.id, { waiveCharge: true }, 'an-access-token');
+
+    expect(calls[0]?.body).toEqual({ waiveCharge: true });
+  });
+});
+
+describe('groups and the register', () => {
+  const group = {
+    id: '019880d3-0000-7000-8000-00000000001a',
+    name: 'Вокальний ансамбль',
+    teacher: {
+      id: '019880d3-0000-7000-8000-00000000000b',
+      firstName: 'Ірина',
+      lastName: 'Мельник',
+    },
+    direction: {
+      id: '019880d3-0000-7000-8000-00000000001b',
+      slug: 'vocal',
+      name: 'Вокал',
+      description: null,
+      icon: null,
+    },
+    location: {
+      id: '019880d3-0000-7000-8000-00000000000d',
+      name: 'Благовісна',
+      address: 'вул. Благовісна, 170',
+      mapUrl: null,
+    },
+    capacity: 8,
+    durationMinutes: 60,
+    isOpenForEnrollment: true,
+    startsOn: '2026-09-02',
+    endsOn: null,
+    schedule: [{ weekday: 3, startTime: '17:00' }],
+    seatsTaken: 2,
+    seatsLeft: 6,
+  };
+
+  it('reads the open groups without a token', async () => {
+    const { client, calls } = recordingClient(() => jsonResponse([group]));
+
+    const groups = await client.getGroups();
+
+    expect(calls[0]?.url).toBe('http://api.test/groups');
+    expect(calls[0]?.headers['authorization']).toBeUndefined();
+    expect(groups[0]?.name).toBe('Вокальний ансамбль');
+  });
+
+  it('applies to a group with the session token', async () => {
+    const enrollment = {
+      id: '019880d3-0000-7000-8000-00000000001c',
+      groupId: group.id,
+      student: {
+        id: '019880d3-0000-7000-8000-00000000000c',
+        firstName: 'Олена',
+        lastName: 'Коваль',
+        phone: '+380671234567',
+      },
+      status: 'PENDING',
+      joinedAt: '2026-09-01T09:00:00.000Z',
+      leftAt: null,
+    };
+    const { client, calls } = recordingClient(() => jsonResponse(enrollment, 201));
+
+    const applied = await client.applyToGroup(group.id, 'an-access-token');
+
+    expect(calls[0]?.url).toBe(`http://api.test/groups/${group.id}/enrollments`);
+    expect(calls[0]?.headers['authorization']).toBe('Bearer an-access-token');
+    expect(applied.status).toBe('PENDING');
+  });
+
+  it('saves the register on the teacher`s own lesson path', async () => {
+    const lessonId = '019880d3-0000-7000-8000-00000000001d';
+    const studentId = '019880d3-0000-7000-8000-00000000000c';
+    const register = {
+      lessonId,
+      groupId: group.id,
+      groupName: group.name,
+      startsAt: '2026-09-02T14:00:00.000Z',
+      entries: [
+        {
+          student: { id: studentId, firstName: 'Олена', lastName: 'Коваль', phone: '+380671234567' },
+          status: 'PRESENT',
+        },
+      ],
+    };
+    const { client, calls } = recordingClient(() => jsonResponse(register));
+
+    const saved = await client.saveAttendance(
+      lessonId,
+      { entries: [{ studentId, status: 'PRESENT' }] },
+      'an-access-token',
+    );
+
+    expect(calls[0]?.url).toBe(`http://api.test/me/lessons/${lessonId}/attendance`);
+    expect(calls[0]?.method).toBe('PUT');
+    expect(saved.entries[0]?.status).toBe('PRESENT');
+  });
+});
+
+describe('subscriptions', () => {
+  const subscription = {
+    id: '019880d3-0000-7000-8000-00000000002a',
+    student: {
+      id: '019880d3-0000-7000-8000-00000000000c',
+      firstName: 'Олена',
+      lastName: 'Коваль',
+      phone: '+380671234567',
+    },
+    teacher: {
+      id: '019880d3-0000-7000-8000-00000000000b',
+      firstName: 'Ірина',
+      lastName: 'Мельник',
+    },
+    directionName: 'Вокал',
+    planName: 'Абонемент 8 занять',
+    durationMinutes: 45,
+    lessonsTotal: 8,
+    lessonsUsed: 2,
+    lessonsReserved: 1,
+    lessonsLeft: 5,
+    priceUah: 2800,
+    validFrom: '2026-09-01',
+    validTo: '2026-11-30',
+    paidAt: '2026-09-01T09:00:00.000Z',
+    status: 'ACTIVE',
+  };
+
+  it('reads the caller`s own packages', async () => {
+    const { client, calls } = recordingClient(() => jsonResponse([subscription]));
+
+    const rows = await client.getMySubscriptions('an-access-token');
+
+    expect(calls[0]?.url).toBe('http://api.test/me/subscriptions');
+    expect(rows[0]?.lessonsLeft).toBe(5);
+  });
+
+  it('marks a package paid', async () => {
+    const { client, calls } = recordingClient(() => jsonResponse(subscription));
+
+    await client.markSubscriptionPaid(subscription.id, 'an-access-token');
+
+    expect(calls[0]?.url).toBe(`http://api.test/subscriptions/${subscription.id}/paid`);
+    expect(calls[0]?.method).toBe('POST');
   });
 });
