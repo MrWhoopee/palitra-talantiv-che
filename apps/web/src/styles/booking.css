@@ -459,3 +459,101 @@
   justify-self: start;
   padding: var(--pt-space-3) var(--pt-space-6);
 }
+
+.schedule-fieldset {
+  display: grid;
+  gap: var(--pt-space-3);
+  margin: 0;
+  padding: var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+}
+
+.field-check {
+  display: flex;
+  gap: var(--pt-space-2);
+  align-items: center;
+}
+
+/* The register. One row per child, and the marks read as a row of choices
+   rather than a dropdown: a teacher taps through a group of eight in one
+   pass, and a select would cost two taps per name. */
+.register {
+  display: grid;
+  gap: var(--pt-space-3);
+  margin: 0 0 var(--pt-space-5);
+  padding: 0;
+  list-style: none;
+}
+
+/* A grid rather than a flex row, so a long surname does not push its marks
+   onto a second line while a short one stays on the first - a register the
+   teacher reads down a column has to line up. */
+.register-row {
+  display: grid;
+  gap: var(--pt-space-2) var(--pt-space-4);
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  align-items: center;
+  padding: var(--pt-space-3) var(--pt-space-4);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-bg);
+}
+
+@media (max-width: 40rem) {
+  .register-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.register-name {
+  font-weight: 600;
+}
+
+.register-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.register-mark {
+  display: inline-flex;
+  gap: var(--pt-space-2);
+  align-items: center;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.register-mark:has(input:checked) {
+  color: var(--pt-text);
+  font-weight: 600;
+}
+
+/* Present to a screen reader, absent to everyone else: each row's marks need
+   a name, and the name is already on the row in plain sight. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A badge inside a card is a label, not a bar: the card is a one-column grid,
+   so without this the pill stretches the full width of it. */
+.teacher-card .badge {
+  justify-self: start;
+}
+
+/* The second half of a lesson's people line, on its own row: a separator
+   left dangling at the start of a wrapped line reads as a typo. */
+.lesson-aside {
+  display: block;
+  color: var(--pt-text-muted);
+}

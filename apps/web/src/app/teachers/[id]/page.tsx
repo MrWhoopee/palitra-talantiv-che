@@ -1,4 +1,4 @@
-import type { Lesson, PricePlan, PublicTeacher, Slot } from '@palitra/shared';
+import type { Lesson, PricePlan, PublicTeacher, Slot, Subscription } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -14,7 +14,20 @@ const WEEKS_AHEAD = 4;
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ plan?: string; week?: string }>;
+  searchParams: Promise<{ source?: string; week?: string }>;
+}
+
+/**
+ * What pays for a lesson, as one list: the tariffs the studio sells and the
+ * packages this visitor already holds with this teacher. They are the same
+ * choice from the calendar's point of view - both fix a duration - so the
+ * screen offers them side by side instead of splitting into two flows.
+ */
+interface BookingSource {
+  key: string;
+  title: string;
+  detail: string;
+  durationMinutes: number;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -35,7 +48,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function TeacherPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { plan: planId, week } = await searchParams;
+  const { source: sourceKey, week } = await searchParams;
 
   const teacher = await loadTeacher(id);
   if (!teacher) {
@@ -43,15 +56,20 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
   }
 
   const user = await getCurrentUser();
-  const plans = await loadPlansFor(teacher);
-  const plan = plans.find((candidate) => candidate.id === planId) ?? plans[0];
+  const [plans, packages] = await Promise.all([
+    loadPlansFor(teacher),
+    user ? loadPackagesFor(teacher.id) : Promise.resolve([]),
+  ]);
+
+  const sources = [...packages.map(toPackageSource), ...plans.map(toPlanSource)];
+  const source = sources.find((candidate) => candidate.key === sourceKey) ?? sources[0];
 
   const weekOffset = clampWeek(week);
   const from = shiftDays(today(), weekOffset * 7);
   const to = shiftDays(from, 6);
 
-  const slots = plan
-    ? await loadSlots(teacher.id, dateKey(from), dateKey(to), plan.durationMinutes)
+  const slots = source
+    ? await loadSlots(teacher.id, dateKey(from), dateKey(to), source.durationMinutes)
     : [];
 
   const byDay = groupByDay(slots);
@@ -83,7 +101,7 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
         </p>
       </header>
 
-      {plans.length === 0 ? (
+      {sources.length === 0 ? (
         <p className="empty">
           Для цього викладача ще не налаштовані тарифи. Зателефонуйте студії, щоб записатися.
         </p>
@@ -94,17 +112,15 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
             <p className="panel-hint">Тариф задає тривалість заняття.</p>
 
             <ul className="chip-row">
-              {plans.map((candidate) => (
-                <li key={candidate.id}>
+              {sources.map((candidate) => (
+                <li key={candidate.key}>
                   <Link
-                    href={`/teachers/${teacher.id}?plan=${candidate.id}&week=${weekOffset}`}
-                    className={`plan-chip${candidate.id === plan?.id ? ' plan-chip-active' : ''}`}
-                    aria-current={candidate.id === plan?.id ? 'true' : undefined}
+                    href={`/teachers/${teacher.id}?source=${encodeURIComponent(candidate.key)}&week=${weekOffset}`}
+                    className={`plan-chip${candidate.key === source?.key ? ' plan-chip-active' : ''}`}
+                    aria-current={candidate.key === source?.key ? 'true' : undefined}
                   >
-                    <strong>{candidate.directionName}</strong>
-                    <span>
-                      {candidate.name} · {candidate.durationMinutes} хв · {candidate.priceUah} ₴
-                    </span>
+                    <strong>{candidate.title}</strong>
+                    <span>{candidate.detail}</span>
                   </Link>
                 </li>
               ))}
@@ -124,7 +140,7 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
                 {Array.from({ length: WEEKS_AHEAD }, (_, index) => (
                   <Link
                     key={index}
-                    href={`/teachers/${teacher.id}?plan=${plan?.id ?? ''}&week=${index}`}
+                    href={`/teachers/${teacher.id}?source=${encodeURIComponent(source?.key ?? '')}&week=${index}`}
                     className={`week-link${index === weekOffset ? ' week-link-active' : ''}`}
                     aria-current={index === weekOffset ? 'page' : undefined}
                   >
@@ -148,12 +164,13 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
               </p>
             ) : null}
 
-            {plan ? (
+            {source ? (
               <BookingForm
                 teacherId={teacher.id}
-                planId={plan.id}
+                source={source.key}
                 signedIn={user !== null}
                 trialAvailable={trialAvailable}
+                fromSubscription={source.key.startsWith('subscription:')}
                 days={days.map((day) => ({
                   key: dateKey(day),
                   label: longDate(day),
@@ -205,6 +222,54 @@ async function loadPlansFor(teacher: PublicTeacher): Promise<PricePlan[]> {
   }
 }
 
+/**
+ * The packages this visitor may still draw a lesson from with this teacher.
+ * The API refuses an exhausted or expired one anyway; filtering here keeps the
+ * screen from offering a choice it knows would be refused.
+ */
+async function loadPackagesFor(teacherId: string): Promise<Subscription[]> {
+  const accessToken = await readAccessToken();
+  if (!accessToken) {
+    return [];
+  }
+
+  const todayKey = dateKey(today());
+
+  try {
+    const subscriptions = await api.getMySubscriptions(accessToken);
+    return subscriptions.filter(
+      (subscription) =>
+        subscription.teacher.id === teacherId &&
+        subscription.status === 'ACTIVE' &&
+        subscription.lessonsLeft > 0 &&
+        subscription.validFrom <= todayKey &&
+        subscription.validTo >= todayKey,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function toPlanSource(plan: PricePlan): BookingSource {
+  return {
+    key: `plan:${plan.id}`,
+    title: plan.directionName,
+    detail: `${plan.name} · ${plan.durationMinutes} хв · ${plan.priceUah} ₴`,
+    durationMinutes: plan.durationMinutes,
+  };
+}
+
+function toPackageSource(subscription: Subscription): BookingSource {
+  return {
+    key: `subscription:${subscription.id}`,
+    title: subscription.directionName ?? 'Абонемент',
+    detail: `Абонемент · лишилось ${subscription.lessonsLeft} з ${subscription.lessonsTotal}`,
+    // The package carries the length of the plan it was sold against, which
+    // is the same length the API will use when the booking arrives.
+    durationMinutes: subscription.durationMinutes,
+  };
+}
+
 async function loadSlots(
   teacherId: string,
   from: string,
@@ -241,7 +306,7 @@ async function hasTrialLeft(userId: string | null): Promise<boolean> {
     const lessons: Lesson[] = await api.getMyLessons(accessToken);
     return !lessons.some(
       (lesson) =>
-        lesson.student.id === userId && lesson.kind === 'TRIAL' && lesson.status !== 'CANCELLED',
+        lesson.student?.id === userId && lesson.kind === 'TRIAL' && lesson.status !== 'CANCELLED',
     );
   } catch {
     return true;

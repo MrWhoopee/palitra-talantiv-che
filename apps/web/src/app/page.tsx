@@ -50,9 +50,19 @@ export default async function HomePage() {
         Вокал, фортепіано, гітара та укулеле — для дітей і дорослих.
       </p>
 
-      <p style={{ margin: '0 0 var(--pt-space-8)' }}>
+      <p
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 'var(--pt-space-4)',
+          margin: '0 0 var(--pt-space-8)',
+        }}
+      >
         <Link href="/teachers" className="button-primary">
           Обрати викладача — перше заняття безкоштовне
+        </Link>
+        <Link href="/groups" className="button-quiet">
+          Групи та ансамблі
         </Link>
       </p>
 

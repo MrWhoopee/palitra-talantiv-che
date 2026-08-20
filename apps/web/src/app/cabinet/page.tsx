@@ -1,4 +1,4 @@
-import type { Lesson } from '@palitra/shared';
+import type { Group, Lesson, Subscription } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -6,6 +6,7 @@ import { FormAlert } from '@/components/form-alert';
 import { api } from '@/lib/api';
 import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
+import { describeGroupSchedule } from '@/lib/studio-time';
 import { LessonCard } from './lesson-card';
 import { LogoutButton } from './logout-button';
 import '../../styles/auth.css';
@@ -21,9 +22,9 @@ export const dynamic = 'force-dynamic';
 export default async function CabinetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ booked?: string; error?: string }>;
+  searchParams: Promise<{ booked?: string; applied?: string; error?: string }>;
 }) {
-  const { booked, error } = await searchParams;
+  const { booked, applied, error } = await searchParams;
   const user = await getCurrentUser();
 
   // The middleware already turns anonymous visitors away; this is the second
@@ -32,7 +33,13 @@ export default async function CabinetPage({
     redirect('/login');
   }
 
-  const lessons = await loadLessons();
+  const [lessons, subscriptions, groups] = await withToken(async (accessToken) =>
+    Promise.all([
+      api.getMyLessons(accessToken),
+      api.getMySubscriptions(accessToken),
+      api.getMyGroups(accessToken),
+    ]),
+  );
   const now = new Date();
   const teaching = user.role === 'TEACHER' || user.role === 'ADMIN';
 
@@ -59,9 +66,14 @@ export default async function CabinetPage({
         </div>
         <div className="cabinet-header-actions">
           {teaching ? (
-            <Link href="/cabinet/schedule" className="button-quiet">
-              Мій графік
-            </Link>
+            <>
+              <Link href="/cabinet/schedule" className="button-quiet">
+                Мій графік
+              </Link>
+              <Link href="/cabinet/groups" className="button-quiet">
+                Мої групи
+              </Link>
+            </>
           ) : (
             <Link href="/teachers" className="button-primary">
               Записатися на заняття
@@ -73,6 +85,11 @@ export default async function CabinetPage({
 
       {booked ? (
         <FormAlert tone="ok">Заявку надіслано. Викладач підтвердить її найближчим часом.</FormAlert>
+      ) : null}
+      {applied ? (
+        <FormAlert tone="ok">
+          Заявку до групи надіслано. Місце тримається, поки викладач її розглядає.
+        </FormAlert>
       ) : null}
       {error ? <FormAlert tone="error">{error}</FormAlert> : null}
 
@@ -126,6 +143,64 @@ export default async function CabinetPage({
         </section>
       ) : null}
 
+      {subscriptions.length > 0 ? (
+        <section className="panel">
+          <h2 className="panel-title">Абонементи</h2>
+          <p className="panel-hint">
+            Заняття списується з абонемента, коли викладач позначить його проведеним. Заброньовані
+            заняття вже враховано в залишку.
+          </p>
+          <ul className="rule-list">
+            {subscriptions.map((subscription: Subscription) => (
+              <li key={subscription.id} className="rule">
+                <span className="rule-when">
+                  <strong>{subscription.directionName ?? 'Абонемент'}</strong>{' '}
+                  {subscription.planName ?? ''}
+                </span>
+                <span className="rule-where">
+                  {teaching
+                    ? `${subscription.student.lastName} ${subscription.student.firstName}`
+                    : `${subscription.teacher.firstName} ${subscription.teacher.lastName}`}
+                </span>
+                <span className="rule-valid">
+                  до {subscription.validTo}
+                  {subscription.paidAt ? '' : ' · не оплачено'}
+                </span>
+                <span
+                  className={`badge ${subscription.lessonsLeft > 0 ? 'badge-ok' : 'badge-off'}`}
+                >
+                  Лишилось {subscription.lessonsLeft} з {subscription.lessonsTotal}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {groups.length > 0 ? (
+        <section className="panel">
+          <h2 className="panel-title">Групи</h2>
+          <ul className="rule-list">
+            {groups.map((group: Group) => (
+              <li key={group.id} className="rule">
+                <span className="rule-when">
+                  <strong>{group.name}</strong> {describeGroupSchedule(group.schedule)}
+                </span>
+                <span className="rule-where">
+                  {group.direction.name} · {group.location.name}
+                </span>
+                <Link
+                  href={teaching ? `/cabinet/groups/${group.id}` : `/groups/${group.id}`}
+                  className="button-quiet"
+                >
+                  {teaching ? 'Склад і заявки' : 'Про групу'}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="cabinet-card">
         <h2 className="auth-title">Мої дані</h2>
         <dl className="cabinet-facts">
@@ -147,17 +222,22 @@ export default async function CabinetPage({
   );
 }
 
-async function loadLessons(): Promise<Lesson[]> {
+/**
+ * The three lists the cabinet is made of, in one round of requests. Empty
+ * lists rather than a broken page: whatever the API answers, the rest of the
+ * cabinet still tells the visitor who they are and how to reach the studio.
+ */
+async function withToken(
+  load: (accessToken: string) => Promise<[Lesson[], Subscription[], Group[]]>,
+): Promise<[Lesson[], Subscription[], Group[]]> {
   const accessToken = await readAccessToken();
   if (!accessToken) {
-    return [];
+    return [[], [], []];
   }
 
   try {
-    return await api.getMyLessons(accessToken);
+    return await load(accessToken);
   } catch {
-    // An empty list rather than a broken page: the rest of the cabinet still
-    // tells the visitor who they are and how to reach the studio.
-    return [];
+    return [[], [], []];
   }
 }

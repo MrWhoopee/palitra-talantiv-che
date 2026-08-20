@@ -21,18 +21,21 @@ interface DayView {
 
 interface BookingFormProps {
   teacherId: string;
-  planId: string;
+  /** `plan:<id>` or `subscription:<id>` - what pays for the lesson. */
+  source: string;
   signedIn: boolean;
   trialAvailable: boolean;
+  fromSubscription: boolean;
   days: DayView[];
   showLocations: boolean;
 }
 
 export function BookingForm({
   teacherId,
-  planId,
+  source,
   signedIn,
   trialAvailable,
+  fromSubscription,
   days,
   showLocations,
 }: BookingFormProps) {
@@ -44,25 +47,31 @@ export function BookingForm({
       {state.error ? <FormAlert tone="error">{state.error}</FormAlert> : null}
 
       <input type="hidden" name="teacherId" value={teacherId} />
-      <input type="hidden" name="pricePlanId" value={planId} />
+      <input type="hidden" name="source" value={source} />
 
-      <fieldset className="kind-choice">
-        <legend className="panel-hint">Тип заняття</legend>
-        {trialAvailable ? (
+      {/* A lesson drawn from a package is neither a trial nor a paid single
+          one, so there is nothing to choose - the package already decided. */}
+      {fromSubscription ? (
+        <p className="panel-hint">Заняття буде списано з обраного абонемента.</p>
+      ) : (
+        <fieldset className="kind-choice">
+          <legend className="panel-hint">Тип заняття</legend>
+          {trialAvailable ? (
+            <label className="kind-option">
+              <input type="radio" name="kind" value="TRIAL" defaultChecked />
+              <span>
+                Пробне <em>безкоштовно, один раз</em>
+              </span>
+            </label>
+          ) : null}
           <label className="kind-option">
-            <input type="radio" name="kind" value="TRIAL" defaultChecked />
+            <input type="radio" name="kind" value="SINGLE" defaultChecked={!trialAvailable} />
             <span>
-              Пробне <em>безкоштовно, один раз</em>
+              Разове <em>оплата в студії</em>
             </span>
           </label>
-        ) : null}
-        <label className="kind-option">
-          <input type="radio" name="kind" value="SINGLE" defaultChecked={!trialAvailable} />
-          <span>
-            Разове <em>оплата в студії</em>
-          </span>
-        </label>
-      </fieldset>
+        </fieldset>
+      )}
 
       {empty ? (
         <p className="empty">Цього тижня вільного часу немає. Подивіться наступний.</p>

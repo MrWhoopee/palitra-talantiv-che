@@ -97,3 +97,19 @@ export function dateKey(date: LocalDate): string {
 function weekdayIndex(date: LocalDate): number {
   return new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay();
 }
+
+/** `"Середа 17:00, п'ятниця 18:30"` - a group's week in one line. */
+export function describeGroupSchedule(
+  schedule: readonly { weekday: number; startTime: string }[],
+): string {
+  if (schedule.length === 0) {
+    return 'Розклад ще не складено';
+  }
+
+  return schedule
+    .map((entry, index) => {
+      const day = WEEKDAY_LABELS[entry.weekday] ?? '';
+      return `${index === 0 ? day : day.toLowerCase()} ${entry.startTime}`;
+    })
+    .join(', ');
+}

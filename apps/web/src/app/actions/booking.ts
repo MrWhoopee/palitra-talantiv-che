@@ -19,10 +19,19 @@ export async function bookSlotAction(_previous: FormState, formData: FormData): 
   // here rather than duplicating the grid into hidden inputs.
   const [startsAt, locationId] = String(formData.get('slot') ?? '').split('|');
 
+  // The tariff picker carries either a plan or a package, depending on which
+  // one the visitor chose - the shared schema requires exactly the one the
+  // kind implies, so an empty string has to become "not sent".
+  const source = String(formData.get('source') ?? '');
+  const kind = source.startsWith('subscription:') ? 'SUBSCRIPTION' : formData.get('kind');
+  const reference = source.slice(source.indexOf(':') + 1);
+
   const parsed = bookingRequestSchema.safeParse({
     teacherId: formData.get('teacherId'),
-    pricePlanId: formData.get('pricePlanId'),
-    kind: formData.get('kind'),
+    ...(kind === 'SUBSCRIPTION'
+      ? { subscriptionId: reference }
+      : { pricePlanId: reference || formData.get('pricePlanId') }),
+    kind,
     startsAt,
     locationId,
   });
@@ -81,10 +90,26 @@ export const confirmLessonAction = lessonAction((lessonId, token) =>
   api.confirmLesson(lessonId, token).then(() => undefined),
 );
 
-export const cancelLessonAction = lessonAction((lessonId, token, formData) => {
+export const cancelLessonAction = lessonAction((lessonId, token, formData) =>
+  api.cancelLesson(lessonId, cancellationOf(formData), token).then(() => undefined),
+);
+
+/**
+ * The teacher's way of calling a lesson off without it costing the student a
+ * lesson from their package - a separate button rather than a checkbox,
+ * because the default has to be the rule and the exception has to be a
+ * deliberate press.
+ */
+export const waiveAndCancelLessonAction = lessonAction((lessonId, token, formData) =>
+  api
+    .cancelLesson(lessonId, { ...cancellationOf(formData), waiveCharge: true }, token)
+    .then(() => undefined),
+);
+
+function cancellationOf(formData: FormData): { reason?: string } {
   const reason = String(formData.get('reason') ?? '').trim();
-  return api.cancelLesson(lessonId, reason || undefined, token).then(() => undefined);
-});
+  return reason ? { reason } : {};
+}
 
 export const completeLessonAction = lessonAction((lessonId, token) =>
   api.completeLesson(lessonId, token).then(() => undefined),

@@ -13,9 +13,9 @@ const PRIVATE_PREFIXES = ['/cabinet'];
  * simply read the cookie: by the time it runs, the cookie is valid, or the
  * visitor is anonymous and the page knows it.
  *
- * The teacher pages are public but still run through here: someone with a
- * live refresh token who lands on a booking screen must be recognised, or the
- * calendar would tell them to sign in while they already are.
+ * The teacher and group pages are public but still run through here: someone
+ * with a live refresh token who lands on a booking screen must be recognised,
+ * or the calendar would tell them to sign in while they already are.
  */
 export async function proxy(request: NextRequest) {
   const isPrivate = PRIVATE_PREFIXES.some((prefix) => request.nextUrl.pathname.startsWith(prefix));
@@ -72,5 +72,5 @@ function redirectToLogin(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/cabinet/:path*', '/teachers/:path*'],
+  matcher: ['/cabinet/:path*', '/teachers/:path*', '/groups/:path*'],
 };
