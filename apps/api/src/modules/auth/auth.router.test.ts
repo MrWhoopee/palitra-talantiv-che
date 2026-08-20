@@ -95,7 +95,9 @@ describe('POST /auth/register', () => {
 
     const user = await prisma.user.findUniqueOrThrow({ where: { email: registration.email } });
     expect(user.passwordHash).not.toBe(registration.password);
-    expect(user.passwordHash.startsWith('$2')).toBe(true);
+    // Someone who registered has a password; only an invited account may sit
+    // there without one, and this is not that path.
+    expect(user.passwordHash?.startsWith('$2')).toBe(true);
   });
 
   it('leaves the email unverified and sends a verification link', async () => {
@@ -446,5 +448,101 @@ describe('password reset', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.code).toBe('VALIDATION_FAILED');
+  });
+});
+
+describe('POST /auth/accept-invite', () => {
+  /**
+   * The state an invitation starts from: an account the admin created, with a
+   * role and a name but no password at all. Written through Prisma rather than
+   * through the admin endpoint so that this file tests one router, not two.
+   */
+  async function inviteTeacher() {
+    const user = await prisma.user.create({
+      data: {
+        email: 'iryna@example.com',
+        passwordHash: null,
+        role: 'TEACHER',
+        firstName: 'Ірина',
+        lastName: 'Шевченко',
+        phone: '+380671112233',
+      },
+    });
+    await auth.sendInvite(user);
+    return user;
+  }
+
+  it('sends a link to the invited address', async () => {
+    await inviteTeacher();
+
+    expect(mailer.sent).toHaveLength(1);
+    expect(mailer.sent[0]?.to).toBe('iryna@example.com');
+    expect(mailer.sent[0]?.text).toContain('http://localhost:3000/accept-invite?token=');
+  });
+
+  it('sets the password and signs the teacher in', async () => {
+    await inviteTeacher();
+
+    const response = await request(app)
+      .post('/auth/accept-invite')
+      .send({ token: tokenFromLastMail(), password: 'correct horse battery' });
+
+    expect(response.status).toBe(200);
+    expect(() => authResponseSchema.parse(response.body)).not.toThrow();
+    expect(response.body.user.role).toBe('TEACHER');
+  });
+
+  it('confirms the address, because following the link proves the mailbox', async () => {
+    await inviteTeacher();
+
+    await request(app)
+      .post('/auth/accept-invite')
+      .send({ token: tokenFromLastMail(), password: 'correct horse battery' });
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'iryna@example.com' } });
+    expect(user.emailVerifiedAt).not.toBeNull();
+  });
+
+  it('refuses to sign in an invited teacher who has not set a password yet', async () => {
+    await inviteTeacher();
+
+    const response = await request(app)
+      .post('/auth/login')
+      .send({ email: 'iryna@example.com', password: '' });
+
+    // The account exists and has no password. Nothing may be accepted as one -
+    // this is what the `?? ABSENT_USER_HASH` in `login` is guarding, and it is
+    // easy to remove by someone who does not know why it is there.
+    expect(response.status).toBe(400);
+
+    const anything = await request(app)
+      .post('/auth/login')
+      .send({ email: 'iryna@example.com', password: 'correct horse battery' });
+
+    expect(anything.status).toBe(401);
+  });
+
+  it('spends the invitation, so the link cannot be used twice', async () => {
+    await inviteTeacher();
+    const token = tokenFromLastMail();
+
+    await request(app).post('/auth/accept-invite').send({ token, password: 'correct horse battery' });
+    const again = await request(app)
+      .post('/auth/accept-invite')
+      .send({ token, password: 'somebody elses password' });
+
+    expect(again.status).toBe(401);
+  });
+
+  it('does not accept an invitation at the password reset endpoint', async () => {
+    await inviteTeacher();
+
+    const response = await request(app)
+      .post('/auth/password-reset/confirm')
+      .send({ token: tokenFromLastMail(), password: 'correct horse battery' });
+
+    // The whole reason `kind` exists on the token: an invitation and a reset
+    // are not interchangeable keys.
+    expect(response.status).toBe(401);
   });
 });

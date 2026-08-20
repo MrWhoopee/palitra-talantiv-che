@@ -52,6 +52,9 @@ const ROOT_TABLES = [
   // through `Location`, but nothing points at a testimonial or an achievement.
   '"Testimonial"',
   '"Achievement"',
+  // Site copy. Keyed by a slug the code chooses, so nothing references them.
+  '"SiteText"',
+  '"SiteSetting"',
 ].join(', ');
 
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
