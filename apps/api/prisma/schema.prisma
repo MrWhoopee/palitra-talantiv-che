@@ -107,6 +107,7 @@ model Location {
   rules    AvailabilityRule[]
   lessons  Lesson[]
   groups   Group[]
+  events   StudioEvent[]
 }
 
 /// What the studio teaches: vocals, piano, guitar, ukulele.
@@ -460,4 +461,91 @@ model LessonAttendance {
 
   @@id([lessonId, studentId])
   @@index([studentId])
+}
+
+// ---------------------------------------------------------------------------
+// Public content. Read-only from the outside until the admin arrives in stage
+// 6; every row carries `isPublished`, and the public endpoints never return an
+// unpublished one.
+// ---------------------------------------------------------------------------
+
+enum StudioEventKind {
+  CONCERT
+  OPEN_LESSON
+  COMPETITION
+  OTHER
+}
+
+/// A concert, an open lesson, a competition the studio takes part in.
+///
+/// These are the same rows the cabinet calendar will show, which is why events
+/// live in the database while the rest of the site's copy does not: an event
+/// has a time, a place, and people expected to be there.
+model StudioEvent {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  slug        String          @unique
+  title       String
+  description String?
+  startsAt    DateTime        @db.Timestamptz(3)
+  endsAt      DateTime?       @db.Timestamptz(3)
+  locationId  String?         @db.Uuid
+  coverUrl    String?
+  kind        StudioEventKind @default(CONCERT)
+  isPublished Boolean         @default(false)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+
+  location Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  gallery  GalleryItem[]
+
+  @@index([startsAt])
+}
+
+enum GalleryItemKind {
+  PHOTO
+  VIDEO
+}
+
+/// A photo or a YouTube embed. `url` is a link rather than an upload: the
+/// storage adapter belongs to stage 6, and until it exists the studio's media
+/// already lives somewhere with a URL.
+model GalleryItem {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  kind        GalleryItemKind @default(PHOTO)
+  url         String
+  thumbUrl    String?
+  caption     String?
+  eventId     String?         @db.Uuid
+  sortOrder   Int             @default(0)
+  isPublished Boolean         @default(true)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+
+  event StudioEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+}
+
+/// What a parent or a student said about the studio. Unpublished by default:
+/// nobody's words go on the site until someone decides they should.
+model Testimonial {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  authorName  String
+  text        String
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+}
+
+/// A competition win or a trip. `year` rather than a date, because that is the
+/// precision such things are remembered and listed in.
+model Achievement {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  title       String
+  description String?
+  year        Int      @db.SmallInt
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([year])
 }

@@ -11,6 +11,7 @@ export interface TeachersService {
   getTeacher(teacherId: string): Promise<PublicTeacher>;
   listLocations(): Promise<Location[]>;
   listDirections(): Promise<Direction[]>;
+  getDirection(slug: string): Promise<Direction>;
   listPricePlans(): Promise<PricePlan[]>;
 }
 
@@ -64,6 +65,17 @@ export function createTeachersService({ prisma }: TeachersServiceDeps): Teachers
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       });
       return directions.map(toDirection);
+    },
+
+    /** By slug, because that is what the direction's own page is addressed by. */
+    async getDirection(slug: string): Promise<Direction> {
+      const direction = await prisma.direction.findUnique({ where: { slug } });
+
+      if (!direction) {
+        throw new DomainError('NOT_FOUND', 'Напрям не знайдено');
+      }
+
+      return toDirection(direction);
     },
 
     /**

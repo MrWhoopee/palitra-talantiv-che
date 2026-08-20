@@ -12,6 +12,8 @@ import { createAvailabilityRouter } from './modules/availability/availability.ro
 import { createAvailabilityService } from './modules/availability/availability.service';
 import { createBookingRouter } from './modules/booking/booking.router';
 import { createBookingService } from './modules/booking/booking.service';
+import { createContentRouter } from './modules/content/content.router';
+import { createContentService } from './modules/content/content.service';
 import { createGroupsRouter } from './modules/groups/groups.router';
 import { createGroupsService } from './modules/groups/groups.service';
 import { createSubscriptionsRouter } from './modules/subscriptions/subscriptions.router';
@@ -59,6 +61,7 @@ const app = createApp({
     }),
     createSubscriptionsRouter({ subscriptions, accessTokens }),
     createGroupsRouter({ groups: createGroupsService({ prisma }), accessTokens }),
+    createContentRouter({ content: createContentService({ prisma }) }),
   ],
 });
 
