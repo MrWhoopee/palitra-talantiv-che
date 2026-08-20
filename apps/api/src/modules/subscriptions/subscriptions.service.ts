@@ -318,6 +318,7 @@ function toSubscription(row: SubscriptionRow, lessonsReserved: number): Subscrip
     },
     directionName: row.pricePlan.direction.name,
     planName: row.pricePlan.name,
+    durationMinutes: row.pricePlan.durationMinutes,
     lessonsTotal: row.lessonsTotal,
     lessonsUsed: row.lessonsUsed,
     lessonsReserved,

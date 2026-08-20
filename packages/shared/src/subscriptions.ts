@@ -33,6 +33,8 @@ export const subscriptionSchema = z.object({
   teacher: partySchema,
   directionName: z.string().nullable(),
   planName: z.string().nullable(),
+  /** From the plan the package was sold against - what fixes a lesson's length. */
+  durationMinutes: z.number().int().positive(),
   lessonsTotal: z.number().int().positive(),
   lessonsUsed: z.number().int().nonnegative(),
   lessonsReserved: z.number().int().nonnegative(),
