@@ -14,6 +14,25 @@ const envSchema = z.object({
    */
   JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
 
+  /**
+   * Where uploaded pictures are written. Relative paths resolve against the
+   * working directory of the API, which is `apps/api` in development and the
+   * image's workdir in a container - so a deployment that needs the files to
+   * survive a restart mounts a volume here.
+   */
+  STORAGE_DIR: z.string().default('var/uploads'),
+
+  /**
+   * Where this API is reachable from a browser. Stored picture links are built
+   * from it, so it belongs in the environment rather than in the request: a
+   * link written while serving one host must not stop working when the same
+   * row is read through another.
+   */
+  PUBLIC_API_URL: z
+    .string()
+    .default('http://localhost:4000')
+    .transform((value) => value.replace(/\/+$/, '')),
+
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
   MAIL_FROM: z.string().default('Палітра талантів <no-reply@palitra-talantiv.local>'),

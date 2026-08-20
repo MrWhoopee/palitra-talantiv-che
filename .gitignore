@@ -26,3 +26,6 @@ Thumbs.db
 
 # Personal Claude Code overrides for this checkout - not a team policy.
 .claude/settings.local.json
+
+# Завантажені зображення: локальне сховище, не вміст репозиторію
+apps/api/var/
