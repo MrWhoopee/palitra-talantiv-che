@@ -44,7 +44,15 @@ export function createTestPrisma(url: URL = testDatabaseUrl()): PrismaClient {
  * at it from above (tokens, profiles, rules and lessons all hang off `User`;
  * price plans hang off `Direction`).
  */
-const ROOT_TABLES = ['"User"', '"Location"', '"Direction"'].join(', ');
+const ROOT_TABLES = [
+  '"User"',
+  '"Location"',
+  '"Direction"',
+  // Content that stands on its own. Events and gallery items are reached
+  // through `Location`, but nothing points at a testimonial or an achievement.
+  '"Testimonial"',
+  '"Achievement"',
+].join(', ');
 
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${ROOT_TABLES} RESTART IDENTITY CASCADE`);

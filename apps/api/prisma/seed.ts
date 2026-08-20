@@ -2,6 +2,7 @@ import 'dotenv/config';
 import {
   addLocalDays,
   formatLocalDate,
+  fromZonedTime,
   parseLocalDate,
   parseTimeOfDay,
   toLocalDate,
@@ -308,6 +309,64 @@ const SUBSCRIPTIONS = [
   },
 ];
 
+/**
+ * Public content for development. Dates are relative to today so the playbill
+ * always has something ahead of it and something behind it, and every line
+ * announces itself as a fixture - see the note at the point of insertion.
+ */
+const STUDIO_EVENTS = [
+  {
+    slug: 'demo-zvitnyi-kontsert',
+    title: 'Демо: звітний концерт студії',
+    description: 'Демонстраційна подія для розробки. Замініть на справжню афішу студії.',
+    inDays: 21,
+    hour: 18,
+    minutes: 120,
+    location: 'blahovisna',
+    kind: 'CONCERT' as const,
+  },
+  {
+    slug: 'demo-vidkrytyi-urok',
+    title: 'Демо: відкритий урок з вокалу',
+    description: 'Демонстраційна подія для розробки.',
+    inDays: 7,
+    hour: 17,
+    minutes: 60,
+    location: 'shevchenka',
+    kind: 'OPEN_LESSON' as const,
+  },
+  {
+    slug: 'demo-konkurs',
+    title: 'Демо: конкурс, у якому студія брала участь',
+    description: 'Демонстраційна подія для розробки — вона в минулому, щоб перевірити архів.',
+    inDays: -30,
+    hour: 12,
+    minutes: 240,
+    location: 'blahovisna',
+    kind: 'COMPETITION' as const,
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    authorName: 'Тестова родина',
+    text: 'Демонстраційний відгук для розробки. Справжні відгуки з’являться, коли студія їх передасть і дозволить опублікувати.',
+  },
+  {
+    authorName: 'Тестовий учень',
+    text: 'Демонстраційний відгук для розробки.',
+  },
+];
+
+const ACHIEVEMENTS = [
+  {
+    title: 'Демо: досягнення студії',
+    description: 'Демонстраційний запис для розробки. Замініть на справжні перемоги студії.',
+    year: 2024,
+    imageUrl: null,
+  },
+];
+
 const ADMIN = {
   email: 'admin@palitra-talantiv.local',
   firstName: 'Адміністратор',
@@ -533,6 +592,67 @@ async function main(): Promise<void> {
           validFrom: formatLocalDate(today),
           validTo: formatLocalDate(addLocalDays(today, 90)),
           paid: subscription.paid,
+        });
+      }
+    }
+
+    // Public content. Every string here says out loud that it is a fixture:
+    // this is the site of a real studio, and an invented testimonial or an
+    // invented competition win would be a lie the moment it is deployed.
+    for (const [index, event] of STUDIO_EVENTS.entries()) {
+      // Through the zoned helpers rather than `setHours`, so a demo concert
+      // written as 18:00 is 18:00 in Cherkasy and not in the server's zone.
+      const startsAt = fromZonedTime(addLocalDays(today, event.inDays), event.hour * 60);
+      await prisma.studioEvent.upsert({
+        where: { slug: event.slug },
+        update: {},
+        create: {
+          slug: event.slug,
+          title: event.title,
+          description: event.description,
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + event.minutes * 60_000),
+          locationId: required(locations, event.location),
+          kind: event.kind,
+          isPublished: true,
+        },
+      });
+
+      const existingGallery = await prisma.galleryItem.count({
+        where: { caption: `Демо-фото ${index + 1}` },
+      });
+      if (existingGallery === 0) {
+        await prisma.galleryItem.create({
+          data: {
+            kind: 'PHOTO',
+            url: `/demo/gallery-${index + 1}.svg`,
+            caption: `Демо-фото ${index + 1}`,
+            sortOrder: index,
+          },
+        });
+      }
+    }
+
+    for (const [index, testimonial] of TESTIMONIALS.entries()) {
+      const existing = await prisma.testimonial.findFirst({
+        where: { authorName: testimonial.authorName },
+        select: { id: true },
+      });
+      if (!existing) {
+        await prisma.testimonial.create({
+          data: { ...testimonial, sortOrder: index, isPublished: true },
+        });
+      }
+    }
+
+    for (const [index, achievement] of ACHIEVEMENTS.entries()) {
+      const existing = await prisma.achievement.findFirst({
+        where: { title: achievement.title },
+        select: { id: true },
+      });
+      if (!existing) {
+        await prisma.achievement.create({
+          data: { ...achievement, sortOrder: index, isPublished: true },
         });
       }
     }

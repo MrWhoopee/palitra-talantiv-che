@@ -30,6 +30,10 @@ export function createTeachersRouter({ teachers }: TeachersRouterDeps): Router {
     res.status(200).json(await teachers.listDirections());
   });
 
+  router.get('/directions/:slug', async (req, res) => {
+    res.status(200).json(await teachers.getDirection(String(req.params['slug'])));
+  });
+
   router.get('/price-plans', async (_req, res) => {
     res.status(200).json(await teachers.listPricePlans());
   });
