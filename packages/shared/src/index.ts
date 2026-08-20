@@ -2,6 +2,8 @@ export * from './auth';
 export * from './availability';
 export * from './booking';
 export * from './errors';
+export * from './groups';
 export * from './health';
+export * from './subscriptions';
 export * from './teachers';
 export * from './time';
