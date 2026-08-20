@@ -1,10 +1,12 @@
 import {
+  achievementSchema,
   apiErrorSchema,
   attendanceUpdateSchema,
   authResponseSchema,
   availabilityExceptionSchema,
   availabilityRuleSchema,
   directionSchema,
+  galleryItemSchema,
   groupEnrollmentListSchema,
   groupEnrollmentSchema,
   groupListSchema,
@@ -21,8 +23,12 @@ import {
   publicUserSchema,
   slotsResponseSchema,
   subscriptionListSchema,
+  studioEventListSchema,
+  studioEventSchema,
   subscriptionSchema,
+  testimonialSchema,
   BAD_RESPONSE_CODE,
+  type Achievement,
   type AuthResponse,
   type AvailabilityException,
   type AvailabilityExceptionInput,
@@ -34,6 +40,7 @@ import {
   type CancelLesson,
   type Direction,
   type DomainErrorCode,
+  type GalleryItem,
   type Group,
   type GroupEnrollment,
   type GroupInput,
@@ -48,8 +55,10 @@ import {
   type PublicUser,
   type RegisterRequest,
   type SlotsResponse,
+  type StudioEvent,
   type Subscription,
   type SubscriptionInput,
+  type Testimonial,
 } from '@palitra/shared';
 import { z, type ZodType } from 'zod';
 
@@ -155,6 +164,13 @@ export interface ApiClient {
     input: AttendanceUpdate,
     accessToken: string,
   ): Promise<LessonAttendance>;
+
+  getDirection(slug: string): Promise<Direction>;
+  getEvents(when?: 'upcoming' | 'past' | 'all'): Promise<StudioEvent[]>;
+  getEvent(slug: string): Promise<StudioEvent>;
+  getGallery(): Promise<GalleryItem[]>;
+  getTestimonials(): Promise<Testimonial[]>;
+  getAchievements(): Promise<Achievement[]>;
 }
 
 /** The query as the caller writes it - the duration is a number, not text. */
@@ -437,6 +453,19 @@ export function createApiClient({
         body: attendanceUpdateSchema.parse(input),
         accessToken,
       }),
+
+    getDirection: (slug) =>
+      requestParsed(directionSchema, `/directions/${encodeURIComponent(slug)}`),
+
+    getEvents: (when = 'upcoming') => requestParsed(studioEventListSchema, `/events?when=${when}`),
+
+    getEvent: (slug) => requestParsed(studioEventSchema, `/events/${encodeURIComponent(slug)}`),
+
+    getGallery: () => requestParsed(z.array(galleryItemSchema), '/gallery'),
+
+    getTestimonials: () => requestParsed(z.array(testimonialSchema), '/testimonials'),
+
+    getAchievements: () => requestParsed(z.array(achievementSchema), '/achievements'),
   };
 }
 
