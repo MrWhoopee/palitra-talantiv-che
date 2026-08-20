@@ -83,7 +83,8 @@ export default async function GroupPage({ params }: PageProps) {
         {user === null ? (
           <p className="panel-note">
             Щоб подати заявку, потрібен кабінет.{' '}
-            <Link href={`/login?next=${encodeURIComponent(`/groups/${group.id}`)}`}>Увійти</Link> або{' '}
+            <Link href={`/login?next=${encodeURIComponent(`/groups/${group.id}`)}`}>Увійти</Link>{' '}
+            або{' '}
             <Link href={`/register?next=${encodeURIComponent(`/groups/${group.id}`)}`}>
               зареєструватися
             </Link>

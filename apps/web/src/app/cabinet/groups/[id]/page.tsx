@@ -184,10 +184,7 @@ async function loadGroup(id: string): Promise<Group | null> {
 }
 
 /** `null` means "not this teacher's group", which is not the same as "empty". */
-async function loadEnrollments(
-  id: string,
-  accessToken: string,
-): Promise<GroupEnrollment[] | null> {
+async function loadEnrollments(id: string, accessToken: string): Promise<GroupEnrollment[] | null> {
   try {
     return await api.getGroupEnrollments(id, accessToken);
   } catch {

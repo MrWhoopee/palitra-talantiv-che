@@ -71,10 +71,7 @@ describe('computeGroupLessons', () => {
       from: new Date('2026-03-22T00:00:00.000Z'),
     });
 
-    expect(times(lessons)).toEqual([
-      '2026-03-22T01:30:00.000Z',
-      '2026-04-05T00:30:00.000Z',
-    ]);
+    expect(times(lessons)).toEqual(['2026-03-22T01:30:00.000Z', '2026-04-05T00:30:00.000Z']);
   });
 
   it('generates every meeting of a group that meets twice a week', () => {
@@ -102,10 +99,7 @@ describe('computeGroupLessons', () => {
 
   it('starts from today rather than from the course start date', () => {
     const lessons = plan({ from: new Date('2026-09-16T05:00:00.000Z') });
-    expect(times(lessons)).toEqual([
-      '2026-09-22T14:00:00.000Z',
-      '2026-09-29T14:00:00.000Z',
-    ]);
+    expect(times(lessons)).toEqual(['2026-09-22T14:00:00.000Z', '2026-09-29T14:00:00.000Z']);
   });
 
   it('waits for a course that has not begun yet', () => {
@@ -140,10 +134,7 @@ describe('computeGroupLessons', () => {
 
   it('includes the last day of the course', () => {
     const lessons = plan({ endsOn: on('2026-09-08') });
-    expect(times(lessons)).toEqual([
-      '2026-09-01T14:00:00.000Z',
-      '2026-09-08T14:00:00.000Z',
-    ]);
+    expect(times(lessons)).toEqual(['2026-09-01T14:00:00.000Z', '2026-09-08T14:00:00.000Z']);
   });
 
   it('never returns meetings out of order', () => {

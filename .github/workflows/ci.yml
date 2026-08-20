@@ -65,6 +65,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Two audits, because they answer two different questions.
+      #
+      # The first is a gate: a critical advisory in something the studio
+      # actually ships is a reason to stop the line.
+      #
+      # The second is a report, and it must not block. Today it flags
+      # deepmerge-ts, reached only through Prisma's CLI - a tool that runs at
+      # build time and never serves a request. We cannot patch it without
+      # Prisma releasing first, so a red build over it would teach everyone
+      # here to ignore red builds, which costs more than the advisory does.
+      - name: Audit production dependencies
+        run: pnpm run audit
+
+      - name: Report all known advisories
+        run: pnpm audit --audit-level=low
+        continue-on-error: true
+
       - name: Apply database migrations
         run: pnpm --filter @palitra/api db:deploy
 

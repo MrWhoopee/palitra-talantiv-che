@@ -77,9 +77,12 @@ export const groupInputSchema = z
     durationMinutes: z
       .number()
       .int()
-      .refine((value): value is LessonDuration => LESSON_DURATIONS.includes(value as LessonDuration), {
-        message: 'Тривалість заняття може бути 30, 45 або 60 хвилин',
-      }),
+      .refine(
+        (value): value is LessonDuration => LESSON_DURATIONS.includes(value as LessonDuration),
+        {
+          message: 'Тривалість заняття може бути 30, 45 або 60 хвилин',
+        },
+      ),
     isOpenForEnrollment: z.boolean().optional(),
     startsOn: localDateSchema,
     endsOn: localDateSchema.nullable().optional(),

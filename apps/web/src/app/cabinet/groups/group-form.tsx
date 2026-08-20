@@ -138,7 +138,9 @@ export function GroupForm({
             aria-invalid={Boolean(errors['endsOn']?.length)}
           />
           <span className="field-hint">Порожньо — курс без кінця</span>
-          {errors['endsOn']?.[0] ? <span className="field-error">{errors['endsOn'][0]}</span> : null}
+          {errors['endsOn']?.[0] ? (
+            <span className="field-error">{errors['endsOn'][0]}</span>
+          ) : null}
         </p>
       </div>
 

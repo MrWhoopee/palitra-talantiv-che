@@ -300,9 +300,8 @@ describe('enrolling in a group', () => {
 
   it('refuses once the group is full', async () => {
     const setup = await studio();
-    const groupId = groupSaveResultSchema.parse(
-      (await createGroup(setup, { capacity: 2 })).body,
-    ).group.id;
+    const groupId = groupSaveResultSchema.parse((await createGroup(setup, { capacity: 2 })).body)
+      .group.id;
     const third = await createUser(prisma);
 
     await apply(groupId, setup.first.id);

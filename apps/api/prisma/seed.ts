@@ -509,7 +509,10 @@ async function main(): Promise<void> {
       const studentId = await userIdByEmail(prisma, subscription.student);
       const teacherId = await userIdByEmail(prisma, subscription.teacher);
       const plan = await prisma.pricePlan.findFirst({
-        where: { directionId: required(directions, subscription.direction), name: subscription.planName },
+        where: {
+          directionId: required(directions, subscription.direction),
+          name: subscription.planName,
+        },
         select: { id: true },
       });
 

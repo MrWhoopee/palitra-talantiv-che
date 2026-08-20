@@ -426,7 +426,12 @@ describe('groups and the register', () => {
       startsAt: '2026-09-02T14:00:00.000Z',
       entries: [
         {
-          student: { id: studentId, firstName: 'Олена', lastName: 'Коваль', phone: '+380671234567' },
+          student: {
+            id: studentId,
+            firstName: 'Олена',
+            lastName: 'Коваль',
+            phone: '+380671234567',
+          },
           status: 'PRESENT',
         },
       ],

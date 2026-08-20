@@ -133,7 +133,10 @@ export function createSubscriptionService({
       // A package is a run of individual lessons with one teacher; a group
       // course is paid for as a course, not drawn down lesson by lesson.
       if (plan.format !== 'INDIVIDUAL') {
-        throw new DomainError('VALIDATION_FAILED', 'Абонемент оформлюється на індивідуальний тариф');
+        throw new DomainError(
+          'VALIDATION_FAILED',
+          'Абонемент оформлюється на індивідуальний тариф',
+        );
       }
       if (!isSellableDuration(plan.durationMinutes)) {
         throw new DomainError('VALIDATION_FAILED', 'Тариф має некоректну тривалість заняття');
