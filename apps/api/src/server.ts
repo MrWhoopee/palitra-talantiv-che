@@ -15,6 +15,7 @@ import { createAvailabilityRouter } from './modules/availability/availability.ro
 import { createAvailabilityService } from './modules/availability/availability.service';
 import { createBookingRouter } from './modules/booking/booking.router';
 import { createBookingService } from './modules/booking/booking.service';
+import { createContentAdminRouter } from './modules/content/content.admin.router';
 import { createContentRouter } from './modules/content/content.router';
 import { createContentService } from './modules/content/content.service';
 import { createGroupsRouter } from './modules/groups/groups.router';
@@ -35,6 +36,7 @@ const mailer = createSmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, from
 
 const availability = createAvailabilityService({ prisma });
 const subscriptions = createSubscriptionService({ prisma });
+const content = createContentService({ prisma });
 
 const auth = createAuthService({
   prisma,
@@ -70,8 +72,14 @@ const app = createApp({
     }),
     createSubscriptionsRouter({ subscriptions, accessTokens }),
     createGroupsRouter({ groups: createGroupsService({ prisma }), accessTokens }),
-    createContentRouter({ content: createContentService({ prisma }) }),
-    createAdminRouter({ accessTokens, routers: [createUploadsAdminRouter({ storage })] }),
+    createContentRouter({ content }),
+    createAdminRouter({
+      accessTokens,
+      routers: [
+        createUploadsAdminRouter({ storage }),
+        createContentAdminRouter({ content, storage }),
+      ],
+    }),
   ],
 });
 
