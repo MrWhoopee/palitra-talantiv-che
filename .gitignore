@@ -23,3 +23,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Personal Claude Code overrides for this checkout - not a team policy.
+.claude/settings.local.json
