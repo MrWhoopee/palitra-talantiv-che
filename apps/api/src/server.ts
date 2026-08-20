@@ -5,6 +5,9 @@ import { createDatabaseCheck } from './lib/database-check';
 import { loadEnv } from './lib/env';
 import { createSmtpMailer } from './lib/mailer';
 import { prisma } from './lib/prisma';
+import { createLocalDiskStorage } from './lib/storage';
+import { createAdminRouter } from './modules/admin/admin.router';
+import { createUploadsAdminRouter } from './modules/uploads/uploads.admin.router';
 import { AUTH_TTL } from './modules/auth/auth.config';
 import { createAuthRouter } from './modules/auth/auth.router';
 import { createAuthService } from './modules/auth/auth.service';
@@ -42,9 +45,15 @@ const auth = createAuthService({
   webOrigin: env.WEB_ORIGIN,
 });
 
+const storage = createLocalDiskStorage({
+  dir: env.STORAGE_DIR,
+  publicBaseUrl: `${env.PUBLIC_API_URL}/uploads`,
+});
+
 const app = createApp({
   checkDatabase: createDatabaseCheck(prisma),
   webOrigin: env.WEB_ORIGIN,
+  uploadsDir: env.STORAGE_DIR,
   routers: [
     createAuthRouter({ auth, accessTokens }),
     createTeachersRouter({ teachers: createTeachersService({ prisma }) }),
@@ -62,6 +71,7 @@ const app = createApp({
     createSubscriptionsRouter({ subscriptions, accessTokens }),
     createGroupsRouter({ groups: createGroupsService({ prisma }), accessTokens }),
     createContentRouter({ content: createContentService({ prisma }) }),
+    createAdminRouter({ accessTokens, routers: [createUploadsAdminRouter({ storage })] }),
   ],
 });
 

@@ -44,3 +44,20 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ ...required, JWT_SECRET: 'short-secret' })).toThrow(/JWT_SECRET/);
   });
 });
+
+describe('loadEnv: uploads', () => {
+  it('defaults the storage directory and the address it is served at', () => {
+    const env = loadEnv(required);
+
+    expect(env.STORAGE_DIR).toBe('var/uploads');
+    expect(env.PUBLIC_API_URL).toBe('http://localhost:4000');
+  });
+
+  it('trims a trailing slash off the public address', () => {
+    const env = loadEnv({ ...required, PUBLIC_API_URL: 'https://api.palitra.example/' });
+
+    // It is concatenated with `/uploads/<name>`; a stray slash would produce
+    // links with a double slash that some proxies redirect and some do not.
+    expect(env.PUBLIC_API_URL).toBe('https://api.palitra.example');
+  });
+});
