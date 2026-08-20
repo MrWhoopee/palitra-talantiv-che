@@ -1,6 +1,7 @@
 export * from './auth';
 export * from './availability';
 export * from './booking';
+export * from './content';
 export * from './errors';
 export * from './groups';
 export * from './health';
