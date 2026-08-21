@@ -41,6 +41,43 @@
   font-weight: 600;
 }
 
+/*
+ * A portrait appears on a card only when the studio has sent one. The cards
+ * without it keep the shape they have always had: while the photographs
+ * arrive one at a time, a grey placeholder in every other card would read as
+ * a site that is broken rather than one that is filling up.
+ */
+/* A small square, not a banner across the card: full width, a portrait taken
+   on a phone becomes a wide strip through the middle of somebody's face, and
+   the studio cannot be asked to crop before uploading. */
+.teacher-photo {
+  width: 5.5rem;
+  border-radius: var(--pt-radius-md);
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.teacher-portrait {
+  width: 8rem;
+  border-radius: var(--pt-radius-md);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+/*
+ * Two columns, and the words are one of them. The portrait spanning the rows
+ * of the header instead would stretch them to share its height, and the name,
+ * the subjects and the bio would drift apart from each other.
+ */
+@media (min-width: 40rem) {
+  .teacher-head:has(.teacher-portrait) {
+    display: grid;
+    gap: var(--pt-space-5);
+    grid-template-columns: 8rem minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
 .teacher-bio,
 .teacher-meta {
   color: var(--pt-text-muted);

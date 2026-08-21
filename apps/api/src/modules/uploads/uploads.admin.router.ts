@@ -1,13 +1,11 @@
+import { MAX_UPLOAD_BYTES, UPLOAD_KINDS, type UploadKind } from '@palitra/shared';
 import { Router } from 'express';
 import multer from 'multer';
 import { DomainError } from '../../http/error-handler';
-import { prepareImage, type UploadKind } from '../../lib/images';
+import { prepareImage } from '../../lib/images';
 import type { StorageAdapter } from '../../lib/storage';
 
-/** Eight megabytes takes any phone photo and stops a video from being tried. */
-const MAX_BYTES = 8 * 1024 * 1024;
-
-const KINDS = new Set<UploadKind>(['gallery', 'cover', 'portrait']);
+const KINDS = new Set<UploadKind>(UPLOAD_KINDS);
 
 export interface UploadsAdminRouterDeps {
   storage: StorageAdapter;
@@ -27,7 +25,10 @@ export function createUploadsAdminRouter({ storage }: UploadsAdminRouterDeps): R
   // In memory, not to a temporary file: the buffer goes straight into `sharp`,
   // and a file on the way there would be one more thing to clean up after a
   // failed request.
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_BYTES } });
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_UPLOAD_BYTES },
+  });
 
   router.post('/admin/uploads', upload.single('file'), async (req, res) => {
     if (!req.file) {

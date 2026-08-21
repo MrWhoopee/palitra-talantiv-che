@@ -36,6 +36,12 @@ export interface ApiClientOptions {
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /**
+   * A file upload instead of a JSON body. The content type is left unset on
+   * purpose: `fetch` fills it in from the form, boundary and all, and a
+   * hand-written one would name a boundary the body does not use.
+   */
+  form?: FormData;
   accessToken?: string;
   /** Forwarded to the API so a session can be named after the device it runs on. */
   userAgent?: string;
@@ -51,7 +57,7 @@ export function createHttp({ baseUrl, fetch: fetchImpl = globalThis.fetch }: Api
 
   async function request(
     path: string,
-    { method = 'GET', body, accessToken, userAgent }: RequestOptions = {},
+    { method = 'GET', body, form, accessToken, userAgent }: RequestOptions = {},
   ): Promise<{ payload: unknown; status: number }> {
     const headers: Record<string, string> = {};
     if (body !== undefined) {
@@ -67,6 +73,7 @@ export function createHttp({ baseUrl, fetch: fetchImpl = globalThis.fetch }: Api
     const response = await fetchImpl(`${root}${path}`, {
       method,
       headers,
+      ...(form === undefined ? {} : { body: form }),
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
 

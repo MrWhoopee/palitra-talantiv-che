@@ -44,6 +44,14 @@ export default async function TeachersPage() {
         {teachers.map((teacher) => (
           <li key={teacher.id}>
             <Link href={`/teachers/${teacher.id}`} className="teacher-card">
+              {/* Only where there is one. A card without a photo keeps the
+                  shape it has always had rather than growing a grey box: the
+                  studio is sending pictures one at a time, and a placeholder
+                  in every other card would look like the site is broken. */}
+              {teacher.photoUrl === null ? null : (
+                <img className="teacher-photo" src={teacher.photoUrl} alt="" loading="lazy" />
+              )}
+
               <span className="teacher-name">
                 {teacher.firstName} {teacher.lastName}
               </span>

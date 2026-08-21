@@ -83,23 +83,30 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
         <Link href="/teachers">← Усі викладачі</Link>
       </p>
 
-      <header className="page-head">
-        <h1 className="page-title">
-          {teacher.firstName} {teacher.lastName}
-        </h1>
-        <p className="chip-row">
-          {teacher.directions.map((direction) => (
-            <span key={direction.id} className="chip">
-              {direction.name}
-            </span>
-          ))}
-        </p>
-        {teacher.bio ? <p className="page-lede">{teacher.bio}</p> : null}
-        <p className="teacher-meta">
-          {teacher.locations
-            .map((location) => `${location.name} — ${location.address}`)
-            .join(' · ')}
-        </p>
+      <header className="page-head teacher-head">
+        {/* Only where there is one - see the note on the list page. */}
+        {teacher.photoUrl === null ? null : (
+          <img className="teacher-portrait" src={teacher.photoUrl} alt="" />
+        )}
+
+        <div className="teacher-head__text">
+          <h1 className="page-title">
+            {teacher.firstName} {teacher.lastName}
+          </h1>
+          <p className="chip-row">
+            {teacher.directions.map((direction) => (
+              <span key={direction.id} className="chip">
+                {direction.name}
+              </span>
+            ))}
+          </p>
+          {teacher.bio ? <p className="page-lede">{teacher.bio}</p> : null}
+          <p className="teacher-meta">
+            {teacher.locations
+              .map((location) => `${location.name} — ${location.address}`)
+              .join(' · ')}
+          </p>
+        </div>
       </header>
 
       {sources.length === 0 ? (

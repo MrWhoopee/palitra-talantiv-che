@@ -1,12 +1,15 @@
+import type { UploadKind } from '@palitra/shared';
 import sharp from 'sharp';
 import { DomainError } from '../http/error-handler';
 
 /**
- * What an uploaded picture is for. It decides one thing today - whether a
+ * What an uploaded picture is for. It decides one thing here - whether a
  * thumbnail is worth making - and exists as a name rather than a boolean so
- * that the call sites read as what they are uploading.
+ * that the call sites read as what they are uploading. The list is shared,
+ * because the form that names a kind and the endpoint that reads it must
+ * agree on the spelling.
  */
-export type UploadKind = 'gallery' | 'cover' | 'portrait';
+export type { UploadKind };
 
 /** The long edge of the stored image. */
 const MAX_EDGE = 1600;
