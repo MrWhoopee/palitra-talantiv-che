@@ -337,6 +337,143 @@ describe('POST /admin/teachers/:id/reinvite', () => {
   });
 });
 
+describe('the reference tables', () => {
+  const blahovisna = { name: 'Благовісна', address: 'вул. Благовісна, 170' };
+
+  it('adds an address and shows it on the site', async () => {
+    const created = await request(app)
+      .post('/admin/locations')
+      .set('Authorization', admin)
+      .send(blahovisna);
+
+    expect(created.status).toBe(201);
+
+    const { body } = await request(app).get('/locations');
+    expect(body).toHaveLength(1);
+    expect(body[0].address).toBe('вул. Благовісна, 170');
+  });
+
+  it('refuses to remove an address the timetable is built on', async () => {
+    const { body } = await invite();
+    const created = await request(app)
+      .post('/admin/locations')
+      .set('Authorization', admin)
+      .send(blahovisna);
+
+    await prisma.availabilityRule.create({
+      data: {
+        teacherId: body.id,
+        locationId: created.body.id,
+        weekday: 1,
+        startMinute: 600,
+        endMinute: 1080,
+        validFrom: new Date('2020-01-01'),
+      },
+    });
+
+    const response = await request(app)
+      .delete(`/admin/locations/${created.body.id}`)
+      .set('Authorization', admin);
+
+    // Cascading here would silently delete somebody's working hours, and the
+    // lessons already held at this address refer to it too.
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('IN_USE');
+    expect(await prisma.location.count()).toBe(1);
+  });
+
+  it('refuses a second direction with the same address in the url', async () => {
+    const vokal = { slug: 'vokal', name: 'Вокал' };
+    await request(app).post('/admin/directions').set('Authorization', admin).send(vokal);
+
+    const again = await request(app)
+      .post('/admin/directions')
+      .set('Authorization', admin)
+      .send({ ...vokal, name: 'Вокал для дорослих' });
+
+    expect(again.status).toBe(409);
+    expect(again.body.code).toBe('SLUG_TAKEN');
+  });
+
+  it('will not take a direction down together with its prices', async () => {
+    const direction = await request(app)
+      .post('/admin/directions')
+      .set('Authorization', admin)
+      .send({ slug: 'vokal', name: 'Вокал' });
+
+    await request(app)
+      .post('/admin/price-plans')
+      .set('Authorization', admin)
+      .send({
+        directionId: direction.body.id,
+        name: 'Абонемент 8 занять',
+        lessonsCount: 8,
+        durationMinutes: 60,
+        format: 'INDIVIDUAL',
+        priceUah: 4000,
+      });
+
+    const response = await request(app)
+      .delete(`/admin/directions/${direction.body.id}`)
+      .set('Authorization', admin);
+
+    // The schema cascades from a direction to its price plans. Deleting a
+    // subject should not quietly take the price list with it.
+    expect(response.status).toBe(409);
+    expect(await prisma.pricePlan.count()).toBe(1);
+  });
+
+  it('keeps a retired price off the site and on the admin list', async () => {
+    const direction = await request(app)
+      .post('/admin/directions')
+      .set('Authorization', admin)
+      .send({ slug: 'vokal', name: 'Вокал' });
+
+    const plan = await request(app)
+      .post('/admin/price-plans')
+      .set('Authorization', admin)
+      .send({
+        directionId: direction.body.id,
+        name: 'Абонемент 8 занять',
+        lessonsCount: 8,
+        durationMinutes: 60,
+        format: 'INDIVIDUAL',
+        priceUah: 4000,
+      });
+
+    expect(plan.status).toBe(201);
+    expect((await request(app).get('/price-plans')).body).toHaveLength(1);
+
+    await request(app)
+      .patch(`/admin/price-plans/${plan.body.id}`)
+      .set('Authorization', admin)
+      .send({ isActive: false });
+
+    // A price nobody can be sold any more must not be quotable on the site,
+    // while the studio still needs to see what it was.
+    expect((await request(app).get('/price-plans')).body).toHaveLength(0);
+    expect(
+      (await request(app).get('/admin/price-plans').set('Authorization', admin)).body,
+    ).toHaveLength(1);
+  });
+
+  it('refuses a price for a direction that does not exist', async () => {
+    const response = await request(app)
+      .post('/admin/price-plans')
+      .set('Authorization', admin)
+      .send({
+        directionId: '0195c8a0-0000-7000-8000-0000000000ff',
+        name: 'Абонемент 8 занять',
+        lessonsCount: 8,
+        durationMinutes: 60,
+        format: 'INDIVIDUAL',
+        priceUah: 4000,
+      });
+
+    expect(response.status).toBe(400);
+  });
+});
+
 describe('a teacher who has left', () => {
   it('takes no new bookings once they are deactivated', async () => {
     const { body } = await invite();

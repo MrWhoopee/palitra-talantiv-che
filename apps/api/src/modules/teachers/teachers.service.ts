@@ -1,16 +1,34 @@
 import type {
   AdminTeacher,
   Direction,
+  DirectionInput,
+  DirectionPatch,
   Location,
+  LocationInput,
+  LocationPatch,
   PricePlan,
+  PricePlanInput,
+  PricePlanPatch,
   PublicTeacher,
   TeacherInvite,
   TeacherPatch,
 } from '@palitra/shared';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
-import type { UserModel } from '../../generated/prisma/models';
+import type {
+  DirectionModel,
+  LocationModel,
+  PricePlanModel,
+  UserModel,
+} from '../../generated/prisma/models';
 import { DomainError } from '../../http/error-handler';
-import { defined, withReferences, withUnique } from '../../lib/rows';
+import {
+  defined,
+  deleteRow,
+  updateRow,
+  withDependents,
+  withReferences,
+  withUnique,
+} from '../../lib/rows';
 
 /**
  * Mailing an invitation belongs to the auth module, which owns tokens and
@@ -48,6 +66,26 @@ export interface TeachersService {
   setTeacherDirections(teacherId: string, ids: readonly string[]): Promise<AdminTeacher>;
   setTeacherLocations(teacherId: string, ids: readonly string[]): Promise<AdminTeacher>;
   reinviteTeacher(teacherId: string): Promise<void>;
+
+  /**
+   * The reference tables, edited as rows rather than as the folded shapes the
+   * site reads: the screen is editing the row, so the row is what it gets back
+   * - with the ordering and the retired price plans the public lists leave out.
+   */
+  listAllLocations(): Promise<LocationModel[]>;
+  createLocation(input: LocationInput): Promise<LocationModel>;
+  updateLocation(id: string, patch: LocationPatch): Promise<LocationModel>;
+  deleteLocation(id: string): Promise<void>;
+
+  listAllDirections(): Promise<DirectionModel[]>;
+  createDirection(input: DirectionInput): Promise<DirectionModel>;
+  updateDirection(id: string, patch: DirectionPatch): Promise<DirectionModel>;
+  deleteDirection(id: string): Promise<void>;
+
+  listAllPricePlans(): Promise<PricePlanModel[]>;
+  createPricePlan(input: PricePlanInput): Promise<PricePlanModel>;
+  updatePricePlan(id: string, patch: PricePlanPatch): Promise<PricePlanModel>;
+  deletePricePlan(id: string): Promise<void>;
 }
 
 /**
@@ -295,6 +333,107 @@ export function createTeachersService({ prisma, invite }: TeachersServiceDeps): 
       }
 
       await invite.sendInvite(profile.user);
+    },
+
+    // -----------------------------------------------------------------------
+    // The reference tables. Rarely edited and everything else is built on
+    // them, which is why nothing here deletes quietly: a row the studio wants
+    // gone is refused while lessons, groups or subscriptions still name it.
+    // -----------------------------------------------------------------------
+
+    async listAllLocations(): Promise<LocationModel[]> {
+      return prisma.location.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+    },
+
+    async createLocation(input): Promise<LocationModel> {
+      return prisma.location.create({ data: input });
+    },
+
+    async updateLocation(id, patch): Promise<LocationModel> {
+      return updateRow(
+        () => prisma.location.update({ where: { id }, data: defined(patch) }),
+        'Локацію не знайдено',
+      );
+    },
+
+    async deleteLocation(id): Promise<void> {
+      await withDependents(
+        () => deleteRow(() => prisma.location.delete({ where: { id } }), 'Локацію не знайдено'),
+        'Локацію не можна видалити: на ній є заняття, групи або графік роботи',
+      );
+    },
+
+    async listAllDirections(): Promise<DirectionModel[]> {
+      return prisma.direction.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+    },
+
+    async createDirection(input): Promise<DirectionModel> {
+      return withUnique(
+        () => prisma.direction.create({ data: input }),
+        'SLUG_TAKEN',
+        'Напрям із таким посиланням уже існує',
+      );
+    },
+
+    async updateDirection(id, patch): Promise<DirectionModel> {
+      return withUnique(
+        () =>
+          updateRow(
+            () => prisma.direction.update({ where: { id }, data: defined(patch) }),
+            'Напрям не знайдено',
+          ),
+        'SLUG_TAKEN',
+        'Напрям із таким посиланням уже існує',
+      );
+    },
+
+    async deleteDirection(id): Promise<void> {
+      // The schema would take the direction's price plans down with it. That
+      // is not something to do behind the studio's back, so a direction that
+      // still has prices is refused and the prices are dealt with first.
+      const prices = await prisma.pricePlan.count({ where: { directionId: id } });
+      if (prices > 0) {
+        throw new DomainError(
+          'IN_USE',
+          'Спершу приберіть тарифи цього напряму — інакше вони зникнуть разом із ним',
+        );
+      }
+
+      await withDependents(
+        () => deleteRow(() => prisma.direction.delete({ where: { id } }), 'Напрям не знайдено'),
+        'Напрям не можна видалити: на ньому є групи або заняття',
+      );
+    },
+
+    async listAllPricePlans(): Promise<PricePlanModel[]> {
+      return prisma.pricePlan.findMany({
+        orderBy: [{ direction: { sortOrder: 'asc' } }, { sortOrder: 'asc' }, { priceUah: 'asc' }],
+      });
+    },
+
+    async createPricePlan(input): Promise<PricePlanModel> {
+      return withReferences(
+        () => prisma.pricePlan.create({ data: input }),
+        'Такого напряму не існує',
+      );
+    },
+
+    async updatePricePlan(id, patch): Promise<PricePlanModel> {
+      return withReferences(
+        () =>
+          updateRow(
+            () => prisma.pricePlan.update({ where: { id }, data: defined(patch) }),
+            'Тариф не знайдено',
+          ),
+        'Такого напряму не існує',
+      );
+    },
+
+    async deletePricePlan(id): Promise<void> {
+      await withDependents(
+        () => deleteRow(() => prisma.pricePlan.delete({ where: { id } }), 'Тариф не знайдено'),
+        'Тариф не можна видалити: за ним продані абонементи. Зробіть його неактивним',
+      );
     },
   };
 }

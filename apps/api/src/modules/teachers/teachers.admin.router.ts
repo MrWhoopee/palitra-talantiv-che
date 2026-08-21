@@ -1,4 +1,14 @@
-import { teacherInviteSchema, teacherLinksSchema, teacherPatchSchema } from '@palitra/shared';
+import {
+  directionInputSchema,
+  directionPatchSchema,
+  locationInputSchema,
+  locationPatchSchema,
+  pricePlanInputSchema,
+  pricePlanPatchSchema,
+  teacherInviteSchema,
+  teacherLinksSchema,
+  teacherPatchSchema,
+} from '@palitra/shared';
 import { Router } from 'express';
 import { pathUuid, withBody } from '../../http/middleware/validate';
 import type { TeachersService } from './teachers.service';
@@ -59,6 +69,78 @@ export function createTeachersAdminRouter({ teachers }: TeachersAdminRouterDeps)
 
   router.post('/admin/teachers/:id/reinvite', async (req, res) => {
     await teachers.reinviteTeacher(pathUuid(req, 'id'));
+    res.status(204).end();
+  });
+
+  // The reference tables the public router serves read-only, here with the
+  // ordering, the retired price plans, and the four verbs that write them.
+
+  router.get('/admin/locations', async (_req, res) => {
+    res.status(200).json(await teachers.listAllLocations());
+  });
+
+  router.post(
+    '/admin/locations',
+    withBody(locationInputSchema, async (input, _req, res) => {
+      res.status(201).json(await teachers.createLocation(input));
+    }),
+  );
+
+  router.patch(
+    '/admin/locations/:id',
+    withBody(locationPatchSchema, async (patch, req, res) => {
+      res.status(200).json(await teachers.updateLocation(pathUuid(req, 'id'), patch));
+    }),
+  );
+
+  router.delete('/admin/locations/:id', async (req, res) => {
+    await teachers.deleteLocation(pathUuid(req, 'id'));
+    res.status(204).end();
+  });
+
+  router.get('/admin/directions', async (_req, res) => {
+    res.status(200).json(await teachers.listAllDirections());
+  });
+
+  router.post(
+    '/admin/directions',
+    withBody(directionInputSchema, async (input, _req, res) => {
+      res.status(201).json(await teachers.createDirection(input));
+    }),
+  );
+
+  router.patch(
+    '/admin/directions/:id',
+    withBody(directionPatchSchema, async (patch, req, res) => {
+      res.status(200).json(await teachers.updateDirection(pathUuid(req, 'id'), patch));
+    }),
+  );
+
+  router.delete('/admin/directions/:id', async (req, res) => {
+    await teachers.deleteDirection(pathUuid(req, 'id'));
+    res.status(204).end();
+  });
+
+  router.get('/admin/price-plans', async (_req, res) => {
+    res.status(200).json(await teachers.listAllPricePlans());
+  });
+
+  router.post(
+    '/admin/price-plans',
+    withBody(pricePlanInputSchema, async (input, _req, res) => {
+      res.status(201).json(await teachers.createPricePlan(input));
+    }),
+  );
+
+  router.patch(
+    '/admin/price-plans/:id',
+    withBody(pricePlanPatchSchema, async (patch, req, res) => {
+      res.status(200).json(await teachers.updatePricePlan(pathUuid(req, 'id'), patch));
+    }),
+  );
+
+  router.delete('/admin/price-plans/:id', async (req, res) => {
+    await teachers.deletePricePlan(pathUuid(req, 'id'));
     res.status(204).end();
   });
 

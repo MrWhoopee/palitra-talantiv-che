@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LESSON_DURATIONS } from './availability';
+import { sortOrderSchema } from './fields';
 
 export const LESSON_FORMATS = ['INDIVIDUAL', 'GROUP'] as const;
 
@@ -42,6 +43,42 @@ export const pricePlanSchema = z.object({
 });
 
 export type PricePlan = z.infer<typeof pricePlanSchema>;
+
+/**
+ * What the studio writes on the price screen. The direction's name is not
+ * here: the plan names a direction and the name is read from it, so a renamed
+ * subject cannot end up spelled two ways on the same page.
+ */
+const pricePlanFields = z.object({
+  directionId: z.uuid(),
+  name: z.string().trim().min(2).max(120),
+  lessonsCount: z.coerce.number().int().min(1).max(100),
+  /**
+   * The bounds are the shortest lesson the studio sells and the longest thing
+   * anyone would still call one lesson. Which durations can actually be booked
+   * is a narrower question, decided by `LESSON_DURATIONS` and enforced when a
+   * lesson is booked - the studio may price a 90-minute masterclass here and
+   * arrange it by hand.
+   */
+  durationMinutes: z.coerce.number().int().min(15).max(240),
+  format: z.enum(LESSON_FORMATS),
+  priceUah: z.coerce.number().int().min(0).max(1_000_000),
+  /**
+   * Last season's price is deactivated rather than deleted: a subscription
+   * already sold points at the plan it was sold against, and that has to keep
+   * meaning what it meant.
+   */
+  isActive: z.boolean().default(true),
+  sortOrder: sortOrderSchema.default(0),
+});
+
+export const pricePlanInputSchema = pricePlanFields;
+
+export type PricePlanInput = z.infer<typeof pricePlanInputSchema>;
+
+export const pricePlanPatchSchema = pricePlanFields.partial();
+
+export type PricePlanPatch = z.infer<typeof pricePlanPatchSchema>;
 
 const personSchema = z.object({
   id: z.uuid(),
