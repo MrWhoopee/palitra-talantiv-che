@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { emailSchema, nameSchema, phoneSchema } from './fields';
 
 export const USER_ROLES = ['ADMIN', 'TEACHER', 'STUDENT'] as const;
 
@@ -14,39 +15,11 @@ const BCRYPT_MAX_PASSWORD_BYTES = 72;
 
 const utf8Bytes = new TextEncoder();
 
-const emailSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.email({ message: 'Некоректна адреса електронної пошти' }))
-  .refine((value) => value.length <= 254, { message: 'Занадто довга адреса' });
-
 const passwordSchema = z
   .string()
   .min(8, { message: 'Пароль має містити щонайменше 8 символів' })
   .refine((value) => utf8Bytes.encode(value).length <= BCRYPT_MAX_PASSWORD_BYTES, {
     message: 'Пароль задовгий',
-  });
-
-const nameSchema = z
-  .string()
-  .trim()
-  .min(1, { message: "Обов'язкове поле" })
-  .max(80, { message: 'Задовге значення' });
-
-/**
- * Kept permissive on purpose: the studio's contact list already mixes
- * `+380671234567`, `067 123 45 67` and bracketed forms, and rejecting a real
- * phone number costs a booking. Only the digit count is enforced.
- */
-const phoneSchema = z
-  .string()
-  .trim()
-  .min(1, { message: "Обов'язкове поле" })
-  .max(32, { message: 'Задовге значення' })
-  .regex(/^[+\d][\d\s()-]*$/, { message: 'Некоректний номер телефону' })
-  .refine((value) => (value.match(/\d/g) ?? []).length >= 9, {
-    message: 'Некоректний номер телефону',
   });
 
 const tokenSchema = z.string().min(1, { message: 'Порожній токен' }).max(512);

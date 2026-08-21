@@ -12,7 +12,12 @@ const prisma = createTestPrisma();
 
 const app: Express = createApp({
   checkDatabase: async () => true,
-  routers: [createTeachersRouter({ teachers: createTeachersService({ prisma }) })],
+  routers: [
+    createTeachersRouter({
+      // Nothing public sends an invitation; this file only reads.
+      teachers: createTeachersService({ prisma, invite: { async sendInvite() {} } }),
+    }),
+  ],
 });
 
 beforeEach(async () => {

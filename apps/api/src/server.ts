@@ -22,6 +22,7 @@ import { createGroupsRouter } from './modules/groups/groups.router';
 import { createGroupsService } from './modules/groups/groups.service';
 import { createSubscriptionsRouter } from './modules/subscriptions/subscriptions.router';
 import { createSubscriptionService } from './modules/subscriptions/subscriptions.service';
+import { createTeachersAdminRouter } from './modules/teachers/teachers.admin.router';
 import { createTeachersRouter } from './modules/teachers/teachers.router';
 import { createTeachersService } from './modules/teachers/teachers.service';
 
@@ -47,6 +48,9 @@ const auth = createAuthService({
   webOrigin: env.WEB_ORIGIN,
 });
 
+// Built after `auth`, which is what it sends invitations through.
+const teachers = createTeachersService({ prisma, invite: auth });
+
 const storage = createLocalDiskStorage({
   dir: env.STORAGE_DIR,
   publicBaseUrl: `${env.PUBLIC_API_URL}/uploads`,
@@ -58,7 +62,7 @@ const app = createApp({
   uploadsDir: env.STORAGE_DIR,
   routers: [
     createAuthRouter({ auth, accessTokens }),
-    createTeachersRouter({ teachers: createTeachersService({ prisma }) }),
+    createTeachersRouter({ teachers }),
     createAvailabilityRouter({ availability, accessTokens }),
     createBookingRouter({
       booking: createBookingService({
@@ -77,6 +81,7 @@ const app = createApp({
       accessTokens,
       routers: [
         createUploadsAdminRouter({ storage }),
+        createTeachersAdminRouter({ teachers }),
         createContentAdminRouter({ content, storage }),
       ],
     }),

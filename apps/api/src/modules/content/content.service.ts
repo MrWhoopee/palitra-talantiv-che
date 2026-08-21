@@ -13,7 +13,7 @@ import {
   type TestimonialInput,
   type TestimonialPatch,
 } from '@palitra/shared';
-import { Prisma, type PrismaClient } from '../../generated/prisma/client.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
 import type {
   AchievementModel,
   GalleryItemModel,
@@ -21,6 +21,7 @@ import type {
   TestimonialModel,
 } from '../../generated/prisma/models';
 import { DomainError } from '../../http/error-handler';
+import { defined, deleteRow, updateRow, withUnique } from '../../lib/rows';
 import { toLocation } from '../teachers/teachers.service';
 
 export interface ContentServiceDeps {
@@ -293,56 +294,9 @@ export function createContentService({ prisma }: ContentServiceDeps): ContentSer
   };
 }
 
-const UNIQUE_VIOLATION = 'P2002';
-const RECORD_NOT_FOUND = 'P2025';
-
-function isPrismaCode(error: unknown, code: string): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
-}
-
-/**
- * The slug is the address of the page, so the database decides who gets it.
- * Checking first and inserting after would let two events created in the same
- * second both pass the check.
- */
-async function withUniqueSlug<T>(write: () => Promise<T>): Promise<T> {
-  try {
-    return await write();
-  } catch (error) {
-    if (isPrismaCode(error, UNIQUE_VIOLATION)) {
-      throw new DomainError('SLUG_TAKEN', 'Подія з таким посиланням уже існує');
-    }
-    throw error;
-  }
-}
-
-async function updateRow<T>(write: () => Promise<T>, message: string): Promise<T> {
-  try {
-    return await write();
-  } catch (error) {
-    if (isPrismaCode(error, RECORD_NOT_FOUND)) {
-      throw new DomainError('NOT_FOUND', message);
-    }
-    throw error;
-  }
-}
-
-async function deleteRow(write: () => Promise<unknown>, message: string): Promise<void> {
-  await updateRow(write, message);
-}
-
-/**
- * A patch without the keys that were never sent.
- *
- * `{ title: undefined }` and "no title in the body" mean the same thing here -
- * leave it alone - but they are not the same value to Prisma, which reads an
- * explicit `undefined` as a field it must not have been given at all. Dropping
- * the keys says it once, instead of at every call site.
- */
-function defined<T extends object>(patch: T): { [K in keyof T]?: Exclude<T[K], undefined> } {
-  return Object.fromEntries(
-    Object.entries(patch).filter(([, value]) => value !== undefined),
-  ) as never;
+/** The slug is the address of the page, so the database decides who gets it. */
+function withUniqueSlug<T>(write: () => Promise<T>): Promise<T> {
+  return withUnique(write, 'SLUG_TAKEN', 'Подія з таким посиланням уже існує');
 }
 
 /** Dates arrive as ISO strings on the wire and go into the database as instants. */

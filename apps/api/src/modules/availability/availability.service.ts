@@ -49,14 +49,15 @@ export function createAvailabilityService({
   now = () => new Date(),
   scheduling = SCHEDULING,
 }: AvailabilityServiceDeps): AvailabilityService {
-  async function requireTeacher(teacherId: string): Promise<void> {
-    const exists = await prisma.teacherProfile.findUnique({
+  async function requireTeacher(teacherId: string): Promise<boolean> {
+    const profile = await prisma.teacherProfile.findUnique({
       where: { userId: teacherId },
-      select: { userId: true },
+      select: { isActive: true },
     });
-    if (!exists) {
+    if (!profile) {
       throw new DomainError('NOT_FOUND', 'Викладача не знайдено');
     }
+    return profile.isActive;
   }
 
   /**
@@ -193,7 +194,16 @@ export function createAvailabilityService({
     },
 
     async getSlots(teacherId: string, query: SlotQuery): Promise<SlotsResponse> {
-      await requireTeacher(teacherId);
+      const isActive = await requireTeacher(teacherId);
+
+      // A teacher who has left keeps their rules and their history - both are
+      // still true of the past - but has no free time to offer. Empty rather
+      // than 404: their profile page and their finished lessons still exist,
+      // there is simply nothing left to book. Booking asks this same question
+      // through `assertSlotIsOffered`, so the refusal reaches that path too.
+      if (!isActive) {
+        return { teacherId, durationMinutes: query.duration, slots: [] };
+      }
 
       const moment = now();
       const requestedFrom = fromZonedTime(requireLocalDate(query.from), 0);

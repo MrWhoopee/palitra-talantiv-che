@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalText, slugSchema } from './fields';
 import { locationSchema } from './teachers';
 import { fromZonedTime, toLocalDate } from './time';
 
@@ -152,27 +153,8 @@ function stripPrefix(value: string, prefix: string): string | null {
 // the endpoint behind it can never disagree about a rule.
 // ---------------------------------------------------------------------------
 
-/**
- * The page address of an event. Latin letters only, because it goes into a URL
- * and a transliterated slug survives being pasted into a messenger, while a
- * Cyrillic one arrives as a line of percent signs.
- */
-export const slugSchema = z
-  .string()
-  .trim()
-  .min(2)
-  .max(80)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'лише латиниця, цифри й дефіси');
-
-/** Trimmed, and empty becomes absent: a form posts "" for a field left alone. */
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => (value === '' ? null : value))
-    .nullish()
-    .transform((value) => value ?? null);
+/** The page address of an event, under the name the rest of the app knows. */
+export { slugSchema };
 
 const studioEventFields = z.object({
   slug: slugSchema,
