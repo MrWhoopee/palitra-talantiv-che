@@ -14,6 +14,8 @@ export const DOMAIN_ERROR_CODES = [
   'INVALID_LESSON_STATUS',
   'EMAIL_TAKEN',
   'SLUG_TAKEN',
+  /** Something else in the system is built on this row, so it cannot go. */
+  'IN_USE',
   'INVALID_CREDENTIALS',
   'INVALID_TOKEN',
   'TOO_MANY_REQUESTS',
@@ -40,6 +42,7 @@ export const DOMAIN_ERROR_STATUS: Record<DomainErrorCode, number> = {
   INVALID_LESSON_STATUS: 422,
   EMAIL_TAKEN: 409,
   SLUG_TAKEN: 409,
+  IN_USE: 409,
   INVALID_CREDENTIALS: 401,
   INVALID_TOKEN: 401,
   TOO_MANY_REQUESTS: 429,

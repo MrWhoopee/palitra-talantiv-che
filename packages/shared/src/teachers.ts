@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { emailSchema, nameSchema, optionalText, phoneSchema, sortOrderSchema } from './fields';
+import {
+  emailSchema,
+  nameSchema,
+  optionalText,
+  phoneSchema,
+  slugSchema,
+  sortOrderSchema,
+} from './fields';
 
 export const locationSchema = z.object({
   id: z.uuid(),
@@ -113,3 +120,44 @@ export type TeacherPatch = z.infer<typeof teacherPatchSchema>;
 export const teacherLinksSchema = z.object({ ids: z.array(z.uuid()).max(50) });
 
 export type TeacherLinks = z.infer<typeof teacherLinksSchema>;
+
+// ---------------------------------------------------------------------------
+// The reference tables. Small, rarely edited, and everything else is built on
+// them: an address is what a lesson happens at, a direction is what a price is
+// quoted for. That is why they are written from here and not typed in twice.
+// ---------------------------------------------------------------------------
+
+const locationFields = z.object({
+  name: z.string().trim().min(2).max(120),
+  address: z.string().trim().min(3).max(300),
+  mapUrl: optionalText(500),
+  sortOrder: sortOrderSchema.default(0),
+});
+
+export const locationInputSchema = locationFields;
+
+export type LocationInput = z.infer<typeof locationInputSchema>;
+
+export const locationPatchSchema = locationFields.partial();
+
+export type LocationPatch = z.infer<typeof locationPatchSchema>;
+
+const directionFields = z.object({
+  slug: slugSchema,
+  name: z.string().trim().min(2).max(120),
+  description: optionalText(2000),
+  /** The name of an icon in the web app, not a file the studio uploads. */
+  icon: optionalText(80),
+  sortOrder: sortOrderSchema.default(0),
+});
+
+export const directionInputSchema = directionFields;
+
+export type DirectionInput = z.infer<typeof directionInputSchema>;
+
+export const directionPatchSchema = directionFields.partial();
+
+export type DirectionPatch = z.infer<typeof directionPatchSchema>;
+
+/** The price plans are written from the same screen; their shapes live next to
+ * what the site reads them as, in `booking.ts`. */

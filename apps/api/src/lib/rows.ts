@@ -59,12 +59,29 @@ export async function deleteRow(write: () => Promise<unknown>, message: string):
 }
 
 /** A write that names a row in another table which has to exist. */
-export async function withReferences<T>(write: () => Promise<T>, message: string): Promise<T> {
+export function withReferences<T>(write: () => Promise<T>, message: string): Promise<T> {
+  return onForeignKey(write, 'VALIDATION_FAILED', message);
+}
+
+/**
+ * A delete the rest of the system may be standing on. The database is what
+ * decides: counting the dependants first would be a different question asked
+ * of a different moment, and the constraint is the one that actually holds.
+ */
+export function withDependents<T>(write: () => Promise<T>, message: string): Promise<T> {
+  return onForeignKey(write, 'IN_USE', message);
+}
+
+async function onForeignKey<T>(
+  write: () => Promise<T>,
+  code: DomainErrorCode,
+  message: string,
+): Promise<T> {
   try {
     return await write();
   } catch (error) {
     if (isPrismaCode(error, FOREIGN_KEY_VIOLATION)) {
-      throw new DomainError('VALIDATION_FAILED', message);
+      throw new DomainError(code, message);
     }
     throw error;
   }
