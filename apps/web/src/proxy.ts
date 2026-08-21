@@ -5,7 +5,7 @@ import { ACCESS_COOKIE, REFRESH_COOKIE, sessionCookieOptions } from '@/lib/sessi
 const REFRESH_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 /** Paths that make no sense without a session. Everything else may be read anonymously. */
-const PRIVATE_PREFIXES = ['/cabinet'];
+const PRIVATE_PREFIXES = ['/cabinet', '/admin'];
 
 /**
  * Keeps the fifteen-minute access token fresh for the pages that read it.
@@ -72,5 +72,5 @@ function redirectToLogin(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/cabinet/:path*', '/teachers/:path*', '/groups/:path*'],
+  matcher: ['/cabinet/:path*', '/admin/:path*', '/teachers/:path*', '/groups/:path*'],
 };

@@ -1,6 +1,5 @@
 import {
   achievementSchema,
-  apiErrorSchema,
   attendanceUpdateSchema,
   authResponseSchema,
   availabilityExceptionSchema,
@@ -27,7 +26,6 @@ import {
   studioEventSchema,
   subscriptionSchema,
   testimonialSchema,
-  BAD_RESPONSE_CODE,
   type Achievement,
   type AuthResponse,
   type AvailabilityException,
@@ -35,11 +33,9 @@ import {
   type AvailabilityRule,
   type AvailabilityRuleInput,
   type AttendanceUpdate,
-  type BadResponseCode,
   type BookingRequest,
   type CancelLesson,
   type Direction,
-  type DomainErrorCode,
   type GalleryItem,
   type Group,
   type GroupEnrollment,
@@ -60,27 +56,8 @@ import {
   type SubscriptionInput,
   type Testimonial,
 } from '@palitra/shared';
-import { z, type ZodType } from 'zod';
-
-export class ApiClientError extends Error {
-  readonly code: DomainErrorCode | BadResponseCode;
-  readonly status: number;
-  /** Per-field messages from a VALIDATION_FAILED response, when present. */
-  readonly fieldErrors: Readonly<Record<string, string[]>>;
-
-  constructor(
-    code: DomainErrorCode | BadResponseCode,
-    message: string,
-    status: number,
-    fieldErrors: Record<string, string[]> = {},
-  ) {
-    super(message);
-    this.name = 'ApiClientError';
-    this.code = code;
-    this.status = status;
-    this.fieldErrors = fieldErrors;
-  }
-}
+import { z } from 'zod';
+import { createHttp, type ApiClientOptions } from './http';
 
 export interface ApiClient {
   getHealth(): Promise<HealthResponse>;
@@ -91,6 +68,12 @@ export interface ApiClient {
   verifyEmail(token: string): Promise<PublicUser>;
   requestPasswordReset(email: string): Promise<void>;
   resetPassword(token: string, password: string): Promise<void>;
+  /**
+   * Unlike a reset, this answers with a session: the person has just proved
+   * they hold the mailbox and chosen the password, so there is nothing left to
+   * ask them at a login form.
+   */
+  acceptInvite(token: string, password: string): Promise<AuthResponse>;
   getMe(accessToken: string): Promise<PublicUser>;
 
   getTeachers(): Promise<PublicTeacher[]>;
@@ -180,74 +163,8 @@ export interface SlotQueryInput {
   duration: number;
 }
 
-export interface ApiClientOptions {
-  baseUrl: string;
-  fetch?: typeof globalThis.fetch;
-}
-
-interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: unknown;
-  accessToken?: string;
-  /** Forwarded to the API so a session can be named after the device it runs on. */
-  userAgent?: string;
-}
-
-export function createApiClient({
-  baseUrl,
-  fetch: fetchImpl = globalThis.fetch,
-}: ApiClientOptions): ApiClient {
-  const root = baseUrl.replace(/\/+$/, '');
-
-  async function request(
-    path: string,
-    { method = 'GET', body, accessToken, userAgent }: RequestOptions = {},
-  ): Promise<{ payload: unknown; status: number }> {
-    const headers: Record<string, string> = {};
-    if (body !== undefined) {
-      headers['content-type'] = 'application/json';
-    }
-    if (accessToken) {
-      headers['authorization'] = `Bearer ${accessToken}`;
-    }
-    if (userAgent) {
-      headers['user-agent'] = userAgent;
-    }
-
-    const response = await fetchImpl(`${root}${path}`, {
-      method,
-      headers,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-
-    const payload: unknown =
-      response.status === 204 ? null : await response.json().catch(() => null);
-
-    if (!response.ok) {
-      const parsed = apiErrorSchema.safeParse(payload);
-      throw new ApiClientError(
-        parsed.success ? parsed.data.code : BAD_RESPONSE_CODE,
-        parsed.success ? parsed.data.message : `Request to ${path} failed`,
-        response.status,
-        parsed.success ? toFieldErrors(parsed.data.details) : {},
-      );
-    }
-
-    return { payload, status: response.status };
-  }
-
-  async function requestParsed<T>(
-    schema: ZodType<T>,
-    path: string,
-    options?: RequestOptions,
-  ): Promise<T> {
-    const { payload, status } = await request(path, options);
-    const parsed = schema.safeParse(payload);
-    if (!parsed.success) {
-      throw new ApiClientError(BAD_RESPONSE_CODE, `Unexpected ${path} payload shape`, status);
-    }
-    return parsed.data;
-  }
+export function createApiClient(options: ApiClientOptions): ApiClient {
+  const { request, requestParsed } = createHttp(options);
 
   return {
     getHealth: () => requestParsed(healthResponseSchema, '/health'),
@@ -278,6 +195,12 @@ export function createApiClient({
     async resetPassword(token, password) {
       await request('/auth/password-reset/confirm', { method: 'POST', body: { token, password } });
     },
+
+    acceptInvite: (token, password) =>
+      requestParsed(authResponseSchema, '/auth/accept-invite', {
+        method: 'POST',
+        body: { token, password },
+      }),
 
     getMe: (accessToken) => requestParsed(publicUserSchema, '/auth/me', { accessToken }),
 
@@ -501,21 +424,3 @@ function exceptionsPath(teacherId: string): string {
   return `/teachers/${encodeURIComponent(teacherId)}/availability/exceptions`;
 }
 
-/**
- * `details` is typed `unknown` in the shared envelope because different codes
- * carry different shapes; only the validation one is a field map, and anything
- * else is dropped rather than shown to a visitor as-is.
- */
-function toFieldErrors(details: unknown): Record<string, string[]> {
-  if (typeof details !== 'object' || details === null) {
-    return {};
-  }
-
-  const result: Record<string, string[]> = {};
-  for (const [field, messages] of Object.entries(details)) {
-    if (Array.isArray(messages) && messages.every((m) => typeof m === 'string')) {
-      result[field] = messages;
-    }
-  }
-  return result;
-}

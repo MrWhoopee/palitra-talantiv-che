@@ -135,6 +135,34 @@ export async function requestPasswordResetAction(
   return { done: true };
 }
 
+/**
+ * The other end of an invitation. Same fields as a reset and the same schema,
+ * but it finishes signed in rather than at a login form: the teacher has just
+ * proved they hold the mailbox and chosen the password, and asking them to
+ * type it again immediately would be a form for its own sake.
+ */
+export async function acceptInviteAction(
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = parse(passwordResetSchema, formData);
+  if ('state' in parsed) {
+    return parsed.state;
+  }
+
+  try {
+    await startSession(await api.acceptInvite(parsed.data.token, parsed.data.password));
+  } catch (error) {
+    return {
+      error: describeError(error),
+      fieldErrors: fieldErrorsOf(error),
+      values: submittedValues(formData),
+    };
+  }
+
+  redirect('/cabinet');
+}
+
 export async function resetPasswordAction(
   _previous: FormState,
   formData: FormData,
