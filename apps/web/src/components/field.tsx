@@ -7,19 +7,25 @@ interface FieldProps extends ComponentPropsWithoutRef<'input'> {
   errors?: string[] | undefined;
 }
 
-export function Field({ label, name, hint, errors, ...input }: FieldProps) {
-  const errorId = `${name}-error`;
-  const hintId = `${name}-hint`;
+/**
+ * The id follows the name unless it is given, which is what lets the same form
+ * appear more than once on a page. Where a screen lists eight price plans, all
+ * eight "Назва" fields would otherwise share one id and every label would
+ * point at the first of them.
+ */
+export function Field({ label, name, id = name, hint, errors, ...input }: FieldProps) {
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
   const invalid = Boolean(errors?.length);
 
   return (
     <p className="field">
-      <label className="field-label" htmlFor={name}>
+      <label className="field-label" htmlFor={id}>
         {label}
       </label>
       <input
         {...input}
-        id={name}
+        id={id}
         name={name}
         className="field-input"
         aria-invalid={invalid}

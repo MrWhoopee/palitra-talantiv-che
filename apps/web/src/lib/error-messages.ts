@@ -9,6 +9,11 @@ import type { DomainErrorCode } from '@palitra/shared';
  */
 const MESSAGES: Partial<Record<DomainErrorCode, string>> = {
   EMAIL_TAKEN: 'Обліковий запис із такою поштою вже існує. Спробуйте увійти.',
+  SLUG_TAKEN: 'Таке посилання вже зайняте — сторінка за ним уже існує.',
+  // Deliberately without advice: the way out differs by table - a price plan
+  // is taken off sale, a direction is emptied of its prices first - and each
+  // screen says its own on the page.
+  IN_USE: 'Це вже використовується: на нього посилаються заняття, групи або абонементи.',
   INVALID_CREDENTIALS: 'Невірна пошта або пароль.',
   INVALID_TOKEN: 'Посилання недійсне або застаріло. Запросіть нове.',
   UNAUTHENTICATED: 'Сесія завершилася. Увійдіть знову.',
