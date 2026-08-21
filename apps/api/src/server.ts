@@ -19,6 +19,9 @@ import { createContentAdminRouter } from './modules/content/content.admin.router
 import { createContentRouter } from './modules/content/content.router';
 import { createContentService } from './modules/content/content.service';
 import { createGroupsRouter } from './modules/groups/groups.router';
+import { createSiteAdminRouter } from './modules/site/site.admin.router';
+import { createSiteRouter } from './modules/site/site.router';
+import { createSiteService } from './modules/site/site.service';
 import { createGroupsService } from './modules/groups/groups.service';
 import { createSubscriptionsRouter } from './modules/subscriptions/subscriptions.router';
 import { createSubscriptionService } from './modules/subscriptions/subscriptions.service';
@@ -38,6 +41,7 @@ const mailer = createSmtpMailer({ host: env.SMTP_HOST, port: env.SMTP_PORT, from
 const availability = createAvailabilityService({ prisma });
 const subscriptions = createSubscriptionService({ prisma });
 const content = createContentService({ prisma });
+const site = createSiteService({ prisma });
 
 const auth = createAuthService({
   prisma,
@@ -77,12 +81,14 @@ const app = createApp({
     createSubscriptionsRouter({ subscriptions, accessTokens }),
     createGroupsRouter({ groups: createGroupsService({ prisma }), accessTokens }),
     createContentRouter({ content }),
+    createSiteRouter({ site }),
     createAdminRouter({
       accessTokens,
       routers: [
         createUploadsAdminRouter({ storage }),
         createTeachersAdminRouter({ teachers }),
         createContentAdminRouter({ content, storage }),
+        createSiteAdminRouter({ site }),
       ],
     }),
   ],
