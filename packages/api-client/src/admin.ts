@@ -1,9 +1,24 @@
 import {
+  adminDirectionListSchema,
+  adminDirectionSchema,
+  adminLocationListSchema,
+  adminLocationSchema,
+  adminPricePlanListSchema,
+  adminPricePlanSchema,
   adminTeacherListSchema,
   adminTeacherSchema,
   siteTextListSchema,
   uploadResultSchema,
+  type AdminDirection,
+  type AdminLocation,
+  type AdminPricePlan,
   type AdminTeacher,
+  type DirectionInput,
+  type DirectionPatch,
+  type LocationInput,
+  type LocationPatch,
+  type PricePlanInput,
+  type PricePlanPatch,
   type SiteText,
   type TeacherInvite,
   type TeacherPatch,
@@ -38,6 +53,22 @@ export interface AdminClient {
   ): Promise<AdminTeacher>;
   setTeacherLocations(teacherId: string, ids: string[], accessToken: string): Promise<AdminTeacher>;
   reinviteTeacher(teacherId: string, accessToken: string): Promise<void>;
+
+  getLocations(accessToken: string): Promise<AdminLocation[]>;
+  createLocation(input: LocationInput, accessToken: string): Promise<AdminLocation>;
+  updateLocation(id: string, patch: LocationPatch, accessToken: string): Promise<AdminLocation>;
+  deleteLocation(id: string, accessToken: string): Promise<void>;
+
+  getDirections(accessToken: string): Promise<AdminDirection[]>;
+  createDirection(input: DirectionInput, accessToken: string): Promise<AdminDirection>;
+  updateDirection(id: string, patch: DirectionPatch, accessToken: string): Promise<AdminDirection>;
+  deleteDirection(id: string, accessToken: string): Promise<void>;
+
+  /** Includes the retired plans, which is what makes this list the admin's. */
+  getPricePlans(accessToken: string): Promise<AdminPricePlan[]>;
+  createPricePlan(input: PricePlanInput, accessToken: string): Promise<AdminPricePlan>;
+  updatePricePlan(id: string, patch: PricePlanPatch, accessToken: string): Promise<AdminPricePlan>;
+  deletePricePlan(id: string, accessToken: string): Promise<void>;
 
   getSiteTexts(accessToken: string): Promise<SiteText[]>;
 
@@ -87,6 +118,69 @@ export function createAdminClient(options: ApiClientOptions): AdminClient {
       await request(`${teacherPath(teacherId)}/reinvite`, { method: 'POST', accessToken });
     },
 
+    getLocations: (accessToken) =>
+      requestParsed(adminLocationListSchema, '/admin/locations', { accessToken }),
+
+    createLocation: (input, accessToken) =>
+      requestParsed(adminLocationSchema, '/admin/locations', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    updateLocation: (id, patch, accessToken) =>
+      requestParsed(adminLocationSchema, rowPath('locations', id), {
+        method: 'PATCH',
+        body: patch,
+        accessToken,
+      }),
+
+    async deleteLocation(id, accessToken) {
+      await request(rowPath('locations', id), { method: 'DELETE', accessToken });
+    },
+
+    getDirections: (accessToken) =>
+      requestParsed(adminDirectionListSchema, '/admin/directions', { accessToken }),
+
+    createDirection: (input, accessToken) =>
+      requestParsed(adminDirectionSchema, '/admin/directions', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    updateDirection: (id, patch, accessToken) =>
+      requestParsed(adminDirectionSchema, rowPath('directions', id), {
+        method: 'PATCH',
+        body: patch,
+        accessToken,
+      }),
+
+    async deleteDirection(id, accessToken) {
+      await request(rowPath('directions', id), { method: 'DELETE', accessToken });
+    },
+
+    getPricePlans: (accessToken) =>
+      requestParsed(adminPricePlanListSchema, '/admin/price-plans', { accessToken }),
+
+    createPricePlan: (input, accessToken) =>
+      requestParsed(adminPricePlanSchema, '/admin/price-plans', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    updatePricePlan: (id, patch, accessToken) =>
+      requestParsed(adminPricePlanSchema, rowPath('price-plans', id), {
+        method: 'PATCH',
+        body: patch,
+        accessToken,
+      }),
+
+    async deletePricePlan(id, accessToken) {
+      await request(rowPath('price-plans', id), { method: 'DELETE', accessToken });
+    },
+
     getSiteTexts: (accessToken) =>
       requestParsed(siteTextListSchema, '/admin/site-texts', { accessToken }),
 
@@ -106,4 +200,8 @@ export function createAdminClient(options: ApiClientOptions): AdminClient {
 
 function teacherPath(teacherId: string): string {
   return `/admin/teachers/${encodeURIComponent(teacherId)}`;
+}
+
+function rowPath(collection: string, id: string): string {
+  return `/admin/${collection}/${encodeURIComponent(id)}`;
 }

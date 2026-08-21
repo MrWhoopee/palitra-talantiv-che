@@ -45,6 +45,27 @@ export const pricePlanSchema = z.object({
 export type PricePlan = z.infer<typeof pricePlanSchema>;
 
 /**
+ * The row as the studio edits it. The direction's name is absent where the
+ * public shape carries it: on the price screen the direction is a choice, not
+ * a label, and the name is read from whichever one is chosen.
+ */
+export const adminPricePlanSchema = z.object({
+  id: z.uuid(),
+  directionId: z.uuid(),
+  name: z.string(),
+  lessonsCount: z.number().int(),
+  durationMinutes: z.number().int(),
+  format: z.enum(LESSON_FORMATS),
+  priceUah: z.number().int(),
+  isActive: z.boolean(),
+  sortOrder: z.number().int(),
+});
+
+export type AdminPricePlan = z.infer<typeof adminPricePlanSchema>;
+
+export const adminPricePlanListSchema = z.array(adminPricePlanSchema);
+
+/**
  * What the studio writes on the price screen. The direction's name is not
  * here: the plan names a direction and the name is read from it, so a renamed
  * subject cannot end up spelled two ways on the same page.

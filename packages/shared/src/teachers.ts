@@ -127,6 +127,23 @@ export type TeacherLinks = z.infer<typeof teacherLinksSchema>;
 // quoted for. That is why they are written from here and not typed in twice.
 // ---------------------------------------------------------------------------
 
+/**
+ * The rows as the studio edits them: the public shapes plus the place in the
+ * list, which visitors never see and the person arranging the page always
+ * needs.
+ */
+export const adminLocationSchema = locationSchema.extend({ sortOrder: z.number().int() });
+
+export type AdminLocation = z.infer<typeof adminLocationSchema>;
+
+export const adminLocationListSchema = z.array(adminLocationSchema);
+
+export const adminDirectionSchema = directionSchema.extend({ sortOrder: z.number().int() });
+
+export type AdminDirection = z.infer<typeof adminDirectionSchema>;
+
+export const adminDirectionListSchema = z.array(adminDirectionSchema);
+
 const locationFields = z.object({
   name: z.string().trim().min(2).max(120),
   address: z.string().trim().min(3).max(300),

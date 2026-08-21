@@ -376,6 +376,109 @@ a.admin-nav__item[aria-current='page'] {
   --badge: var(--pt-text-muted);
 }
 
+/* A row inside a panel: one price plan among the several of its direction. */
+.admin-subrow {
+  border-top: 1px solid var(--pt-line);
+  margin-top: var(--pt-space-5);
+  padding-top: var(--pt-space-4);
+}
+
+.admin-subrow:first-of-type {
+  border-top: 0;
+}
+
+.admin-subrow__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pt-space-3);
+  margin: 0;
+  font-size: var(--pt-text-base);
+  font-weight: 500;
+}
+
+summary.admin-subrow__title {
+  cursor: pointer;
+}
+
+summary.admin-subrow__title:hover {
+  color: var(--pt-primary);
+}
+
+/* A chevron of our own: laying the summary out as a flex row drops the
+   browser's marker, and without one nothing says the row opens. */
+summary.admin-subrow__title::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: auto;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(45deg) translate(-0.15rem, -0.15rem);
+  transition: transform 120ms ease;
+}
+
+details[open] > summary.admin-subrow__title::after {
+  transform: rotate(-135deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  summary.admin-subrow__title::after {
+    transition: none;
+  }
+}
+
+.admin-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pt-space-4);
+}
+
+.admin-row__error {
+  margin: var(--pt-space-3) 0 0;
+  color: #b3261e;
+  font-size: var(--pt-text-sm);
+}
+
+/* Quieter than a button, because deleting is not what the screen is for. */
+.admin-link-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--pt-text-muted);
+  font: inherit;
+  font-size: var(--pt-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.admin-link-button:hover {
+  color: var(--pt-text);
+}
+
+.admin-link-button--danger {
+  color: #b3261e;
+  font-weight: 500;
+}
+
+.admin-link-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.admin-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--pt-space-3);
+  margin-top: var(--pt-space-3);
+}
+
+.admin-confirm__question {
+  font-size: var(--pt-text-sm);
+}
+
 .admin-form {
   display: grid;
   gap: var(--pt-space-4);
@@ -393,6 +496,13 @@ a.admin-nav__item[aria-current='page'] {
   .admin-form__row {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* Side by side, one field's hint often wraps and its neighbour's does not.
+   Without this the shorter field stretches its input to match the taller
+   row, and the pair reads as two different kinds of box. */
+.admin-form__row .field {
+  align-content: start;
 }
 
 .admin-button {
