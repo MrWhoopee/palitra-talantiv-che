@@ -1,6 +1,7 @@
 import {
   adminAchievementListSchema,
   adminAchievementSchema,
+  adminEnrollmentListSchema,
   adminDirectionListSchema,
   adminDirectionSchema,
   adminGalleryItemListSchema,
@@ -9,30 +10,46 @@ import {
   adminLocationSchema,
   adminPricePlanListSchema,
   adminPricePlanSchema,
+  adminStudentListSchema,
   adminStudioEventListSchema,
   adminStudioEventSchema,
   adminTeacherListSchema,
   adminTeacherSchema,
   adminTestimonialListSchema,
   adminTestimonialSchema,
+  groupEnrollmentSchema,
+  groupListSchema,
+  lessonListSchema,
+  lessonSchema,
   siteSettingsSchema,
   siteTextListSchema,
   siteTextSchema,
+  subscriptionListSchema,
+  subscriptionSchema,
   uploadResultSchema,
   type AchievementInput,
   type AchievementPatch,
   type AdminAchievement,
   type AdminDirection,
+  type AdminEnrollment,
   type AdminGalleryItem,
   type AdminLocation,
   type AdminPricePlan,
+  type AdminLessonQuery,
+  type AdminStudent,
   type AdminStudioEvent,
   type AdminTeacher,
   type AdminTestimonial,
+  type BookingRequest,
+  type CancelLesson,
   type DirectionInput,
   type DirectionPatch,
+  type EnrollmentQuery,
   type GalleryItemInput,
   type GalleryItemPatch,
+  type Group,
+  type GroupEnrollment,
+  type Lesson,
   type LocationInput,
   type LocationPatch,
   type PricePlanInput,
@@ -41,8 +58,11 @@ import {
   type SiteText,
   type SiteTextInput,
   type SiteTextKey,
+  type StudentQuery,
   type StudioEventInput,
   type StudioEventPatch,
+  type Subscription,
+  type SubscriptionInput,
   type TeacherInvite,
   type TeacherPatch,
   type TestimonialInput,
@@ -145,6 +165,32 @@ export interface AdminClient {
   getSiteSettings(accessToken: string): Promise<SiteSettings>;
   /** A partial write: a key left out keeps its value, a key sent empty is cleared. */
   saveSiteSettings(input: SiteSettings, accessToken: string): Promise<SiteSettings>;
+
+  /**
+   * How the studio is run, as opposed to what its site says.
+   *
+   * These read wider than their counterparts in the cabinet rather than
+   * differently: the same services answer both, and an admin actor is what
+   * widens them. What is genuinely only here is booking a lesson for someone
+   * else and the whole timetable over a stretch of days.
+   */
+  getSchedule(query: AdminLessonQuery, accessToken: string): Promise<Lesson[]>;
+  /** The lesson the studio books over the phone, for the child it is about. */
+  bookForStudent(input: BookingRequest, accessToken: string): Promise<Lesson>;
+  cancelLesson(lessonId: string, input: CancelLesson, accessToken: string): Promise<Lesson>;
+
+  getSubscriptions(accessToken: string): Promise<Subscription[]>;
+  issueSubscription(input: SubscriptionInput, accessToken: string): Promise<Subscription>;
+  markSubscriptionPaid(subscriptionId: string, accessToken: string): Promise<Subscription>;
+  cancelSubscription(subscriptionId: string, accessToken: string): Promise<Subscription>;
+
+  getGroups(accessToken: string): Promise<Group[]>;
+  /** Every application in the studio, not one group's. */
+  getEnrollments(query: EnrollmentQuery, accessToken: string): Promise<AdminEnrollment[]>;
+  approveEnrollment(enrollmentId: string, accessToken: string): Promise<GroupEnrollment>;
+  removeEnrollment(enrollmentId: string, accessToken: string): Promise<GroupEnrollment>;
+
+  getStudents(query: StudentQuery, accessToken: string): Promise<AdminStudent[]>;
 
   /** Stores a picture and answers with its address. Attaching it is a separate call. */
   uploadImage(file: File, kind: UploadKind, accessToken: string): Promise<UploadResult>;
@@ -363,6 +409,69 @@ export function createAdminClient(options: ApiClientOptions): AdminClient {
         accessToken,
       }),
 
+    getSchedule: (query, accessToken) =>
+      requestParsed(lessonListSchema, `/admin/lessons${queryString(query)}`, { accessToken }),
+
+    bookForStudent: (input, accessToken) =>
+      requestParsed(lessonSchema, '/admin/lessons', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    cancelLesson: (lessonId, input, accessToken) =>
+      requestParsed(lessonSchema, `${rowPath('lessons', lessonId)}/cancel`, {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    getSubscriptions: (accessToken) =>
+      requestParsed(subscriptionListSchema, '/admin/subscriptions', { accessToken }),
+
+    issueSubscription: (input, accessToken) =>
+      requestParsed(subscriptionSchema, '/admin/subscriptions', {
+        method: 'POST',
+        body: input,
+        accessToken,
+      }),
+
+    markSubscriptionPaid: (subscriptionId, accessToken) =>
+      requestParsed(subscriptionSchema, `${rowPath('subscriptions', subscriptionId)}/paid`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    cancelSubscription: (subscriptionId, accessToken) =>
+      requestParsed(subscriptionSchema, `${rowPath('subscriptions', subscriptionId)}/cancel`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    getGroups: (accessToken) => requestParsed(groupListSchema, '/admin/groups', { accessToken }),
+
+    getEnrollments: (query, accessToken) =>
+      requestParsed(adminEnrollmentListSchema, `/admin/enrollments${queryString(query)}`, {
+        accessToken,
+      }),
+
+    approveEnrollment: (enrollmentId, accessToken) =>
+      requestParsed(groupEnrollmentSchema, `${rowPath('enrollments', enrollmentId)}/approve`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    removeEnrollment: (enrollmentId, accessToken) =>
+      requestParsed(groupEnrollmentSchema, `${rowPath('enrollments', enrollmentId)}/remove`, {
+        method: 'POST',
+        accessToken,
+      }),
+
+    getStudents: (query, accessToken) =>
+      requestParsed(adminStudentListSchema, `/admin/students${queryString(query)}`, {
+        accessToken,
+      }),
+
     uploadImage: (file, kind, accessToken) => {
       const form = new FormData();
       form.append('kind', kind);
@@ -379,6 +488,24 @@ export function createAdminClient(options: ApiClientOptions): AdminClient {
 
 function teacherPath(teacherId: string): string {
   return `/admin/teachers/${encodeURIComponent(teacherId)}`;
+}
+
+/**
+ * `?from=…&to=…`, with the keys nobody filled in left out entirely rather than
+ * sent empty. An empty `teacherId=` would reach the API as a string that is
+ * not a uuid, and the filter nobody asked for would fail the request.
+ */
+function queryString(query: Record<string, string | undefined>): string {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== '') {
+      params.set(key, value);
+    }
+  }
+
+  const text = params.toString();
+  return text === '' ? '' : `?${text}`;
 }
 
 function rowPath(collection: string, id: string): string {
