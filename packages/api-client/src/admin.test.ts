@@ -97,6 +97,54 @@ describe('createAdminClient', () => {
     expect(contentType).toBeNull();
   });
 
+  it('writes a page under its key rather than creating one', async () => {
+    let call: { url: string; method: string | undefined; body: unknown } | undefined;
+    const client = createAdminClient({
+      baseUrl: 'http://api.test',
+      fetch: async (input, init) => {
+        call = { url: String(input), method: init?.method, body: init?.body };
+        return jsonResponse({
+          key: 'about',
+          title: 'Про студію',
+          body: 'Ми з 2011 року.',
+          updatedAt: '2026-08-21T09:00:00.000Z',
+        });
+      },
+    });
+
+    const saved = await client.saveSiteText(
+      'about',
+      { title: 'Про студію', body: 'Ми з 2011 року.' },
+      'token-abc',
+    );
+
+    // A PUT at a fixed address, because the set of pages is the web app's
+    // routes: there is no call here that could invent a seventh page.
+    expect(call?.url).toBe('http://api.test/admin/site-texts/about');
+    expect(call?.method).toBe('PUT');
+    expect(saved.key).toBe('about');
+  });
+
+  it('sends the whole running order of the gallery at once', async () => {
+    let call: { url: string; method: string | undefined; body: unknown } | undefined;
+    const client = createAdminClient({
+      baseUrl: 'http://api.test',
+      fetch: async (input, init) => {
+        call = { url: String(input), method: init?.method, body: init?.body };
+        return new Response(null, { status: 204 });
+      },
+    });
+
+    const ids = ['0195c8a0-0000-7000-8000-000000000010', '0195c8a0-0000-7000-8000-000000000011'];
+    await client.reorderGallery(ids, 'token-abc');
+
+    expect(call?.url).toBe('http://api.test/admin/gallery/order');
+    expect(call?.method).toBe('PUT');
+    // One request for the arrangement, so two photos moved cannot leave the
+    // list half-sorted because the second call never arrived.
+    expect(JSON.parse(String(call?.body))).toEqual({ ids });
+  });
+
   it('refuses a payload that is not the shape it asked for', async () => {
     const client = createAdminClient({
       baseUrl: 'http://api.test',
