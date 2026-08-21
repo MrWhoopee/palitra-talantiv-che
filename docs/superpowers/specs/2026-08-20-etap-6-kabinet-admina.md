@@ -106,10 +106,10 @@ teachers.router.ts  → teachers.public.router.ts + teachers.admin.router.ts
 
 | Група      | Маршрути                                                                                                                                                          |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Викладачі  | `GET/POST /admin/teachers`, `PATCH /admin/teachers/:id`, `PUT …/directions`, `PUT …/locations`, `POST …/reinvite`                                                  |
+| Викладачі  | `GET/POST /admin/teachers`, `GET/PATCH /admin/teachers/:id`, `PUT …/directions`, `PUT …/locations`, `POST …/reinvite`                                              |
 | Довідники  | `GET/POST/PATCH/DELETE` для `/admin/locations`, `/admin/directions`, `/admin/price-plans`                                                                          |
 | Контент    | те саме для `/admin/events`, `/admin/gallery`, `/admin/testimonials`, `/admin/achievements`                                                                        |
-| Тексти     | `GET /admin/site-texts`, `PUT /admin/site-texts/:key`, `GET/PUT /admin/settings`                                                                                   |
+| Тексти     | `GET /admin/site-texts`, `PUT /admin/site-texts/:key`, `GET/PUT /admin/site-settings`, публічні `GET /site-texts` і `GET /site-settings`                           |
 | Операційка | `GET /admin/lessons?from&to&teacherId&status`, `POST /admin/lessons`, `GET /admin/subscriptions`, `GET /admin/groups`, `GET /admin/students?q`, `GET /admin/enrollments?status` |
 | Файли      | `POST /admin/uploads`                                                                                                                                             |
 | Публічне   | `POST /auth/accept-invite` — єдиний новий маршрут поза `/admin`                                                                                                    |
@@ -119,8 +119,17 @@ teachers.router.ts  → teachers.public.router.ts + teachers.admin.router.ts
 Схеми входу — у `packages/shared`, поруч із наявними: форма й API валідуються одним і тим самим
 об'єктом, тож правило не може розійтися між ними.
 
-Нових кодів помилок не потрібно: `INVALID_TOKEN` покриває прострочене запрошення, `EMAIL_TAKEN` —
-повторне, `NOT_FOUND` і `FORBIDDEN` — решту.
+Тут було написано, що нових кодів помилок не потрібно. Знадобилось два, і обидва — про те, чого
+раніше в системі не було, бо раніше ніхто нічого не редагував:
+
+- `SLUG_TAKEN` (409) — адреса сторінки зайнята. `EMAIL_TAKEN` тут не годиться: повідомлення про
+  пошту у формі події збиває з пантелику.
+- `IN_USE` (409) — рядок довідника, на якому щось стоїть: локація з графіком роботи, напрям із
+  групами, тариф із проданими абонементами. Видалення відмовляє замість того, щоб тягнути за
+  собою чужі записи.
+
+Решта справді покривається наявним: `INVALID_TOKEN` — прострочене чи вже використане запрошення,
+`EMAIL_TAKEN` — повторне, `NOT_FOUND` і `FORBIDDEN` — усе інше.
 
 ## 4. Завантаження зображень
 
@@ -160,10 +169,15 @@ API. Нові змінні оточення: `STORAGE_DIR`, `PUBLIC_UPLOADS_URL`
 працюють у кабінеті. Порядок сортування — числове поле й кнопки вгору/вниз: доступно з клавіатури
 й не тягне бібліотеки.
 
-Markdown для `SiteText` рендериться власною чистою функцією в `packages/shared` — абзаци, списки,
-жирний, посилання — одразу в React-елементи, без `dangerouslySetInnerHTML` і без нових
+Markdown для `SiteText` розбирає власна чиста функція в `packages/shared` — абзаци, заголовки від
+другого рівня, списки, жирний, курсив, посилання — без `dangerouslySetInnerHTML` і без нових
 залежностей. Чиста функція потрапляє рівно в ту категорію, яку розділ 9 базової спеки вимагає
 тестувати.
+
+Функція повертає **блоки, а не React-елементи**, як тут спершу було написано: `packages/shared`
+не має React серед залежностей і імпортується з API, а перетворити блок на елемент — три рядки
+в `apps/web`. Посилання — єдине місце, де набраний текст стає `href`, тож адреса, яка не є
+http(s), `mailto:`, `tel:` чи шляхом на цьому ж сайті, лишає текст і втрачає адресу.
 
 ## 6. Права
 
