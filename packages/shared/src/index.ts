@@ -7,6 +7,7 @@ export * from './groups';
 export * from './health';
 export * from './markdown';
 export * from './site';
+export * from './students';
 export * from './subscriptions';
 export * from './teachers';
 export * from './time';

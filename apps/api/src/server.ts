@@ -7,6 +7,8 @@ import { createSmtpMailer } from './lib/mailer';
 import { prisma } from './lib/prisma';
 import { createLocalDiskStorage } from './lib/storage';
 import { createAdminRouter } from './modules/admin/admin.router';
+import { createOperationsAdminRouter } from './modules/admin/operations.admin.router';
+import { createStudentsService } from './modules/students/students.service';
 import { createUploadsAdminRouter } from './modules/uploads/uploads.admin.router';
 import { AUTH_TTL } from './modules/auth/auth.config';
 import { createAuthRouter } from './modules/auth/auth.router';
@@ -60,6 +62,19 @@ const storage = createLocalDiskStorage({
   publicBaseUrl: `${env.PUBLIC_API_URL}/uploads`,
 });
 
+// Named rather than built inline, because the cabinet reaches the same two
+// services the cabinet-facing routers do. Two instances would be two of every
+// decision they hold - the clock they read, the config they were given.
+const booking = createBookingService({
+  prisma,
+  availability,
+  subscriptions,
+  mailer,
+  webOrigin: env.WEB_ORIGIN,
+});
+const groups = createGroupsService({ prisma });
+const students = createStudentsService({ prisma });
+
 const app = createApp({
   checkDatabase: createDatabaseCheck(prisma),
   webOrigin: env.WEB_ORIGIN,
@@ -68,18 +83,9 @@ const app = createApp({
     createAuthRouter({ auth, accessTokens }),
     createTeachersRouter({ teachers }),
     createAvailabilityRouter({ availability, accessTokens }),
-    createBookingRouter({
-      booking: createBookingService({
-        prisma,
-        availability,
-        subscriptions,
-        mailer,
-        webOrigin: env.WEB_ORIGIN,
-      }),
-      accessTokens,
-    }),
+    createBookingRouter({ booking, accessTokens }),
     createSubscriptionsRouter({ subscriptions, accessTokens }),
-    createGroupsRouter({ groups: createGroupsService({ prisma }), accessTokens }),
+    createGroupsRouter({ groups, accessTokens }),
     createContentRouter({ content }),
     createSiteRouter({ site }),
     createAdminRouter({
@@ -89,6 +95,7 @@ const app = createApp({
         createTeachersAdminRouter({ teachers }),
         createContentAdminRouter({ content, storage }),
         createSiteAdminRouter({ site }),
+        createOperationsAdminRouter({ booking, groups, students, subscriptions }),
       ],
     }),
   ],

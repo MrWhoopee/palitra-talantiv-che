@@ -2,7 +2,9 @@ import {
   formatLocalDate,
   formatTimeOfDay,
   parseTimeOfDay,
+  type AdminEnrollment,
   type AttendanceUpdate,
+  type EnrollmentQuery,
   type Group,
   type GroupEnrollment,
   type GroupInput,
@@ -41,6 +43,15 @@ export interface GroupsService {
   create(actor: Actor, input: GroupInput): Promise<GroupSaveResult>;
   update(actor: Actor, groupId: string, input: GroupInput): Promise<GroupSaveResult>;
   listEnrollments(actor: Actor, groupId: string): Promise<GroupEnrollment[]>;
+  /**
+   * Every application in the studio, whichever group it is to.
+   *
+   * Read the other way round from `listEnrollments`: there the group is known
+   * and the people are the answer, here the people are what is being looked
+   * at and the group is part of describing each one. That is why this returns
+   * a shape with the group folded in rather than the same rows again.
+   */
+  listAllEnrollments(query: EnrollmentQuery): Promise<AdminEnrollment[]>;
   apply(actor: Actor, groupId: string): Promise<GroupEnrollment>;
   approve(actor: Actor, enrollmentId: string): Promise<GroupEnrollment>;
   remove(actor: Actor, enrollmentId: string): Promise<GroupEnrollment>;
@@ -367,6 +378,33 @@ export function createGroupsService({
       });
 
       return rows.map(toEnrollment);
+    },
+
+    async listAllEnrollments(query: EnrollmentQuery): Promise<AdminEnrollment[]> {
+      const rows = await prisma.groupEnrollment.findMany({
+        // No status means the ones that still hold a place. A studio opening
+        // this screen is looking at who is waiting and who is in, not at the
+        // history of everyone who ever left.
+        where: { status: query.status ? query.status : { in: OCCUPYING } },
+        include: {
+          ...enrollmentInclude,
+          group: { include: { teacher: { include: { user: true } } } },
+        },
+        // Waiting first, and the longest wait at the top of it: the screen
+        // exists to be worked through from the top down.
+        orderBy: [{ status: 'asc' }, { joinedAt: 'asc' }],
+        take: 500,
+      });
+
+      return rows.map((row) => ({
+        ...toEnrollment(row),
+        studentEmail: row.student.email,
+        group: {
+          id: row.group.id,
+          name: row.group.name,
+          teacherName: `${row.group.teacher.user.firstName} ${row.group.teacher.user.lastName}`,
+        },
+      }));
     },
 
     async apply(actor: Actor, groupId: string): Promise<GroupEnrollment> {

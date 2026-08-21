@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { LESSON_DURATIONS } from './availability';
+import { LESSON_DURATIONS, localDateSchema } from './availability';
 import { sortOrderSchema } from './fields';
+import { compareLocalDates, eachLocalDate, parseLocalDate } from './time';
 
 export const LESSON_FORMATS = ['INDIVIDUAL', 'GROUP'] as const;
 
@@ -147,6 +148,16 @@ export const bookingRequestSchema = z
   .object({
     teacherId: z.uuid(),
     locationId: z.uuid(),
+    /**
+     * Who the lesson is for, when that is not the person asking.
+     *
+     * Only the studio may fill it in - a parent booking for another family's
+     * child is not a thing that should be expressible - so the API ignores it
+     * for anyone but an admin rather than refusing the request. Left out, the
+     * lesson belongs to whoever sent it, which is every booking made from the
+     * public site.
+     */
+    studentId: z.uuid().optional(),
     pricePlanId: z.uuid().optional(),
     subscriptionId: z.uuid().optional(),
     /** The exact instant the slot endpoint offered - not a rounded local time. */
@@ -171,6 +182,47 @@ export const bookingRequestSchema = z
   });
 
 export type BookingRequest = z.infer<typeof bookingRequestSchema>;
+
+/**
+ * The studio's own view of its timetable: a stretch of days, optionally
+ * narrowed to one teacher or one state.
+ *
+ * Bounded the same way the slot query is, and for the same reason - the range
+ * decides how much work one request is - but wider, because a studio looking
+ * at its term is a normal thing to do and a parent looking sixty days ahead
+ * for a free hour is not.
+ */
+export const MAX_SCHEDULE_QUERY_DAYS = 120;
+
+export const adminLessonQuerySchema = z
+  .object({
+    from: localDateSchema,
+    to: localDateSchema,
+    teacherId: z.uuid().optional(),
+    status: z.enum(LESSON_STATUSES).optional(),
+  })
+  .superRefine((query, ctx) => {
+    const from = parseLocalDate(query.from);
+    const to = parseLocalDate(query.to);
+    if (!from || !to) {
+      return;
+    }
+
+    if (compareLocalDates(from, to) > 0) {
+      ctx.addIssue({ code: 'custom', path: ['to'], message: 'Кінець періоду раніше за початок' });
+      return;
+    }
+
+    if (eachLocalDate(from, to).length > MAX_SCHEDULE_QUERY_DAYS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['to'],
+        message: `Період не може перевищувати ${MAX_SCHEDULE_QUERY_DAYS} днів`,
+      });
+    }
+  });
+
+export type AdminLessonQuery = z.infer<typeof adminLessonQuerySchema>;
 
 export const cancelLessonSchema = z.object({
   reason: z.string().trim().max(500).optional(),

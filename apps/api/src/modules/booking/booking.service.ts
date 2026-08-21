@@ -1,7 +1,11 @@
 import {
   formatLocalDate,
+  fromZonedTime,
   isSellableDuration,
+  MINUTES_PER_DAY,
+  parseLocalDate,
   toLocalDate,
+  type AdminLessonQuery,
   type BookingRequest,
   type CancelLesson,
   type Lesson,
@@ -39,6 +43,13 @@ export interface BookingServiceDeps {
 export interface BookingService {
   book(actor: Actor, input: BookingRequest): Promise<Lesson>;
   listMyLessons(userId: string): Promise<Lesson[]>;
+  /**
+   * The studio's whole timetable over a stretch of days. Not `listMyLessons`
+   * with a wider `where`: that one answers "what am I party to", which is a
+   * question about a person, and this one answers "what is happening", which
+   * is a question about the studio.
+   */
+  listSchedule(query: AdminLessonQuery): Promise<Lesson[]>;
   confirm(actor: Actor, lessonId: string): Promise<Lesson>;
   cancel(actor: Actor, lessonId: string, input?: CancelLesson): Promise<Lesson>;
   markOutcome(actor: Actor, lessonId: string, status: 'COMPLETED' | 'NO_SHOW'): Promise<Lesson>;
@@ -136,7 +147,13 @@ export function createBookingService({
 
   return {
     async book(actor: Actor, input: BookingRequest): Promise<Lesson> {
-      const student = await prisma.user.findUnique({ where: { id: actor.userId } });
+      // Whose lesson it is. Only the studio may name someone else - a parent
+      // sending another family's id gets their own booking, not a refusal,
+      // because there is nothing to tell them: as far as the public site is
+      // concerned the field does not exist.
+      const studentId = actor.role === 'ADMIN' ? (input.studentId ?? actor.userId) : actor.userId;
+
+      const student = await prisma.user.findUnique({ where: { id: studentId } });
       if (!student) {
         throw new DomainError('NOT_FOUND', 'Користувача не знайдено');
       }
@@ -262,6 +279,35 @@ export function createBookingService({
         include: lessonInclude,
         orderBy: { startsAt: 'asc' },
         take: 500,
+      });
+
+      return lessons.map(toLesson);
+    },
+
+    async listSchedule(query: AdminLessonQuery): Promise<Lesson[]> {
+      const from = parseLocalDate(query.from);
+      const to = parseLocalDate(query.to);
+
+      // Unreachable behind the schema, which is where the dates are checked.
+      if (!from || !to) {
+        throw new DomainError('VALIDATION_FAILED', 'Некоректний період');
+      }
+
+      // Both ends in Kyiv's wall clock, because a day is a day in Cherkasy:
+      // on a server set to UTC an evening lesson would fall into the next day
+      // and drop out of the range the studio asked for.
+      const start = fromZonedTime(from, 0);
+      const end = fromZonedTime(to, MINUTES_PER_DAY);
+
+      const lessons = await prisma.lesson.findMany({
+        where: {
+          startsAt: { gte: start, lt: end },
+          ...(query.teacherId === undefined ? {} : { teacherId: query.teacherId }),
+          ...(query.status === undefined ? {} : { status: query.status }),
+        },
+        include: lessonInclude,
+        orderBy: { startsAt: 'asc' },
+        take: 1000,
       });
 
       return lessons.map(toLesson);

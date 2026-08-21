@@ -5,8 +5,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../http/app';
 import { createAccessTokenService } from '../../lib/access-token';
 import type { StorageAdapter } from '../../lib/storage';
+import type { BookingService } from '../booking/booking.service';
+import type { GroupsService } from '../groups/groups.service';
+import type { StudentsService } from '../students/students.service';
+import type { SubscriptionService } from '../subscriptions/subscriptions.service';
 import { createUploadsAdminRouter } from '../uploads/uploads.admin.router';
 import { createAdminRouter } from './admin.router';
+import { createOperationsAdminRouter } from './operations.admin.router';
 
 const accessTokens = createAccessTokenService({ secret: 'test-secret'.repeat(4), ttlSeconds: 900 });
 
@@ -30,6 +35,23 @@ function createMemoryStorage(): StorageAdapter & { saved: Buffer[] } {
   };
 }
 
+/**
+ * The operational routes are mounted here so the table below covers them too.
+ * Nothing behind them is called: every request in these tests is refused at
+ * the prefix, which is exactly the property being tested, so a service that
+ * would throw if reached is the honest stub.
+ */
+const unreachable = new Proxy(
+  {},
+  {
+    get() {
+      return () => {
+        throw new Error('A guarded route reached its service');
+      };
+    },
+  },
+);
+
 let storage: ReturnType<typeof createMemoryStorage>;
 let adminRouter: Router;
 let app: Express;
@@ -38,7 +60,15 @@ beforeEach(() => {
   storage = createMemoryStorage();
   adminRouter = createAdminRouter({
     accessTokens,
-    routers: [createUploadsAdminRouter({ storage })],
+    routers: [
+      createUploadsAdminRouter({ storage }),
+      createOperationsAdminRouter({
+        booking: unreachable as BookingService,
+        groups: unreachable as GroupsService,
+        students: unreachable as StudentsService,
+        subscriptions: unreachable as SubscriptionService,
+      }),
+    ],
   });
   app = createApp({ checkDatabase: async () => true, routers: [adminRouter] });
 });

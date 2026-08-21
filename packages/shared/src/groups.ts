@@ -131,6 +131,34 @@ export type GroupEnrollment = z.infer<typeof groupEnrollmentSchema>;
 export const groupEnrollmentListSchema = z.array(groupEnrollmentSchema);
 
 /**
+ * An application as the studio sees it, across every group at once.
+ *
+ * The public shape carries only `groupId`, which is all a screen already
+ * looking at one group needs. A list of everything pending is read the other
+ * way round - the group is the thing being identified - so its name and its
+ * teacher come along rather than being fetched per row.
+ */
+export const adminEnrollmentSchema = groupEnrollmentSchema.extend({
+  group: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    teacherName: z.string(),
+  }),
+  /** So the studio can reach the person, not only recognise the name. */
+  studentEmail: z.string(),
+});
+
+export type AdminEnrollment = z.infer<typeof adminEnrollmentSchema>;
+
+export const adminEnrollmentListSchema = z.array(adminEnrollmentSchema);
+
+export const enrollmentQuerySchema = z.object({
+  status: z.enum(GROUP_ENROLLMENT_STATUSES).optional(),
+});
+
+export type EnrollmentQuery = z.infer<typeof enrollmentQuerySchema>;
+
+/**
  * The register for one group lesson: every active member, with the mark if one
  * has been made. Absent marks are `null` rather than missing rows, so the
  * screen shows the whole group and the teacher cannot silently skip a child.
