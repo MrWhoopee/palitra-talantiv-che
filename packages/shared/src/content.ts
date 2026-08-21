@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { optionalText, slugSchema } from './fields';
+import { optionalText, slugSchema, sortOrderSchema } from './fields';
 import { locationSchema } from './teachers';
 import { fromZonedTime, toLocalDate } from './time';
 
@@ -156,6 +156,32 @@ function stripPrefix(value: string, prefix: string): string | null {
 /** The page address of an event, under the name the rest of the app knows. */
 export { slugSchema };
 
+/**
+ * An event as the studio's own screen sees it: the stored row, flat.
+ *
+ * Not `studioEventSchema` with a field or two added, the way the reference
+ * tables extend their public shapes. The public event carries the location
+ * folded in as an object, because a visitor reads an address; the screen that
+ * edits one needs the id it will send back in a `<select>`. Extending would
+ * mean shipping both and letting each screen guess which is authoritative.
+ */
+export const adminStudioEventSchema = z.object({
+  id: z.uuid(),
+  slug: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  startsAt: z.iso.datetime(),
+  endsAt: z.iso.datetime().nullable(),
+  locationId: z.uuid().nullable(),
+  coverUrl: z.string().nullable(),
+  kind: studioEventKindSchema,
+  isPublished: z.boolean(),
+});
+
+export type AdminStudioEvent = z.infer<typeof adminStudioEventSchema>;
+
+export const adminStudioEventListSchema = z.array(adminStudioEventSchema);
+
 const studioEventFields = z.object({
   slug: slugSchema,
   title: z.string().trim().min(2).max(160),
@@ -185,6 +211,22 @@ export const studioEventPatchSchema = studioEventFields.partial();
 
 export type StudioEventPatch = z.infer<typeof studioEventPatchSchema>;
 
+/** The stored row: the event as an id to send back, and the two switches. */
+export const adminGalleryItemSchema = z.object({
+  id: z.uuid(),
+  kind: galleryItemKindSchema,
+  url: z.string(),
+  thumbUrl: z.string().nullable(),
+  caption: z.string().nullable(),
+  eventId: z.uuid().nullable(),
+  sortOrder: z.number().int(),
+  isPublished: z.boolean(),
+});
+
+export type AdminGalleryItem = z.infer<typeof adminGalleryItemSchema>;
+
+export const adminGalleryItemListSchema = z.array(adminGalleryItemSchema);
+
 const galleryItemFields = z.object({
   kind: galleryItemKindSchema.default('PHOTO'),
   url: z.string().trim().min(1).max(500),
@@ -212,15 +254,33 @@ export const sortOrderInputSchema = z.object({ ids: z.array(z.uuid()).max(500) }
 
 export type SortOrderInput = z.infer<typeof sortOrderInputSchema>;
 
-export const testimonialInputSchema = z.object({
+export const adminTestimonialSchema = testimonialSchema.extend({
+  sortOrder: z.number().int(),
+  isPublished: z.boolean(),
+});
+
+export type AdminTestimonial = z.infer<typeof adminTestimonialSchema>;
+
+export const adminTestimonialListSchema = z.array(adminTestimonialSchema);
+
+const testimonialFields = z.object({
   authorName: z.string().trim().min(2).max(120),
   text: z.string().trim().min(10).max(2000),
+  /**
+   * The primary key the published list is ordered by, so it is the studio's
+   * only way to decide which review is read first. It is written from the same
+   * numeric box as the reference tables use, rather than from a reordering
+   * endpoint of its own: the list is short and the box is already familiar.
+   */
+  sortOrder: sortOrderSchema.default(0),
   isPublished: z.boolean().default(false),
 });
 
+export const testimonialInputSchema = testimonialFields;
+
 export type TestimonialInput = z.infer<typeof testimonialInputSchema>;
 
-export const testimonialPatchSchema = testimonialInputSchema.partial();
+export const testimonialPatchSchema = testimonialFields.partial();
 
 export type TestimonialPatch = z.infer<typeof testimonialPatchSchema>;
 
@@ -232,7 +292,16 @@ export type TestimonialPatch = z.infer<typeof testimonialPatchSchema>;
  */
 export const STUDIO_FOUNDED = 2011;
 
-export const achievementInputSchema = z.object({
+export const adminAchievementSchema = achievementSchema.extend({
+  sortOrder: z.number().int(),
+  isPublished: z.boolean(),
+});
+
+export type AdminAchievement = z.infer<typeof adminAchievementSchema>;
+
+export const adminAchievementListSchema = z.array(adminAchievementSchema);
+
+const achievementFields = z.object({
   title: z.string().trim().min(2).max(200),
   description: optionalText(2000),
   year: z.coerce
@@ -241,11 +310,15 @@ export const achievementInputSchema = z.object({
     .min(STUDIO_FOUNDED)
     .max(new Date().getFullYear() + 1),
   imageUrl: optionalText(500),
+  /** Within a year, which win is listed first. Between years, the year wins. */
+  sortOrder: sortOrderSchema.default(0),
   isPublished: z.boolean().default(false),
 });
 
+export const achievementInputSchema = achievementFields;
+
 export type AchievementInput = z.infer<typeof achievementInputSchema>;
 
-export const achievementPatchSchema = achievementInputSchema.partial();
+export const achievementPatchSchema = achievementFields.partial();
 
 export type AchievementPatch = z.infer<typeof achievementPatchSchema>;
