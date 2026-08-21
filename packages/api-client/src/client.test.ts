@@ -497,3 +497,54 @@ describe('subscriptions', () => {
     expect(calls[0]?.method).toBe('POST');
   });
 });
+
+describe("the studio's own copy", () => {
+  function cacheRecordingClient(body: unknown) {
+    const calls: { url: string; cache: RequestCache | undefined }[] = [];
+    const client = createApiClient({
+      baseUrl: 'http://api.test',
+      fetch: async (input, init) => {
+        calls.push({ url: String(input), cache: init?.cache });
+        return jsonResponse(body);
+      },
+    });
+    return { client, calls };
+  }
+
+  it('asks for the page copy to be kept rather than fetched again', async () => {
+    const { client, calls } = cacheRecordingClient([
+      {
+        key: 'about',
+        title: 'Про студію',
+        body: 'Ми з 2011 року.',
+        updatedAt: '2026-08-21T09:00:00.000Z',
+      },
+    ]);
+
+    const texts = await client.getSiteTexts();
+
+    expect(calls[0]?.url).toBe('http://api.test/site-texts');
+    // The load-bearing part. Without it every page of the site would put a
+    // request behind its own footer, and the copy changes a few times a year.
+    expect(calls[0]?.cache).toBe('force-cache');
+    expect(texts[0]?.key).toBe('about');
+  });
+
+  it('asks for the contacts to be kept too, since the footer is on every page', async () => {
+    const { client, calls } = cacheRecordingClient({ phone: '+380671112233' });
+
+    const settings = await client.getSiteSettings();
+
+    expect(calls[0]?.url).toBe('http://api.test/site-settings');
+    expect(calls[0]?.cache).toBe('force-cache');
+    expect(settings.phone).toBe('+380671112233');
+  });
+
+  it('reads a studio that has said nothing as an empty set, not as a failure', async () => {
+    const { client } = cacheRecordingClient({});
+
+    // Every key is optional, so a studio that never opened the screen gets an
+    // object with nothing in it - which each consumer falls back from.
+    await expect(client.getSiteSettings()).resolves.toEqual({});
+  });
+});

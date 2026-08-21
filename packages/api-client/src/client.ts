@@ -20,6 +20,8 @@ import {
   publicTeacherListSchema,
   publicTeacherSchema,
   publicUserSchema,
+  siteSettingsSchema,
+  siteTextListSchema,
   slotsResponseSchema,
   subscriptionListSchema,
   studioEventListSchema,
@@ -50,6 +52,8 @@ import {
   type PublicTeacher,
   type PublicUser,
   type RegisterRequest,
+  type SiteSettings,
+  type SiteText,
   type SlotsResponse,
   type StudioEvent,
   type Subscription,
@@ -154,6 +158,18 @@ export interface ApiClient {
   getGallery(): Promise<GalleryItem[]>;
   getTestimonials(): Promise<Testimonial[]>;
   getAchievements(): Promise<Achievement[]>;
+
+  /**
+   * The studio's own copy, and the facts in the footer of every page.
+   *
+   * Both ask to be kept rather than fetched again: the footer is on every page
+   * of the site, and a call per render would put an API request behind every
+   * link a visitor follows. What makes that safe is that the only writer is
+   * the cabinet, and every save there names the pages it changed - so the
+   * stored copy is replaced the moment it is edited, not a few minutes later.
+   */
+  getSiteTexts(): Promise<SiteText[]>;
+  getSiteSettings(): Promise<SiteSettings>;
 }
 
 /** The query as the caller writes it - the duration is a number, not text. */
@@ -389,6 +405,12 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     getTestimonials: () => requestParsed(z.array(testimonialSchema), '/testimonials'),
 
     getAchievements: () => requestParsed(z.array(achievementSchema), '/achievements'),
+
+    getSiteTexts: () =>
+      requestParsed(siteTextListSchema, '/site-texts', { cache: 'force-cache' }),
+
+    getSiteSettings: () =>
+      requestParsed(siteSettingsSchema, '/site-settings', { cache: 'force-cache' }),
   };
 }
 
