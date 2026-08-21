@@ -24,20 +24,13 @@ export function AdminNav() {
           <ul>
             {group.screens.map((screen) => (
               <li key={screen.href}>
-                {screen.ready ? (
-                  <Link
-                    href={screen.href}
-                    className="admin-nav__item"
-                    aria-current={isOpen(pathname, screen.href) ? 'page' : undefined}
-                  >
-                    {screen.label}
-                  </Link>
-                ) : (
-                  <span className="admin-nav__item admin-nav__item--soon">
-                    {screen.label}
-                    <span className="admin-nav__soon">скоро</span>
-                  </span>
-                )}
+                <Link
+                  href={screen.href}
+                  className="admin-nav__item"
+                  aria-current={isOpen(pathname, screen.href) ? 'page' : undefined}
+                >
+                  {screen.label}
+                </Link>
               </li>
             ))}
           </ul>
