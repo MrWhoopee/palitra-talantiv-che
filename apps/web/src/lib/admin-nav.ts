@@ -34,10 +34,10 @@ export const ADMIN_NAV: AdminGroup[] = [
     screens: [
       { href: '/admin/pages', label: 'Сторінки', ready: true },
       { href: '/admin/contacts', label: 'Контакти', ready: true },
-      { href: '/admin/events', label: 'Події', ready: false },
-      { href: '/admin/gallery', label: 'Галерея', ready: false },
-      { href: '/admin/testimonials', label: 'Відгуки', ready: false },
-      { href: '/admin/achievements', label: 'Досягнення', ready: false },
+      { href: '/admin/events', label: 'Події', ready: true },
+      { href: '/admin/gallery', label: 'Галерея', ready: true },
+      { href: '/admin/testimonials', label: 'Відгуки', ready: true },
+      { href: '/admin/achievements', label: 'Досягнення', ready: true },
     ],
   },
   {

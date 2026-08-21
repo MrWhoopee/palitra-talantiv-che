@@ -607,6 +607,58 @@ details[open] > summary.admin-subrow__title::after {
   line-height: var(--pt-leading-normal);
 }
 
+/* A gallery item, which unlike a teacher is landscape more often than not:
+   the same idea as `.admin-photo` with the ratio the other way round. */
+.admin-media {
+  display: grid;
+  gap: var(--pt-space-4);
+  align-items: start;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .admin-media {
+    grid-template-columns: 12rem 1fr;
+  }
+}
+
+.admin-media__shot {
+  width: 100%;
+  border-radius: var(--pt-radius-md);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.admin-media__none {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  aspect-ratio: 4 / 3;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.admin-media__body {
+  display: grid;
+  gap: var(--pt-space-2);
+  align-content: start;
+}
+
+/* Two arrows, one place each. Buttons rather than dragging: this works from
+   the keyboard, says out loud what it will do, and pulls in no library. */
+.admin-order {
+  display: flex;
+  gap: var(--pt-space-2);
+  margin-top: var(--pt-space-1);
+}
+
+.admin-order .admin-link-button {
+  min-width: 2.25rem;
+  text-align: center;
+}
+
 /* A badge sitting in a panel's heading rather than in a row of its own. */
 .admin-panel__title .admin-badge {
   margin-left: var(--pt-space-3);
