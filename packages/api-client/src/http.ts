@@ -45,6 +45,13 @@ export interface RequestOptions {
   accessToken?: string;
   /** Forwarded to the API so a session can be named after the device it runs on. */
   userAgent?: string;
+  /**
+   * A standard fetch option, passed straight through. On its own it says what
+   * it says in a browser; under a framework whose `fetch` keeps a cache of its
+   * own it is how a caller marks a response worth keeping between requests.
+   * The client stays out of that decision - it only refuses to hide the knob.
+   */
+  cache?: RequestCache;
 }
 
 export interface Http {
@@ -57,7 +64,7 @@ export function createHttp({ baseUrl, fetch: fetchImpl = globalThis.fetch }: Api
 
   async function request(
     path: string,
-    { method = 'GET', body, form, accessToken, userAgent }: RequestOptions = {},
+    { method = 'GET', body, form, accessToken, userAgent, cache }: RequestOptions = {},
   ): Promise<{ payload: unknown; status: number }> {
     const headers: Record<string, string> = {};
     if (body !== undefined) {
@@ -73,6 +80,7 @@ export function createHttp({ baseUrl, fetch: fetchImpl = globalThis.fetch }: Api
     const response = await fetchImpl(`${root}${path}`, {
       method,
       headers,
+      ...(cache === undefined ? {} : { cache }),
       ...(form === undefined ? {} : { body: form }),
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
