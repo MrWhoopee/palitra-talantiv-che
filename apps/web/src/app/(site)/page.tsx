@@ -9,7 +9,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLd } from '@/components/json-ld';
 import { Track } from '@/components/track';
+import { Prose } from '@/components/prose';
 import { api } from '@/lib/api';
+import { readSiteCopy } from '@/lib/site-content';
 import { musicSchoolJsonLd } from '@/lib/seo';
 import { formatEventDate } from '@/lib/studio-time';
 import { STUDIO } from '@/lib/studio';
@@ -30,11 +32,12 @@ export const dynamic = 'force-dynamic';
  * given us photographs yet still gets a finished home page.
  */
 export default async function HomePage() {
-  const [directions, plans, teachers, events] = await Promise.all([
+  const [directions, plans, teachers, events, copy] = await Promise.all([
     safely(() => api.getDirections(), [] as Direction[]),
     safely(() => api.getPricePlans(), [] as PricePlan[]),
     safely(() => api.getTeachers(), [] as PublicTeacher[]),
     safely(() => api.getEvents('upcoming'), [] as StudioEvent[]),
+    readSiteCopy('home'),
   ]);
 
   const tracks = directions.map((direction) => ({
@@ -51,11 +54,20 @@ export default async function HomePage() {
           <p className="eyebrow">
             {STUDIO.city} · з {STUDIO.since} року
           </p>
-          <h1 className="hero__title">Музична студія для дітей і дорослих</h1>
-          <p className="hero__lead">
-            Вокал, фортепіано, гітара та укулеле. Індивідуальні заняття й ансамблі — від чотирьох
-            років і без верхньої межі.
-          </p>
+          {/* The studio's own opening where it has written one. Everything
+              below the hero is built from the database, so it stands whether
+              or not anybody has ever opened the cabinet. */}
+          <h1 className="hero__title">{copy?.title ?? 'Музична студія для дітей і дорослих'}</h1>
+          {copy ? (
+            <div className="hero__lead site-copy">
+              <Prose blocks={copy.blocks} />
+            </div>
+          ) : (
+            <p className="hero__lead">
+              Вокал, фортепіано, гітара та укулеле. Індивідуальні заняття й ансамблі — від чотирьох
+              років і без верхньої межі.
+            </p>
+          )}
 
           <p className="hero__actions">
             <Link href="/teachers" className="button-primary">

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Prose } from '@/components/prose';
 import { api } from '@/lib/api';
+import { readSiteCopy } from '@/lib/site-content';
 import { openGraphFor } from '@/lib/seo';
 import { STUDIO } from '@/lib/studio';
 import '@/styles/content.css';
@@ -19,25 +21,43 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 /**
- * Everything on this page is either a fact we hold or a count taken from the
- * database. The studio's own story - who founded it and why - is one of the
- * things stage 5 is waiting on, and until it arrives the page says what is
- * true rather than something plausible.
+ * Everything below the opening is either a fact we hold or a count taken from
+ * the database. The opening itself is now the studio's to write: the story of
+ * who founded it and why was the thing stage 5 was waiting on, and stage 6
+ * handed over the pen rather than guessing at it. Until it is written the page
+ * still says what is true rather than something plausible.
  */
 export default async function AboutPage() {
-  const teachers = await api.getTeachers().catch(() => []);
+  const [teachers, copy] = await Promise.all([
+    api.getTeachers().catch(() => []),
+    readSiteCopy('about'),
+  ]);
   const years = new Date().getFullYear() - STUDIO.since;
 
   return (
     <main className="page">
+      {/* The studio's own words where it has written any, and the wording
+          the site was built with where it has not. What follows below is
+          built rather than typed - counts, addresses, the rules the code
+          actually enforces - so it stays either way: this screen lets the
+          studio change how the page speaks, not what the app does. */}
       <header className="page-head">
         <p className="eyebrow">Хто ми</p>
-        <h1 className="page-title">Про студію</h1>
-        <p className="page-lede">
-          «Палітра талантів» — музична студія в Черкасах. Ми вчимо співати й грати на фортепіано,
-          гітарі та укулеле — дітей і дорослих, з нуля або з будь-якого місця, де людина зупинилась.
-        </p>
+        <h1 className="page-title">{copy?.title ?? 'Про студію'}</h1>
+        {copy ? null : (
+          <p className="page-lede">
+            «Палітра талантів» — музична студія в Черкасах. Ми вчимо співати й грати на фортепіано,
+            гітарі та укулеле — дітей і дорослих, з нуля або з будь-якого місця, де людина
+            зупинилась.
+          </p>
+        )}
       </header>
+
+      {copy ? (
+        <div className="site-copy">
+          <Prose blocks={copy.blocks} />
+        </div>
+      ) : null}
 
       <section className="section facts">
         <Fact value={`з ${STUDIO.since}`} label={`${years} років у Черкасах`} />

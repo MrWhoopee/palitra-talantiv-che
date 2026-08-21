@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { JsonLd } from '@/components/json-ld';
+import { Prose } from '@/components/prose';
 import { musicSchoolJsonLd, openGraphFor } from '@/lib/seo';
+import { readSiteCopy } from '@/lib/site-content';
 import { STUDIO } from '@/lib/studio';
 import '@/styles/content.css';
 
@@ -21,24 +23,39 @@ export const metadata: Metadata = {
  * links appear only once the studio gives them to us: a number invented for
  * the sake of a filled-in page is a number someone will actually dial.
  */
-export default function ContactsPage() {
+export default async function ContactsPage() {
+  const copy = await readSiteCopy('contacts');
+
   return (
     <main className="page">
       <JsonLd data={musicSchoolJsonLd()} />
 
+      {/* The studio's own words where it has written any, and the wording
+          the site was built with where it has not. What follows below is
+          built rather than typed - counts, addresses, the rules the code
+          actually enforces - so it stays either way: this screen lets the
+          studio change how the page speaks, not what the app does. */}
       <header className="page-head">
         <p className="eyebrow">Як нас знайти</p>
-        <h1 className="page-title">Контакти</h1>
-        <p className="page-lede">
-          Студія працює у двох локаціях у Черкасах. Найшвидший спосіб почати — обрати викладача й
-          записатись на безкоштовне пробне заняття прямо з календаря.
-        </p>
+        <h1 className="page-title">{copy?.title ?? 'Контакти'}</h1>
+        {copy ? null : (
+          <p className="page-lede">
+            Студія працює у двох локаціях у Черкасах. Найшвидший спосіб почати — обрати викладача й
+            записатись на безкоштовне пробне заняття прямо з календаря.
+          </p>
+        )}
         <p className="page-actions">
           <Link href="/teachers" className="button-primary">
             Записатись на пробне
           </Link>
         </p>
       </header>
+
+      {copy ? (
+        <div className="site-copy">
+          <Prose blocks={copy.blocks} />
+        </div>
+      ) : null}
 
       <section className="section">
         <div className="section-head">
