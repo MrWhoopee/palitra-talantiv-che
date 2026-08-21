@@ -2,7 +2,9 @@ import {
   addLocalDays,
   formatLocalDate,
   formatTimeOfDay,
+  fromZonedTime,
   parseLocalDate,
+  parseTimeOfDay,
   toLocalDate,
   toZonedParts,
   type LocalDate,
@@ -109,6 +111,38 @@ export function formatEventRange(startsAt: string, endsAt: string | null): strin
   const sameDay = toDateKey(start) === toDateKey(end);
 
   return sameDay ? `${opening} – ${timeOf(end)}` : `${opening} – ${formatEventDate(endsAt)}`;
+}
+
+/**
+ * An instant as a `<input type="datetime-local">` value: `"2026-09-13T18:00"`
+ * on the studio's wall clock.
+ *
+ * The browser has no zone in that box - it shows whatever string it is given
+ * and hands the same string back. So the conversion has to happen on both
+ * sides here, against Kyiv: an admin editing a concert from a laptop set to
+ * another zone must see the hour the concert starts, not that hour shifted.
+ */
+export function toDateTimeInput(iso: string): string {
+  const parts = toZonedParts(new Date(iso));
+  return `${formatLocalDate(parts)}T${formatTimeOfDay(parts.minuteOfDay)}`;
+}
+
+/**
+ * The reverse: the instant a `datetime-local` value names in Kyiv, as ISO.
+ * `null` for anything that is not a date and a time, which is what an empty
+ * box gives - and an event with no end time is a real thing, not a mistake.
+ */
+export function fromDateTimeInput(value: string): string | null {
+  const [datePart = '', timePart = ''] = value.trim().split('T');
+  const date = parseLocalDate(datePart);
+  // `datetime-local` may include seconds; the studio types minutes.
+  const minuteOfDay = parseTimeOfDay(timePart.slice(0, 5));
+
+  if (date === null || minuteOfDay === null) {
+    return null;
+  }
+
+  return fromZonedTime(date, minuteOfDay).toISOString();
 }
 
 export function fromDateKey(value: string): LocalDate {
