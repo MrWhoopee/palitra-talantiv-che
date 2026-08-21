@@ -1,0 +1,347 @@
+/*
+ * The cabinet the studio works in.
+ *
+ * Same palette and same faces as the site - this is the same studio, seen from
+ * behind the counter - but a different rhythm. The site is airy because it is
+ * being read; this is dense because it is being used, and a screen of controls
+ * spaced like a landing page means scrolling to reach the next field.
+ *
+ * The one device carried over is the fill: each group of screens has a colour,
+ * and the rule beside a screen fills when that screen is open, the way a
+ * lesson's length fills its track on the price page.
+ */
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--pt-bg);
+}
+
+/* --- The sidebar ---------------------------------------------------------- */
+
+.admin-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-space-5);
+  border-right: 1px solid var(--pt-line);
+  background: var(--pt-surface);
+  padding: var(--pt-space-5) var(--pt-space-4);
+  /* Stays put while a long list scrolls next to it. */
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100dvh;
+  overflow-y: auto;
+  /* On a short screen the fifteen sections do not fit. The bar that appears
+     is furniture, not content, so it is drawn as quietly as the browser
+     allows. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--pt-line) transparent;
+}
+
+.admin-side__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pt-space-2);
+}
+
+.admin-side__mark {
+  display: inline-flex;
+}
+
+.admin-side__role {
+  margin: 0;
+  color: var(--pt-data);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+}
+
+.admin-nav {
+  display: grid;
+  gap: var(--pt-space-4);
+}
+
+.admin-nav__group {
+  --tone: var(--pt-primary);
+}
+
+.admin-nav__group[data-tone='studio'] {
+  --tone: var(--pt-data);
+}
+
+.admin-nav__group[data-tone='work'] {
+  --tone: var(--pt-accent-fill);
+}
+
+.admin-nav__title {
+  margin: 0 0 var(--pt-space-2);
+  color: var(--tone);
+  font-size: var(--pt-text-xs);
+  font-weight: 500;
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+}
+
+.admin-nav ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-nav__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pt-space-2);
+  /* The rule lives in the left border, so the fill and the label share one box
+     and can never drift apart on a wrap. */
+  border-left: 2px solid color-mix(in srgb, var(--tone) 22%, transparent);
+  padding: 0.3125rem var(--pt-space-3);
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+  text-decoration: none;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+a.admin-nav__item:hover {
+  border-left-color: color-mix(in srgb, var(--tone) 60%, transparent);
+  color: var(--pt-text);
+}
+
+a.admin-nav__item[aria-current='page'] {
+  border-left-color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 7%, transparent);
+  color: var(--pt-text);
+  font-weight: 500;
+}
+
+.admin-nav__item--soon {
+  color: color-mix(in srgb, var(--pt-text-muted) 60%, transparent);
+}
+
+/* Deliberately faint. While the cabinet is being built most of the list says
+   this, and a column of shouting markers would read as the point of the
+   sidebar rather than as a footnote on it. */
+.admin-nav__soon {
+  color: color-mix(in srgb, var(--pt-text-muted) 45%, transparent);
+  font-size: 0.6875rem;
+}
+
+.admin-side__foot {
+  display: grid;
+  gap: var(--pt-space-2);
+  justify-items: start;
+  margin-top: auto;
+  border-top: 1px solid var(--pt-line);
+  padding-top: var(--pt-space-4);
+  font-size: var(--pt-text-sm);
+}
+
+.admin-side__who {
+  margin: 0;
+  color: var(--pt-text);
+}
+
+.admin-side__out {
+  color: var(--pt-text-muted);
+  text-decoration: none;
+}
+
+.admin-side__out:hover {
+  color: var(--pt-primary);
+}
+
+/* --- The working area ----------------------------------------------------- */
+
+.admin-main {
+  padding: var(--pt-space-6) var(--pt-space-5) var(--pt-space-8);
+  max-width: 64rem;
+}
+
+.admin-head {
+  margin-bottom: var(--pt-space-6);
+}
+
+.admin-eyebrow {
+  margin: 0;
+  color: var(--pt-data);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+}
+
+.admin-title {
+  margin: var(--pt-space-2) 0 0;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xl);
+  letter-spacing: var(--pt-tracking-display);
+  line-height: var(--pt-leading-tight);
+}
+
+.admin-lede {
+  margin: var(--pt-space-3) 0 0;
+  max-width: 44ch;
+  color: var(--pt-text-muted);
+  line-height: var(--pt-leading-normal);
+}
+
+.admin-note {
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-surface);
+  padding: var(--pt-space-4);
+  color: var(--pt-text-muted);
+}
+
+.admin-cards {
+  display: grid;
+  gap: var(--pt-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.admin-card {
+  --tone: var(--pt-primary);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-surface);
+  padding: var(--pt-space-5);
+  box-shadow: var(--pt-shadow-sm);
+}
+
+.admin-card[data-tone='studio'] {
+  --tone: var(--pt-data);
+}
+
+.admin-card__eyebrow {
+  margin: 0;
+  color: var(--tone);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+}
+
+.admin-card__figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pt-space-2);
+  margin: var(--pt-space-3) 0 0;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-2xl);
+  line-height: var(--pt-leading-tight);
+  letter-spacing: var(--pt-tracking-display);
+}
+
+.admin-card__of {
+  color: var(--pt-text-muted);
+  font-family: var(--pt-font-body);
+  font-size: var(--pt-text-sm);
+  letter-spacing: normal;
+}
+
+.admin-card__label {
+  margin: var(--pt-space-1) 0 0;
+  font-size: var(--pt-text-base);
+  font-weight: 400;
+}
+
+.admin-card__lines {
+  display: grid;
+  gap: var(--pt-space-2);
+  margin: var(--pt-space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-card__lines li,
+.admin-card__note {
+  margin: var(--pt-space-4) 0 0;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+  line-height: var(--pt-leading-snug);
+}
+
+.admin-card__lines li {
+  margin: 0;
+}
+
+/* --- Narrow screens ------------------------------------------------------- */
+
+@media (max-width: 60rem) {
+  .admin-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-side {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--pt-line);
+  }
+
+  /* One strip that scrolls sideways rather than three stacked columns. The
+     column version pushed the screen itself below the fold: on a phone the
+     studio arrived to change one thing and would meet the whole menu first.
+     The fill moves from the left edge to the bottom - the same device turned
+     on its side, which is how a row of tabs reads anyway. */
+  .admin-nav {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: var(--pt-space-5);
+    align-items: center;
+    overflow-x: auto;
+    padding-bottom: var(--pt-space-2);
+  }
+
+  .admin-nav__group {
+    display: flex;
+    align-items: center;
+    gap: var(--pt-space-3);
+  }
+
+  .admin-nav__title {
+    margin: 0;
+  }
+
+  .admin-nav ul {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+  }
+
+  .admin-nav__item {
+    border-left: 0;
+    border-bottom: 2px solid color-mix(in srgb, var(--tone) 22%, transparent);
+    padding: var(--pt-space-1) var(--pt-space-2);
+  }
+
+  a.admin-nav__item:hover {
+    border-left-color: transparent;
+    border-bottom-color: color-mix(in srgb, var(--tone) 60%, transparent);
+  }
+
+  a.admin-nav__item[aria-current='page'] {
+    border-left-color: transparent;
+    border-bottom-color: var(--tone);
+  }
+
+  /* Sideways in a row, the marker doubles the width of every item for a word
+     the studio does not need twice. The muted label already says it. */
+  .admin-nav__soon {
+    display: none;
+  }
+
+  .admin-side__foot {
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: var(--pt-space-4);
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav__item {
+    transition: none;
+  }
+}
