@@ -597,6 +597,24 @@ details[open] > summary.admin-subrow__title::after {
   gap: var(--pt-space-3);
 }
 
+/* Long copy: a page's text, an event's description, a review. Vertical only,
+   because a box the studio widened past the panel would push the buttons
+   under it off the screen. */
+.admin-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+  line-height: var(--pt-leading-normal);
+}
+
+/* A badge sitting in a panel's heading rather than in a row of its own. */
+.admin-panel__title .admin-badge {
+  margin-left: var(--pt-space-3);
+  vertical-align: middle;
+  font-family: var(--pt-font-body);
+  letter-spacing: normal;
+}
+
 /* --- Narrow screens ------------------------------------------------------- */
 
 @media (max-width: 60rem) {
