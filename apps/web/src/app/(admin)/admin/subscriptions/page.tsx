@@ -7,6 +7,7 @@ import { RowActionForm } from '@/components/row-action-form';
 import { adminApi } from '@/lib/admin-api';
 import { readAccessToken } from '@/lib/session';
 import { formatUah } from '@/lib/studio';
+import { plainDate } from '@/lib/studio-time';
 import { IssueSubscriptionForm } from './issue-subscription-form';
 
 export const metadata: Metadata = {
@@ -69,7 +70,7 @@ export default async function AdminSubscriptionsPage() {
                   </span>
                   <span className="admin-row__meta">
                     Лишилось {subscription.lessonsLeft} з {subscription.lessonsTotal} ·{' '}
-                    {subscription.validFrom} — {subscription.validTo} ·{' '}
+                    {plainDate(subscription.validFrom)} — {plainDate(subscription.validTo)} ·{' '}
                     {formatUah(subscription.priceUah)}
                   </span>
                   <span className="admin-row__meta">{subscription.student.phone}</span>

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { adminApi } from '@/lib/admin-api';
 import { readAccessToken } from '@/lib/session';
-import { describeGroupSchedule } from '@/lib/studio-time';
+import { describeGroupSchedule, plainDate } from '@/lib/studio-time';
 
 export const metadata: Metadata = {
   title: 'Групи — Палітра талантів',
@@ -57,8 +57,9 @@ export default async function AdminGroupsPage() {
                 </span>
                 <span className="admin-row__meta">{describeGroupSchedule(group.schedule)}</span>
                 <span className="admin-row__meta">
-                  Місць зайнято {group.seatsTaken} з {group.capacity} · з {group.startsOn}
-                  {group.endsOn ? ` до ${group.endsOn}` : ''}
+                  Місць зайнято {group.seatsTaken} з {group.capacity} · з{' '}
+                  {plainDate(group.startsOn)}
+                  {group.endsOn ? ` до ${plainDate(group.endsOn)}` : ''}
                 </span>
 
                 <span className="admin-row__badges">

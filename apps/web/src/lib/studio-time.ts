@@ -72,6 +72,22 @@ export function longDate(date: LocalDate): string {
   return `${weekday}, ${date.day} ${MONTHS[date.month - 1] ?? ''}`;
 }
 
+/**
+ * `"13 серпня 2026"` from a stored `2026-08-13`.
+ *
+ * The dates a package or a group is bounded by are `LocalDate` strings on the
+ * wire, and printing one as it is stored puts an ISO date in the middle of a
+ * Ukrainian sentence. No weekday: which day of the week a subscription starts
+ * on is not something anybody reads it for.
+ */
+export function plainDate(value: string): string {
+  const date = parseLocalDate(value);
+  if (date === null) {
+    return value;
+  }
+  return `${date.day} ${MONTHS[date.month - 1] ?? ''} ${date.year}`;
+}
+
 /** `"чт 13.08"`, for a column heading that has to stay narrow. */
 export function shortDate(date: LocalDate): string {
   const weekday = WEEKDAYS_SHORT[weekdayIndex(date)] ?? '';
