@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { emailSchema, nameSchema, optionalText, phoneSchema, sortOrderSchema } from './fields';
 
 export const locationSchema = z.object({
   id: z.uuid(),
@@ -38,3 +39,77 @@ export const publicTeacherSchema = z.object({
 export type PublicTeacher = z.infer<typeof publicTeacherSchema>;
 
 export const publicTeacherListSchema = z.array(publicTeacherSchema);
+
+// ---------------------------------------------------------------------------
+// What the admin sees and writes. The site reads the shape above; this one is
+// the same teacher with everything the studio itself needs to run: the way to
+// reach them, the two switches that decide where they appear, and whether the
+// invitation has been accepted yet.
+// ---------------------------------------------------------------------------
+
+export const adminTeacherSchema = publicTeacherSchema.extend({
+  email: z.string(),
+  phone: z.string(),
+  /** On the public site or not. */
+  isPublished: z.boolean(),
+  /** Still teaching or not - an inactive teacher takes no new bookings. */
+  isActive: z.boolean(),
+  sortOrder: z.number().int(),
+  /**
+   * Whether the invitation has been accepted. The hash itself never leaves the
+   * API, only the fact that one exists: that is what the screen needs to decide
+   * between "invitation sent" and "working", and it is the difference the
+   * re-invite button is enabled by.
+   */
+  hasPassword: z.boolean(),
+});
+
+export type AdminTeacher = z.infer<typeof adminTeacherSchema>;
+
+export const adminTeacherListSchema = z.array(adminTeacherSchema);
+
+/**
+ * Everything needed to make an account for someone who is not there. No
+ * password: the studio does not invent one for a person and then read it out
+ * over the phone. What it sends is a link, and the teacher picks their own.
+ */
+export const teacherInviteSchema = z.object({
+  email: emailSchema,
+  firstName: nameSchema,
+  lastName: nameSchema,
+  phone: phoneSchema,
+});
+
+export type TeacherInvite = z.infer<typeof teacherInviteSchema>;
+
+const teacherFields = z.object({
+  firstName: nameSchema,
+  lastName: nameSchema,
+  phone: phoneSchema,
+  bio: optionalText(4000),
+  experienceYears: z.coerce.number().int().min(0).max(70).nullish().default(null),
+  photoUrl: optionalText(500),
+  isPublished: z.boolean(),
+  isActive: z.boolean(),
+  sortOrder: sortOrderSchema,
+});
+
+/**
+ * Editing a teacher is always a patch: the card is edited a field at a time,
+ * and the name lives on the account while the bio lives on the profile - a
+ * whole-object PUT would make the screen responsible for sending back parts of
+ * a row it never showed.
+ */
+export const teacherPatchSchema = teacherFields.partial();
+
+export type TeacherPatch = z.infer<typeof teacherPatchSchema>;
+
+/**
+ * A whole set at once, for the links a teacher has to the reference tables.
+ * Sending the set rather than adding and removing one at a time means the
+ * screen and the database cannot end up disagreeing about which subjects
+ * someone teaches.
+ */
+export const teacherLinksSchema = z.object({ ids: z.array(z.uuid()).max(50) });
+
+export type TeacherLinks = z.infer<typeof teacherLinksSchema>;
