@@ -10,3 +10,4 @@ export * from './site';
 export * from './subscriptions';
 export * from './teachers';
 export * from './time';
+export * from './uploads';

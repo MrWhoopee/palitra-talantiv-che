@@ -71,6 +71,32 @@ describe('createAdminClient', () => {
     await expect(client.getTeachers('token-abc')).rejects.toBeInstanceOf(ApiClientError);
   });
 
+  it('sends a picture as a form, letting fetch name the boundary', async () => {
+    let sent: unknown;
+    let contentType: string | null = 'untouched';
+    const client = createAdminClient({
+      baseUrl: 'http://api.test',
+      fetch: async (_input, init) => {
+        sent = init?.body;
+        contentType = new Headers(init?.headers).get('content-type');
+        return jsonResponse({ url: 'http://api.test/uploads/a.webp' }, 201);
+      },
+    });
+
+    const result = await client.uploadImage(
+      new File(['not-really-a-photo'], 'iryna.jpg', { type: 'image/jpeg' }),
+      'portrait',
+      'token-abc',
+    );
+
+    expect(result.url).toBe('http://api.test/uploads/a.webp');
+    expect(sent).toBeInstanceOf(FormData);
+    expect((sent as FormData).get('kind')).toBe('portrait');
+    // Set by hand it would name a boundary the body does not use, and the API
+    // would read the whole upload as one unparseable field.
+    expect(contentType).toBeNull();
+  });
+
   it('refuses a payload that is not the shape it asked for', async () => {
     const client = createAdminClient({
       baseUrl: 'http://api.test',

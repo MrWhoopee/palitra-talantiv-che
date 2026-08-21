@@ -7,6 +7,8 @@ import { Logo } from '@/components/logo';
 import { LogoutButton } from '@/components/logout-button';
 import { getCurrentUser } from '@/lib/current-user';
 import '@/styles/site.css';
+// The field, label and error styles the shared form components render with.
+import '@/styles/auth.css';
 import '@/styles/admin.css';
 
 export const metadata: Metadata = {

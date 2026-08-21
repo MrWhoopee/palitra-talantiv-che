@@ -267,6 +267,226 @@ a.admin-nav__item[aria-current='page'] {
   margin: 0;
 }
 
+/* --- Panels, lists, forms -------------------------------------------------- */
+
+.admin-back {
+  margin: 0 0 var(--pt-space-4);
+  font-size: var(--pt-text-sm);
+}
+
+.admin-back a {
+  color: var(--pt-text-muted);
+  text-decoration: none;
+}
+
+.admin-back a:hover {
+  color: var(--pt-primary);
+}
+
+.admin-panel {
+  margin-top: var(--pt-space-5);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  background: var(--pt-surface);
+  padding: var(--pt-space-5);
+}
+
+.admin-panel__title {
+  margin: 0;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-lg);
+  letter-spacing: var(--pt-tracking-display);
+}
+
+.admin-panel__lede {
+  margin: var(--pt-space-2) 0 0;
+  max-width: 60ch;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+  line-height: var(--pt-leading-normal);
+}
+
+.admin-empty {
+  margin: var(--pt-space-4) 0 0;
+  color: var(--pt-text-muted);
+}
+
+.admin-list {
+  display: grid;
+  margin: var(--pt-space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-row {
+  display: grid;
+  gap: var(--pt-space-1);
+  border-top: 1px solid var(--pt-line);
+  padding: var(--pt-space-4) 0;
+}
+
+.admin-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.admin-row__name {
+  color: var(--pt-text);
+  font-size: var(--pt-text-base);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.admin-row__name:hover {
+  color: var(--pt-primary);
+}
+
+.admin-row__meta {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.admin-row__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+  margin-top: var(--pt-space-1);
+}
+
+/* Three states worth naming, and each one is something the studio can act on:
+   a letter to re-send, a card to finish, a person who has left. */
+.admin-badge {
+  --badge: var(--pt-text-muted);
+  border: 1px solid color-mix(in srgb, var(--badge) 40%, transparent);
+  border-radius: var(--pt-radius-pill);
+  padding: 0.125rem var(--pt-space-3);
+  color: var(--badge);
+  font-size: var(--pt-text-xs);
+}
+
+.admin-badge[data-tone='wait'] {
+  --badge: #a8620f;
+}
+
+.admin-badge[data-tone='draft'] {
+  --badge: var(--pt-primary);
+}
+
+.admin-badge[data-tone='gone'] {
+  --badge: var(--pt-text-muted);
+}
+
+.admin-form {
+  display: grid;
+  gap: var(--pt-space-4);
+  margin-top: var(--pt-space-4);
+  max-width: 44rem;
+}
+
+.admin-form__row {
+  display: grid;
+  gap: var(--pt-space-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .admin-form__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-button {
+  justify-self: start;
+  padding: var(--pt-space-3) var(--pt-space-5);
+  border: 0;
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* For a save that is one part of a card rather than the point of the screen. */
+.admin-button--quiet {
+  border: 1px solid var(--pt-line);
+  background: var(--pt-bg);
+  color: var(--pt-text);
+  font-weight: 500;
+}
+
+.admin-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.admin-checks {
+  display: grid;
+  gap: var(--pt-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.admin-check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--pt-space-2);
+  font-size: var(--pt-text-sm);
+}
+
+.admin-check__hint {
+  grid-column: 2;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-xs);
+  line-height: var(--pt-leading-snug);
+}
+
+.admin-switches {
+  display: grid;
+  gap: var(--pt-space-3);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-photo {
+  display: grid;
+  gap: var(--pt-space-4);
+  align-items: start;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .admin-photo {
+    grid-template-columns: 10rem 1fr;
+  }
+}
+
+.admin-photo__shot {
+  width: 100%;
+  max-width: 10rem;
+  border-radius: var(--pt-radius-md);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.admin-photo__none {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed var(--pt-line);
+  border-radius: var(--pt-radius-md);
+  max-width: 10rem;
+  aspect-ratio: 3 / 4;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.admin-photo__controls {
+  display: grid;
+  gap: var(--pt-space-3);
+}
+
 /* --- Narrow screens ------------------------------------------------------- */
 
 @media (max-width: 60rem) {

@@ -44,7 +44,7 @@ export const ADMIN_NAV: AdminGroup[] = [
     title: 'Студія',
     tone: 'studio',
     screens: [
-      { href: '/admin/teachers', label: 'Викладачі', ready: false },
+      { href: '/admin/teachers', label: 'Викладачі', ready: true },
       { href: '/admin/directions', label: 'Напрями', ready: false },
       { href: '/admin/locations', label: 'Локації', ready: false },
       { href: '/admin/prices', label: 'Прайс', ready: false },
