@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Prose } from '@/components/prose';
 import { openGraphFor } from '@/lib/seo';
+import { readSiteCopy } from '@/lib/site-content';
 import '@/styles/content.css';
 
 const TITLE = 'Правила студії — Палітра талантів';
@@ -20,17 +22,32 @@ export const metadata: Metadata = {
  * held seat. Writing anything here that the code does not do would be a
  * promise nobody keeps.
  */
-export default function RulesPage() {
+export default async function RulesPage() {
+  const copy = await readSiteCopy('rules');
+
   return (
     <main className="page">
+      {/* The studio's own words where it has written any, and the wording
+          the site was built with where it has not. What follows below is
+          built rather than typed - counts, addresses, the rules the code
+          actually enforces - so it stays either way: this screen lets the
+          studio change how the page speaks, not what the app does. */}
       <header className="page-head">
         <p className="eyebrow">Домовленості</p>
-        <h1 className="page-title">Правила студії</h1>
-        <p className="page-lede">
-          Коротко про те, як влаштований запис, скасування й абонементи. Ці правила діють однаково
-          для всіх — саме так їх виконує сайт.
-        </p>
+        <h1 className="page-title">{copy?.title ?? 'Правила студії'}</h1>
+        {copy ? null : (
+          <p className="page-lede">
+            Коротко про те, як влаштований запис, скасування й абонементи. Ці правила діють
+            однаково для всіх — саме так їх виконує сайт.
+          </p>
+        )}
       </header>
+
+      {copy ? (
+        <div className="site-copy">
+          <Prose blocks={copy.blocks} />
+        </div>
+      ) : null}
 
       <section className="section">
         <div className="section-head">

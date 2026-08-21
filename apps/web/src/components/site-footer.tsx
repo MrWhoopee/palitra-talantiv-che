@@ -1,14 +1,33 @@
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
+import { readSiteSettings } from '@/lib/site-content';
 import { FOOTER_NAV, MAIN_NAV, STUDIO } from '@/lib/studio';
 
 /**
  * Public pages only - the cabinet ends where its work ends.
  *
- * Contacts we do not have yet simply do not appear: `STUDIO.phone` and
- * `STUDIO.instagram` are `null` until the studio hands them over.
+ * Contacts the studio has not given us simply do not appear. There are two
+ * ways of not having one and they behave the same: a `null` in `STUDIO`, which
+ * is what the site was built with, and a row the studio cleared on its own
+ * screen, which is how it takes a line back out. Either way nothing is
+ * rendered - a footer with a heading and nothing under it reads as broken.
+ *
+ * The read is cached at the `fetch` level, so this is not a request per page
+ * of the site; the cabinet names this page among the ones it changed, which is
+ * what replaces the cached copy the moment a contact is edited.
  */
-export function SiteFooter() {
+export async function SiteFooter() {
+  const settings = await readSiteSettings();
+
+  const phone = settings.phone || STUDIO.phone;
+  const email = settings.email || null;
+  const workingHours = settings.workingHours || null;
+  const socials: { label: string; href: string }[] = [
+    { label: 'Instagram', href: settings.instagram || STUDIO.instagram || '' },
+    { label: 'Telegram', href: settings.telegram ?? '' },
+    { label: 'Facebook', href: settings.facebook ?? '' },
+  ].filter((social) => social.href !== '');
+
   return (
     <footer className="site-footer">
       <div className="container">
@@ -37,21 +56,29 @@ export function SiteFooter() {
               {STUDIO.locations.map((location) => (
                 <li key={location.name}>{location.address}</li>
               ))}
-              {STUDIO.phone === null ? null : (
+              {phone === null ? null : (
                 <li>
-                  <a href={`tel:${STUDIO.phone}`}>{STUDIO.phone}</a>
+                  <a href={`tel:${phone}`}>{phone}</a>
                 </li>
               )}
+              {email === null ? null : (
+                <li>
+                  <a href={`mailto:${email}`}>{email}</a>
+                </li>
+              )}
+              {workingHours === null ? null : <li>{workingHours}</li>}
             </ul>
           </div>
 
-          {STUDIO.instagram === null ? null : (
+          {socials.length === 0 ? null : (
             <div>
               <h2>Соцмережі</h2>
               <ul>
-                <li>
-                  <a href={STUDIO.instagram}>Instagram</a>
-                </li>
+                {socials.map((social) => (
+                  <li key={social.label}>
+                    <a href={social.href}>{social.label}</a>
+                  </li>
+                ))}
               </ul>
             </div>
           )}

@@ -174,6 +174,39 @@
   text-decoration: underline;
 }
 
+/* Copy the studio wrote itself, which unlike the built pages can hold
+   headings and lists. Held to the same measure as `.prose` so a page that
+   was rewritten still reads at the same line length as one that was not. */
+.site-copy {
+  max-width: 62ch;
+}
+
+.site-copy h2 {
+  margin: var(--pt-space-7) 0 0;
+  font-size: var(--pt-text-lg);
+}
+
+.site-copy h3 {
+  margin: var(--pt-space-6) 0 0;
+  font-size: var(--pt-text-md);
+}
+
+.site-copy ul,
+.site-copy ol {
+  margin: var(--pt-space-4) 0 0;
+  padding-left: var(--pt-space-5);
+  line-height: var(--pt-leading-normal);
+}
+
+.site-copy li + li {
+  margin-top: var(--pt-space-2);
+}
+
+.site-copy a {
+  color: var(--pt-primary);
+  text-decoration: underline;
+}
+
 /* --- Gallery --------------------------------------------------------------
    Photographs and video in one grid. Both are framed the same way: whatever
    the studio sends, the page keeps its rhythm. */
