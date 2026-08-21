@@ -5,6 +5,10 @@
  * who teaches and for how much, and what happens on a given Tuesday. The
  * grouping is the navigation - a flat list of fifteen links would be a list to
  * read through every time rather than a place to reach for.
+ *
+ * Every screen here exists. While stage 6 was being built each entry carried a
+ * `ready` flag, because a link to a screen that is not there yet is a 404 with
+ * the studio's name on it; the last screen took the flag with it.
  */
 
 export type AdminGroupTone = 'site' | 'studio' | 'work';
@@ -12,13 +16,6 @@ export type AdminGroupTone = 'site' | 'studio' | 'work';
 export interface AdminScreen {
   href: string;
   label: string;
-  /**
-   * Temporary. Stage 6 builds these screens one at a time, and a link to a
-   * screen that is not there yet is a 404 with the studio's name on it. Every
-   * entry here is `true` by the end of the stage, and this field goes with the
-   * last one.
-   */
-  ready: boolean;
 }
 
 export interface AdminGroup {
@@ -32,33 +29,33 @@ export const ADMIN_NAV: AdminGroup[] = [
     title: 'Сайт',
     tone: 'site',
     screens: [
-      { href: '/admin/pages', label: 'Сторінки', ready: true },
-      { href: '/admin/contacts', label: 'Контакти', ready: true },
-      { href: '/admin/events', label: 'Події', ready: true },
-      { href: '/admin/gallery', label: 'Галерея', ready: true },
-      { href: '/admin/testimonials', label: 'Відгуки', ready: true },
-      { href: '/admin/achievements', label: 'Досягнення', ready: true },
+      { href: '/admin/pages', label: 'Сторінки' },
+      { href: '/admin/contacts', label: 'Контакти' },
+      { href: '/admin/events', label: 'Події' },
+      { href: '/admin/gallery', label: 'Галерея' },
+      { href: '/admin/testimonials', label: 'Відгуки' },
+      { href: '/admin/achievements', label: 'Досягнення' },
     ],
   },
   {
     title: 'Студія',
     tone: 'studio',
     screens: [
-      { href: '/admin/teachers', label: 'Викладачі', ready: true },
-      { href: '/admin/directions', label: 'Напрями', ready: true },
-      { href: '/admin/locations', label: 'Локації', ready: true },
-      { href: '/admin/prices', label: 'Прайс', ready: true },
+      { href: '/admin/teachers', label: 'Викладачі' },
+      { href: '/admin/directions', label: 'Напрями' },
+      { href: '/admin/locations', label: 'Локації' },
+      { href: '/admin/prices', label: 'Прайс' },
     ],
   },
   {
     title: 'Робота',
     tone: 'work',
     screens: [
-      { href: '/admin/schedule', label: 'Розклад', ready: false },
-      { href: '/admin/subscriptions', label: 'Абонементи', ready: false },
-      { href: '/admin/groups', label: 'Групи', ready: false },
-      { href: '/admin/students', label: 'Учні', ready: false },
-      { href: '/admin/enrollments', label: 'Заявки', ready: false },
+      { href: '/admin/schedule', label: 'Розклад' },
+      { href: '/admin/subscriptions', label: 'Абонементи' },
+      { href: '/admin/groups', label: 'Групи' },
+      { href: '/admin/students', label: 'Учні' },
+      { href: '/admin/enrollments', label: 'Заявки' },
     ],
   },
 ];

@@ -118,18 +118,6 @@ a.admin-nav__item[aria-current='page'] {
   font-weight: 500;
 }
 
-.admin-nav__item--soon {
-  color: color-mix(in srgb, var(--pt-text-muted) 60%, transparent);
-}
-
-/* Deliberately faint. While the cabinet is being built most of the list says
-   this, and a column of shouting markers would read as the point of the
-   sidebar rather than as a footnote on it. */
-.admin-nav__soon {
-  color: color-mix(in srgb, var(--pt-text-muted) 45%, transparent);
-  font-size: 0.6875rem;
-}
-
 .admin-side__foot {
   display: grid;
   gap: var(--pt-space-2);
@@ -667,6 +655,36 @@ details[open] > summary.admin-subrow__title::after {
   letter-spacing: normal;
 }
 
+/* A row of links that narrow a list. Links rather than buttons because each
+   one is an address: a filtered list can be sent to someone, and the back
+   button walks back through what was looked at. */
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pt-space-2);
+  margin-top: var(--pt-space-5);
+}
+
+.admin-filter {
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-pill);
+  padding: var(--pt-space-1) var(--pt-space-4);
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+  text-decoration: none;
+}
+
+.admin-filter:hover {
+  border-color: var(--pt-primary);
+  color: var(--pt-text);
+}
+
+.admin-filter[aria-current='page'] {
+  border-color: var(--pt-primary);
+  background: color-mix(in srgb, var(--pt-primary) 10%, transparent);
+  color: var(--pt-text);
+}
+
 /* --- Narrow screens ------------------------------------------------------- */
 
 @media (max-width: 60rem) {
@@ -724,12 +742,6 @@ details[open] > summary.admin-subrow__title::after {
   a.admin-nav__item[aria-current='page'] {
     border-left-color: transparent;
     border-bottom-color: var(--tone);
-  }
-
-  /* Sideways in a row, the marker doubles the width of every item for a word
-     the studio does not need twice. The muted label already says it. */
-  .admin-nav__soon {
-    display: none;
   }
 
   .admin-side__foot {
