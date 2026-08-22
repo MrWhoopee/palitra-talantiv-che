@@ -98,7 +98,9 @@ describe('parseMarkdown', () => {
   });
 
   it('makes a link out of an address it can follow', () => {
-    const blocks = parseMarkdown('Пишіть на [пошту](mailto:studio@example.com) або в [інстаграм](https://instagram.com/palitra).');
+    const blocks = parseMarkdown(
+      'Пишіть на [пошту](mailto:studio@example.com) або в [інстаграм](https://instagram.com/palitra).',
+    );
 
     expect(blocks[0]).toMatchObject({
       content: [

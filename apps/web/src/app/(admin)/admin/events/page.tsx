@@ -77,8 +77,8 @@ export default async function AdminEventsPage() {
       <section className="admin-panel">
         <h2 className="admin-panel__title">Нова подія</h2>
         <p className="admin-panel__lede">
-          Адреса сторінки має бути неповторною — саме за нею подію знайдуть у пошуку й надішлють
-          у месенджері.
+          Адреса сторінки має бути неповторною — саме за нею подію знайдуть у пошуку й надішлють у
+          месенджері.
         </p>
         <EventForm locations={locations} />
       </section>

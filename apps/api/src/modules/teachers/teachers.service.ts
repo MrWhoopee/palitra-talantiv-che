@@ -132,10 +132,7 @@ export function createTeachersService({ prisma, invite }: TeachersServiceDeps): 
   ): Promise<AdminTeacher> {
     await loadForAdmin(teacherId);
 
-    await withReferences(
-      () => prisma.$transaction(write(teacherId, [...new Set(ids)])),
-      message,
-    );
+    await withReferences(() => prisma.$transaction(write(teacherId, [...new Set(ids)])), message);
 
     return toAdminTeacher(await loadForAdmin(teacherId));
   }

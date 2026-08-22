@@ -64,9 +64,7 @@ export async function saveRow<T>(table: AdminTable<T>, formData: FormData): Prom
       ? await table.attach(parsed.data, formData, accessToken)
       : parsed.data;
 
-    await (id === ''
-      ? table.create(input, accessToken)
-      : table.update(id, input, accessToken));
+    await (id === '' ? table.create(input, accessToken) : table.update(id, input, accessToken));
   } catch (error) {
     return {
       error: describeError(error),

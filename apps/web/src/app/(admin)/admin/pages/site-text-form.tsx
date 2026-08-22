@@ -51,8 +51,8 @@ export function SiteTextForm({ pageKey, value }: { pageKey: SiteTextKey; value?:
           />
           <span className="field-hint">
             Порожній рядок починає новий абзац. Можна писати <code>## Підзаголовок</code>, списки
-            через <code>-</code>, <code>**жирним**</code>, <code>*курсивом*</code> і посилання
-            як <code>[текст](адреса)</code>.
+            через <code>-</code>, <code>**жирним**</code>, <code>*курсивом*</code> і посилання як{' '}
+            <code>[текст](адреса)</code>.
           </span>
           {state.fieldErrors?.['body']?.[0] ? (
             <span className="field-error">{state.fieldErrors['body'][0]}</span>

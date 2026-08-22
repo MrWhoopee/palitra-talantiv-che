@@ -86,11 +86,7 @@ export interface AdminClient {
   getTeachers(accessToken: string): Promise<AdminTeacher[]>;
   getTeacher(teacherId: string, accessToken: string): Promise<AdminTeacher>;
   inviteTeacher(input: TeacherInvite, accessToken: string): Promise<AdminTeacher>;
-  updateTeacher(
-    teacherId: string,
-    patch: TeacherPatch,
-    accessToken: string,
-  ): Promise<AdminTeacher>;
+  updateTeacher(teacherId: string, patch: TeacherPatch, accessToken: string): Promise<AdminTeacher>;
   setTeacherDirections(
     teacherId: string,
     ids: string[],

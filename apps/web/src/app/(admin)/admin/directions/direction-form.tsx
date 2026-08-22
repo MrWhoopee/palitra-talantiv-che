@@ -53,7 +53,9 @@ export function DirectionForm({ value }: { value?: AdminDirection }) {
             rows={3}
             defaultValue={submitted?.['description'] ?? value?.description ?? ''}
           />
-          <span className="field-hint">Кілька речень для сторінки напряму. Можна не заповнювати.</span>
+          <span className="field-hint">
+            Кілька речень для сторінки напряму. Можна не заповнювати.
+          </span>
         </p>
 
         <div className="admin-form__row">

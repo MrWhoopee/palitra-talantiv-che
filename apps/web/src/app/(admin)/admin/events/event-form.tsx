@@ -70,9 +70,7 @@ export function EventForm({
             id={at('startsAt')}
             type="datetime-local"
             required
-            defaultValue={
-              submitted?.['startsAt'] ?? (value ? toDateTimeInput(value.startsAt) : '')
-            }
+            defaultValue={submitted?.['startsAt'] ?? (value ? toDateTimeInput(value.startsAt) : '')}
             errors={state.fieldErrors?.['startsAt']}
           />
           <Field
@@ -176,11 +174,7 @@ export function EventForm({
         </div>
 
         <label className="admin-check">
-          <input
-            type="checkbox"
-            name="isPublished"
-            defaultChecked={value?.isPublished ?? false}
-          />
+          <input type="checkbox" name="isPublished" defaultChecked={value?.isPublished ?? false} />
           На сайті
           <span className="admin-check__hint">
             Знято — подія лишається тут як чернетка, в афіші її немає.
