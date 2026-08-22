@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { neighbours, stageFromSearch, TRACKS, trackAt, trackIndex } from './tracks';
+import { neighbours, TRACKS, trackAt, trackIndex } from './tracks';
 
 describe('TRACKS', () => {
   it('opens with the home page and then reads the menu top to bottom', () => {
@@ -83,15 +83,5 @@ describe('trackAt', () => {
     expect(trackAt(null)).toBeNull();
     expect(trackAt(99)).toBeNull();
     expect(trackAt(-1)).toBeNull();
-  });
-});
-
-describe('stageFromSearch', () => {
-  it('opens the wall only when asked for it by name', () => {
-    expect(stageFromSearch('wall')).toBe('wall');
-    expect(stageFromSearch(null)).toBe('curtain');
-    expect(stageFromSearch('')).toBe('curtain');
-    expect(stageFromSearch('Wall')).toBe('curtain');
-    expect(stageFromSearch('<script>')).toBe('curtain');
   });
 });

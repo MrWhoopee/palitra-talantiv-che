@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { CorridorScene } from '@/components/show-scenes/corridor';
-import { setCurtainOpen } from '@/lib/show';
+import { isCurtainOpen, setCurtainOpen, watchAttributes } from '@/lib/show';
 import { TRACKS } from '@/lib/tracks';
 import '@/styles/show-scene.css';
 
@@ -106,21 +106,34 @@ export function ShowCorridor() {
         return;
       }
 
-      // Escape shuts the curtain rather than changing the address itself.
-      //
-      // Pushing '/' from here did not work and could not: the curtain was
-      // still drawn back, so the home screen read that as "the studio is
-      // open" and sent us straight back to the corridor. One owner decides
-      // which screen is showing, and it decides from the curtain - so leaving
-      // means closing it, and pause in the player means exactly the same
-      // thing by exactly the same route.
-      if (event.key === 'Escape') setCurtainOpen(document.documentElement, false);
+      // Nothing to escape from any more: the corridor is where the site
+      // opens, so there is no screen behind it to go back to.
     };
 
     window.addEventListener('keydown', onKey, true);
 
     return () => window.removeEventListener('keydown', onKey, true);
   }, [index, router]);
+
+  // Play means "open what is in front of you", and in the corridor that is the
+  // door. The player already has the control and already says which track it
+  // is on, so a second button here would be a second way to say the same
+  // thing. Shut on arrival so the button is armed rather than showing pause
+  // for a scene nobody opened.
+  const chosen = useRef(index);
+  chosen.current = index;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    setCurtainOpen(root, false);
+
+    return watchAttributes(root, () => {
+      if (!isCurtainOpen(root)) return;
+
+      const track = TRACKS[chosen.current];
+      if (track !== undefined) router.push(track.href);
+    });
+  }, [router]);
 
   const track = TRACKS[index];
 
@@ -133,7 +146,7 @@ export function ShowCorridor() {
           трек {index + 1} з {TRACKS.length}
         </p>
         <h1 className="scene__title">{track?.label ?? ''}</h1>
-        <p className="scene__meta">{failed ?? 'Enter — увійти · Esc — до завіси'}</p>
+        <p className="scene__meta">{failed ?? '← → коридором · Enter — увійти'}</p>
       </div>
 
       {/*

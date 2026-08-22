@@ -93,20 +93,6 @@ export function neighbours(index: number | null): { previous: Track | null; next
   };
 }
 
-export type Stage = 'curtain' | 'wall';
-
-/**
- * Which screen `/` is showing, read from the address so that the browser's
- * back button walks from the wall to the curtain rather than off the site,
- * and so a link to the wall can be sent to somebody.
- *
- * Anything that is not the one name is the curtain: the value comes from a
- * query string, and a query string is written by whoever is typing.
- */
-export function stageFromSearch(value: string | null | undefined): Stage {
-  return value === 'wall' ? 'wall' : 'curtain';
-}
-
 /** Without the query string, and without a trailing slash except at the root. */
 function normalise(pathname: string): string {
   const path = (pathname.split('?')[0] ?? '').split('#')[0] ?? '';

@@ -52,28 +52,51 @@ export interface CorridorScene {
   dispose(): void;
 }
 
-/** Door to door. Wide enough for wall between them, tight enough to stay a corridor. */
-const PITCH = 2.1;
+/**
+ * Along the corridor, from one door to the next one facing it.
+ *
+ * Doors alternate walls, so two on the same side are twice this apart - 4.4 m,
+ * which is the frontage of a real rehearsal room. The first corridor put them
+ * 2.1 m apart on one wall, and that quietly said every room behind them was
+ * two metres wide. Those are cupboards, not classrooms, and the building was
+ * lying before a single room existed.
+ */
+const STRIDE = 2.2;
 
 /** Low, because that is what makes a corridor a passage rather than a hall. */
 const CEILING = 2.62;
 
-/** The corridor is narrow: the far wall is close enough to feel. */
-const DEPTH = 3.4;
+/**
+ * Wall to wall. A corridor is something you are *between*: at three and a half
+ * metres it was as wide as a room, and standing in it felt like standing in
+ * one.
+ */
+const WIDTH = 2.4;
 
-const LAMP_HEIGHT = 2.32;
+const LAMP_HEIGHT = 2.3;
+
+/** Which wall a door is on: even indices left, odd right. */
+function sideOf(index: number): -1 | 1 {
+  return index % 2 === 0 ? -1 : 1;
+}
 
 export async function createCorridor(options: CorridorOptions): Promise<CorridorScene> {
   const { canvas, quality, portrait, doors, onProgress } = options;
 
-  const room = createRoom(canvas, quality, { floor: true });
+  // No shared floor here. The kit's is eighty metres across and catches the
+  // rim light from outside, which in a corridor reads as a lit runway with
+  // unlit walls either side of it - the one surface in the scene that is not
+  // in the same room as the rest.
+  const room = createRoom(canvas, quality, { floor: false });
   const library = await loadProps(onProgress);
 
-  const span = (doors.length - 1) * PITCH;
+  const span = (doors.length - 1) * STRIDE;
   const centre = span / 2;
   // Run past the doors at both ends. A wall that stops inside the frame turns
   // the corridor back into a flat with scenery standing on it.
-  const RUN = PITCH * 3;
+  const RUN = STRIDE * 4;
+  const length = span + RUN * 2;
+  const wallZ = WIDTH / 2;
   const disposables: { dispose(): void }[] = [];
 
   // The walls. Without them the doors stand in a void and the corridor is a
@@ -86,24 +109,40 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
   });
   disposables.push(wallMaterial);
 
-  const wallGeometry = new PlaneGeometry(span + RUN * 2, CEILING);
+  const wallGeometry = new PlaneGeometry(length, CEILING);
   disposables.push(wallGeometry);
 
-  const back = new Mesh(wallGeometry, wallMaterial);
-  back.position.set(centre, CEILING / 2, 0);
-  back.receiveShadow = room.high;
+  const left = new Mesh(wallGeometry, wallMaterial);
+  left.position.set(centre, CEILING / 2, -wallZ);
+  left.receiveShadow = room.high;
 
-  const front = new Mesh(wallGeometry, wallMaterial);
-  front.position.set(centre, CEILING / 2, DEPTH);
+  const right = new Mesh(wallGeometry, wallMaterial);
+  right.position.set(centre, CEILING / 2, wallZ);
+  right.receiveShadow = room.high;
 
-  const ceilingGeometry = new PlaneGeometry(span + RUN * 2, DEPTH);
+  const ceilingGeometry = new PlaneGeometry(length, WIDTH);
   disposables.push(ceilingGeometry);
 
   const ceiling = new Mesh(ceilingGeometry, wallMaterial);
-  ceiling.position.set(centre, CEILING, DEPTH / 2);
+  ceiling.position.set(centre, CEILING, 0);
   ceiling.rotation.x = Math.PI / 2;
 
-  room.scene.add(back, front, ceiling);
+  const floorGeometry = new PlaneGeometry(length, WIDTH);
+  disposables.push(floorGeometry);
+
+  const floorMaterial = new MeshStandardMaterial({
+    color: 0x110e18,
+    roughness: 0.78,
+    metalness: 0.08,
+  });
+  disposables.push(floorMaterial);
+
+  const floor = new Mesh(floorGeometry, floorMaterial);
+  floor.position.set(centre, 0, 0);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = room.high;
+
+  room.scene.add(left, right, ceiling, floor);
 
   // The doors: one mesh, drawn once, however many tracks there turn out to be.
   const leaves = library.instance('door_leaf', doors.length);
@@ -128,11 +167,17 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
   const tint = new Color();
 
   doors.forEach((door, index) => {
-    const x = index * PITCH;
+    const x = index * STRIDE;
+    const side = sideOf(index);
+    // A door on the far wall is the same door turned round to face back in.
+    const turn = side < 0 ? 0 : Math.PI;
 
-    leaves.place(index, matrix.identity().setPosition(x, 0, 0));
-    glass.place(index, matrix.identity().setPosition(x, 0, 0.012));
-    lamps.setMatrixAt(index, matrix.identity().setPosition(x, LAMP_HEIGHT, 0.16));
+    leaves.place(index, matrix.makeRotationY(turn).setPosition(x, 0, side * wallZ));
+    glass.place(index, matrix.makeRotationY(turn).setPosition(x, 0, side * (wallZ - 0.012)));
+    lamps.setMatrixAt(
+      index,
+      matrix.makeRotationY(turn).setPosition(x, LAMP_HEIGHT, side * (wallZ - 0.16)),
+    );
 
     glass.paint(index, lit(tint, door.tint));
   });
@@ -160,8 +205,12 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
     disposables.push(geometry);
 
     const sign = new Mesh(geometry, material);
-    // On the left panel, clear of the glass, at the height a plate is screwed on.
-    sign.position.set(index * PITCH - 0.255, 1.72, 0.035);
+    const side = sideOf(index);
+    const turn = side < 0 ? 0 : Math.PI;
+    // On the left panel, clear of the glass, at the height a plate is screwed
+    // on - and mirrored with its door when that door faces the other way.
+    sign.rotation.y = turn;
+    sign.position.set(index * STRIDE + (side < 0 ? -0.255 : 0.255), 1.72, side * (wallZ - 0.035));
     room.scene.add(sign);
 
     return sign;
@@ -182,17 +231,36 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
   let current = 0;
   let target = 0;
 
+  /**
+   * Which wall the walk is against, as a number that crosses zero mid-step.
+   *
+   * Doors alternate sides, so a walk down the corridor weaves - and that weave
+   * is what tells you there are two walls. Rounding to the nearest door would
+   * snap the camera across the corridor instead.
+   */
+  const sideAt = (at: number) => {
+    const lo = Math.floor(at);
+    const hi = Math.min(doors.length - 1, lo + 1);
+    const t = at - lo;
+
+    return sideOf(Math.max(0, lo)) * (1 - t) + sideOf(hi) * t;
+  };
+
   const place = (at: number) => {
-    const x = at * PITCH;
+    const x = at * STRIDE;
+    const side = sideAt(at);
 
-    // Standing a little to one side of the door rather than square in front of
-    // it: square on, the corridor behind is invisible and this is a picture of
-    // a door. Off to the side, the others recede and it is a corridor.
-    room.camera.position.set(x - 1.05, 1.52, 2.7);
-    room.camera.lookAt(x + 0.15, 1.12, 0);
+    // Back along the corridor and slightly across from the door, not square in
+    // front of it. Square on, the corridor is invisible and this is a picture
+    // of a door; from across and behind, the far doors recede past it and it
+    // is a place with a length. Only slightly across: leaning the full way
+    // over put the camera half a metre from the opposite wall, and the door it
+    // had just left ate a third of the frame on the way past.
+    room.camera.position.set(x - 3.1, 1.58, -side * 0.38);
+    room.camera.lookAt(x + 0.25, 1.14, side * (wallZ - 0.15));
 
-    lamp.position.set(x, LAMP_HEIGHT, 0.55);
-    lamp.target.position.set(x, 0.9, 0);
+    lamp.position.set(x, LAMP_HEIGHT, side * (wallZ - 0.5));
+    lamp.target.position.set(x, 0.9, side * wallZ);
     lamp.target.updateMatrixWorld();
   };
 

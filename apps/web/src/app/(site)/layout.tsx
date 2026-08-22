@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { PointerLayer } from '@/components/pointer-layer';
 import { RevealObserver } from '@/components/reveal-observer';
 import { ShowPlayer } from '@/components/show-player';
@@ -20,14 +20,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <RevealObserver />
       <PointerLayer />
       <ShowPlayer />
-      {/* The show's home reads the stage out of the query string, and a client
-          hook that touches URL data would otherwise pull every page in this
-          layout out of prerendering. Behind a boundary, the pages stay static
-          and only this island is client-rendered - which is the promise stage
-          7 made about /rules and /contacts. */}
-      <Suspense fallback={null}>
-        <ShowHome />
-      </Suspense>
+      <ShowHome />
     </div>
   );
 }
