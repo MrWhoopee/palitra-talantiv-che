@@ -2,6 +2,7 @@ import {
   ACESFilmicToneMapping,
   AmbientLight,
   Clock,
+  Color,
   DirectionalLight,
   FogExp2,
   Mesh,
@@ -10,6 +11,7 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
+  ShaderMaterial,
   WebGLRenderer,
 } from 'three';
 
@@ -138,4 +140,103 @@ export function fitCamera(room: SceneRoom, width: number, height: number, portra
   room.camera.fov = portrait ? 58 : 42;
   room.camera.updateProjectionMatrix();
   room.renderer.setSize(width, height, false);
+}
+
+/**
+ * An aperture, closed over the frame.
+ *
+ * Six straight blades that turn as they retract - the way a lens opens, which
+ * is the right way to open a page about portraits. Play draws it back; pause
+ * closes it.
+ *
+ * Drawn as one quad with a shader rather than as six meshes. The blades of a
+ * real aperture meet along straight chords, and a chord is exactly what a
+ * polygon distance is: solving it per pixel is shorter and cleaner than
+ * arranging six planes and hoping their corners never part.
+ */
+export interface Iris {
+  readonly mesh: Mesh;
+  /** 0 is shut, 1 is fully open. */
+  setOpen(open: number): void;
+  setAspect(aspect: number): void;
+  dispose(): void;
+}
+
+const IRIS_VERTEX = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}`;
+
+const IRIS_FRAGMENT = `
+precision mediump float;
+
+varying vec2 vUv;
+uniform float u_open;
+uniform float u_aspect;
+uniform vec3 u_blade;
+uniform vec3 u_rim;
+
+const float BLADES = 6.0;
+const float PI = 3.14159265;
+
+void main() {
+  vec2 p = (vUv - 0.5) * vec2(u_aspect, 1.0) * 2.0;
+  float d = length(p);
+  float angle = atan(p.y, p.x);
+
+  // The blades turn as they go, so the opening reads as a mechanism rather
+  // than as a hole being scaled up.
+  float turn = (1.0 - u_open) * 0.7;
+  float wedge = 2.0 * PI / BLADES;
+  float local = mod(angle + turn + PI, wedge) - wedge * 0.5;
+
+  // Centre to blade edge at this angle: a straight chord, which is what makes
+  // the opening a polygon rather than a circle.
+  float reach = (u_open * 2.2) / cos(local);
+
+  if (d < reach) discard;
+
+  // A bright edge where the blades meet the opening: a lens catches light
+  // there, and without it the aperture is a flat mask.
+  float rim = smoothstep(0.16, 0.0, d - reach);
+  gl_FragColor = vec4(mix(u_blade, u_rim, rim), 1.0);
+}`;
+
+export function createIris(): Iris {
+  const material = new ShaderMaterial({
+    vertexShader: IRIS_VERTEX,
+    fragmentShader: IRIS_FRAGMENT,
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      u_open: { value: 0 },
+      u_aspect: { value: 1 },
+      u_blade: { value: new Color(0x0a0810) },
+      u_rim: { value: new Color(0x8f6bf0) },
+    },
+  });
+
+  const mesh = new Mesh(new PlaneGeometry(2, 2), material);
+  // Drawn last and never culled: it is in front of everything by definition.
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 999;
+
+  return {
+    mesh,
+
+    setOpen(open) {
+      material.uniforms['u_open']!.value = open;
+    },
+
+    setAspect(aspect) {
+      material.uniforms['u_aspect']!.value = aspect;
+    },
+
+    dispose() {
+      mesh.geometry.dispose();
+      material.dispose();
+    },
+  };
 }

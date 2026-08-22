@@ -97,3 +97,14 @@
     translate: none;
   }
 }
+
+/* While the curtain is shut, the words are behind it: a name legible over the
+   cloth would give away the cover before it is drawn. */
+.scene:not([data-open]) .scene__panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scene__panel {
+  transition: opacity var(--pt-dur-move) var(--pt-ease-out);
+}

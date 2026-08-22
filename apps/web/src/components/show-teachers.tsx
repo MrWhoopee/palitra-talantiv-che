@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { TeachersScene } from '@/components/show-scenes/teachers';
-import { readSkin, watchAttributes } from '@/lib/show';
+import { isCurtainOpen, readSkin, watchAttributes } from '@/lib/show';
 import { REDUCED_MOTION_QUERY } from '@/lib/skin';
 import '@/styles/show-scene.css';
 
@@ -44,11 +44,16 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<TeachersScene | null>(null);
   const [showing, setShowing] = useState(false);
+  const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     const root = document.documentElement;
-    const read = () => setShowing(readSkin(root) === 'show');
+
+    const read = () => {
+      setShowing(readSkin(root) === 'show');
+      setOpen(isCurtainOpen(root));
+    };
 
     read();
 
@@ -81,6 +86,7 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
         canvas,
         quality: window.matchMedia('(pointer: coarse)').matches ? 'low' : 'high',
         portrait: portrait(),
+        posterUrl: '/demo/covers/teachers.svg',
         teachers: teachers.map((teacher, index) => ({
           id: teacher.id,
           figureUrl: teacher.photoUrl ?? FIGURES[index % FIGURES.length]!,
@@ -90,9 +96,12 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
 
       sceneRef.current = scene;
       scene.resize(window.innerWidth, window.innerHeight, portrait());
+      // The curtain may already be back if the visitor pressed play before the
+      // scene had finished loading.
+      scene.setOpen(isCurtainOpen(document.documentElement));
     });
 
-    // The scroll walks along the row: one screen of scrolling per teacher.
+    // Nothing to scroll along until the curtain has gone.
     const onScroll = () => {
       const span = document.documentElement.scrollHeight - window.innerHeight;
       const progress = span > 0 ? window.scrollY / span : 0;
@@ -117,12 +126,29 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
     };
   }, [live, teachers]);
 
+  // The cloth follows the attribute, and the page under it is only walkable
+  // once the cloth has gone.
+  useEffect(() => {
+    sceneRef.current?.setOpen(open);
+  }, [open]);
+
+  useEffect(() => {
+    if (!live) return;
+
+    document.body.style.overflow = open ? '' : 'hidden';
+    if (!open) window.scrollTo(0, 0);
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [live, open]);
+
   if (!live) return null;
 
   const teacher = teachers[Math.min(current, teachers.length - 1)]!;
 
   return (
-    <main className="scene">
+    <main className="scene" data-open={open ? '' : undefined}>
       <canvas className="scene__canvas" ref={canvasRef} />
 
       <div className="scene__panel">

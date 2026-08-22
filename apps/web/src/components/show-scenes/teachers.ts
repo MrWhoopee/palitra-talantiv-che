@@ -8,7 +8,8 @@ import {
   type Scene,
   type Texture,
 } from 'three';
-import { approach, createRoom, fitCamera, runLoop, type Quality } from './stage-kit';
+import { createLogo, type LogoMark } from '@/components/demo-stage/scene/logo';
+import { approach, createIris, createRoom, fitCamera, runLoop, type Quality } from './stage-kit';
 
 /**
  * The teachers, as a screen you pick somebody from.
@@ -38,11 +39,15 @@ export interface TeachersSceneOptions {
   readonly quality: Quality;
   readonly portrait: boolean;
   readonly teachers: readonly TeacherCard[];
+  /** What hangs on this track's curtain: an SVG, extruded in front of it. */
+  readonly posterUrl: string;
 }
 
 export interface TeachersScene {
   /** Which teacher is on screen. Fractional values are the crossing itself. */
   setIndex(index: number): void;
+  /** Draw this track's curtain back, or shut it again. */
+  setOpen(open: boolean): void;
   resize(width: number, height: number, portrait: boolean): void;
   dispose(): void;
 }
@@ -78,14 +83,50 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
   const streaks = makeStreaks(scene);
 
+  // The way this track opens: a lens, not the house curtain. The hall has a
+  // curtain because it is a hall; a page about portraits opens the way a
+  // portrait is taken, and every track is meant to have its own door.
+  const iris = createIris();
+  scene.add(iris.mesh);
+
+  let poster: LogoMark | null = null;
+  void createLogo(options.posterUrl, 2.2)
+    .then((mark) => {
+      poster = mark;
+      poster.group.position.set(0, 2.6, 3.2);
+      scene.add(poster.group);
+    })
+    .catch(() => {
+      // A cover worth showing without its mark; a mark not worth failing the
+      // whole scene over.
+    });
+
   const wash = new Color(0x1a1230);
   const washTarget = new Color(0x1a1230);
   renderer.setClearColor(wash, 1);
 
   let index = 0;
   let shown = 0;
+  let openTarget = 0;
+  let openT = 0;
 
   const loop = runLoop((delta, time) => {
+    // The cloth runs towards a target, so pause draws it shut by the same
+    // path and at the same pace that play drew it back.
+    if (openT !== openTarget) {
+      const step = delta / 1.9;
+      openT =
+        openTarget > openT
+          ? Math.min(openT + step, openTarget)
+          : Math.max(openT - step, openTarget);
+    }
+
+    const drawn = openT < 0.5 ? 4 * openT * openT * openT : 1 - Math.pow(-2 * openT + 2, 3) / 2;
+    iris.setOpen(drawn);
+    // The mark on the blades goes before they do, so it is not still hanging
+    // in the middle of the frame once there is a scene behind it.
+    poster?.setReveal(Math.min(drawn * 2.2, 1));
+
     shown = approach(shown, index, 6, delta);
 
     const whole = Math.round(shown);
@@ -133,14 +174,20 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
   }
 
   fitCamera(room, window.innerWidth, window.innerHeight, options.portrait);
+  iris.setAspect(window.innerWidth / window.innerHeight);
 
   return {
+    setOpen(open) {
+      openTarget = open ? 1 : 0;
+    },
+
     setIndex(next) {
       index = Math.min(Math.max(next, 0), Math.max(teachers.length - 1, 0));
     },
 
     resize(width, height, portrait) {
       fitCamera(room, width, height, portrait);
+      iris.setAspect(width / height);
       // Standing to one side only works where there is a side; on a phone the
       // figure comes to the middle and the words go over it.
       for (const plane of planes) plane.scale.setScalar(portrait ? 0.78 : 1);
@@ -148,6 +195,8 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
     dispose() {
       loop.stop();
+      iris.dispose();
+      poster?.dispose();
       for (const texture of textures.values()) texture.dispose();
       scene.traverse((object) => {
         if (!(object instanceof Mesh)) return;

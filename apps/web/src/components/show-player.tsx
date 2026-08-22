@@ -62,25 +62,17 @@ export function ShowPlayer() {
       <div className="player__transport">
         <Step track={previous} direction="previous" />
 
-        {/* Play draws the curtain back; pause draws it shut and the mark
-            comes back. It sits in the middle because it is the thing the
-            arrows are arranged around, the way it is on anything that plays.
-
-            On a page that has no cover yet it is a link home, where the one
-            cover there is lives. */}
-        {pathname === '/' ? (
-          <button className="player__play" onClick={toggleCurtain} type="button">
-            <span aria-hidden="true">{open ? '❙❙' : '▶'}</span>
-            <span className="visually-hidden">
-              {open ? 'Пауза: засунути завісу' : 'Грати: розсунути завісу'}
-            </span>
-          </button>
-        ) : (
-          <Link className="player__play" href="/">
-            <span aria-hidden="true">▶</span>
-            <span className="visually-hidden">Грати: обкладинка</span>
-          </Link>
-        )}
+        {/* Play draws this track's curtain back; pause draws it shut and its
+            cover comes back. Every track opens the same way, so the control
+            means the same thing everywhere - which is the point of a
+            transport. It sits in the middle because it is the thing the
+            arrows are arranged around. */}
+        <button className="player__play" onClick={toggleCurtain} type="button">
+          <span aria-hidden="true">{open ? '❙❙' : '▶'}</span>
+          <span className="visually-hidden">
+            {open ? 'Пауза: засунути завісу' : 'Грати: розсунути завісу'}
+          </span>
+        </button>
 
         <Step track={next} direction="next" />
       </div>

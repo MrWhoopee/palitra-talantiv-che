@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420">
+  <!-- The teachers' cover: the roster as four tiles, which is the device the
+       page itself is built on. Paths rather than <rect rx>, because the loader
+       that hangs this in front of the curtain extrudes paths. -->
+  <g fill="#ffffff">
+    <path d="M40 40 h120 a24 24 0 0 1 24 24 v120 a24 24 0 0 1 -24 24 h-120 a24 24 0 0 1 -24 -24 v-120 a24 24 0 0 1 24 -24 z" />
+    <path d="M236 40 h120 a24 24 0 0 1 24 24 v120 a24 24 0 0 1 -24 24 h-120 a24 24 0 0 1 -24 -24 v-120 a24 24 0 0 1 24 -24 z" />
+    <path d="M40 236 h120 a24 24 0 0 1 24 24 v120 a24 24 0 0 1 -24 24 h-120 a24 24 0 0 1 -24 -24 v-120 a24 24 0 0 1 24 -24 z" />
+    <path d="M236 236 h120 a24 24 0 0 1 24 24 v120 a24 24 0 0 1 -24 24 h-120 a24 24 0 0 1 -24 -24 v-120 a24 24 0 0 1 24 -24 z" />
+  </g>
+</svg>
