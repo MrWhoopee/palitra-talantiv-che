@@ -527,3 +527,27 @@
   display: block;
   color: var(--pt-text-muted);
 }
+
+/* The answer where there is no photograph: the person's initials in the
+   display face, on a tinted square the same size as a portrait. Stage 5
+   refused a grey box here and it was right - a grey box is the absence of an
+   answer. This is the page's own device, and the one its cover is made of. */
+.teacher-initials {
+  display: grid;
+  width: 5.5rem;
+  place-items: center;
+  border-radius: var(--pt-radius-md);
+  aspect-ratio: 1;
+  background: color-mix(in srgb, var(--pt-primary) 12%, transparent);
+  color: var(--pt-primary);
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xl);
+  font-weight: 500;
+  letter-spacing: var(--pt-tracking-mark);
+  transition: background var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.teacher-card:hover .teacher-initials,
+.teacher-card:focus-visible .teacher-initials {
+  background: color-mix(in srgb, var(--pt-primary) 20%, transparent);
+}
