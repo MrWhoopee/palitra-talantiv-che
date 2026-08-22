@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { SkinSwitch } from '@/components/skin-switch';
 import { REDUCED_MOTION_QUERY } from '@/lib/skin';
 import { isCurtainOpen, readSkin, setCurtainOpen, watchAttributes } from '@/lib/show';
@@ -42,7 +42,13 @@ export function ShowPlayer() {
   const { previous, next } = neighbours(index);
 
   return (
-    <nav className="player" aria-label="Треки студії">
+    <nav
+      className="player"
+      aria-label="Треки студії"
+      // The bar is lit by whatever it is standing in front of. A track that is
+      // not on the list has no cover to borrow from, so it keeps the paper.
+      style={{ '--pt-track-tint': position?.track.tint ?? 'transparent' } as CSSProperties}
+    >
       {/* What is playing, on the left, the way a player says it. */}
       <p className="player__now">
         <span className="player__label">{position === null ? pageName : position.track.label}</span>

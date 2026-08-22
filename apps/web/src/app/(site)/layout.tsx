@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { PointerLayer } from '@/components/pointer-layer';
 import { RevealObserver } from '@/components/reveal-observer';
 import { ShowPlayer } from '@/components/show-player';
-import { StageCover } from '@/components/stage-cover';
+import { ShowHome } from '@/components/show-home';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import '@/styles/site.css';
@@ -20,7 +20,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <RevealObserver />
       <PointerLayer />
       <ShowPlayer />
-      <StageCover />
+      <ShowHome />
     </div>
   );
 }

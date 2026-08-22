@@ -317,8 +317,19 @@ a.card:focus-visible .track__sweep,
   grid-template-columns: 1fr auto 1fr;
   padding: var(--pt-space-3) var(--pt-space-5);
   border-top: 1px solid var(--pt-line);
-  background: color-mix(in srgb, var(--pt-surface) 92%, transparent);
+  /* The paper first, then the current track's colour laid over it as a wash
+     that fades out towards the top edge - so the bar reads as the foot of the
+     scene it stands in front of rather than as one grey strip in front of all
+     seven. Changing track changes the wash. */
+  background:
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--pt-track-tint, transparent) 26%, transparent),
+      transparent
+    ),
+    color-mix(in srgb, var(--pt-surface) 92%, transparent);
   backdrop-filter: blur(10px);
+  transition: background var(--pt-dur-move) var(--pt-ease-out);
 }
 
 .player__now {
@@ -452,4 +463,27 @@ a.card:focus-visible .track__sweep,
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+}
+
+/* --- The hall replaces the page ----------------------------------------------
+
+   In the show, the home page is the stage and nothing else. The ordinary
+   header, article and footer are not laid out beside it or behind it - they
+   are not on screen at all, which is the difference between a decoration over
+   a document and a second way of presenting the studio.
+
+   They stay in the HTML, so the page a crawler reads is unchanged and the
+   switch back is instant.
+--------------------------------------------------------------------------- */
+
+:root[data-show-home] .site-body > header,
+:root[data-show-home] .site-body > footer,
+:root[data-show-home] .site-body > main:not(.stage) {
+  display: none;
+}
+
+/* The stave belongs on paper, not over a lit stage. */
+:root[data-show-home] .pointer-staff,
+:root[data-show-home] .pointer-notes {
+  display: none;
 }

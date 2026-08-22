@@ -38,7 +38,18 @@ function presence(progress: number, from: number, to: number): number {
   return arriving * (1 - leaving);
 }
 
-export function StageExperience() {
+export interface StageExperienceProps {
+  /**
+   * Whether the curtain is drawn back. Passing it hands control to whoever is
+   * outside - the player's own play and pause - and takes away the tap-to-open
+   * the demo page opens itself with. Left out, the component behaves as it
+   * always did.
+   */
+  readonly open?: boolean;
+}
+
+export function StageExperience({ open: openProp }: StageExperienceProps = {}) {
+  const controlled = openProp !== undefined;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const blocksRef = useRef<(HTMLElement | null)[]>([]);
   const stageRef = useRef<Stage | null>(null);
@@ -123,6 +134,20 @@ export function StageExperience() {
     };
   }, [mode, paint]);
 
+  // Driven from outside when somebody else owns the transport.
+  useEffect(() => {
+    if (!controlled || mode !== 'scene') return;
+
+    if (openProp) {
+      stageRef.current?.open();
+      setPhase((current) => (current === 'closed' ? 'opening' : current));
+      return;
+    }
+
+    stageRef.current?.close();
+    setPhase('closed');
+  }, [controlled, openProp, mode]);
+
   // Nothing to scroll to until the curtain has gone.
   useEffect(() => {
     if (mode !== 'scene') return;
@@ -195,7 +220,7 @@ export function StageExperience() {
     <main className="stage" data-phase={phase}>
       <canvas className="stage__canvas" ref={canvasRef} />
       <div className="stage__vignette" aria-hidden="true" />
-      {phase !== 'open' && (
+      {!controlled && phase !== 'open' && (
         <button
           type="button"
           className="stage__enter"

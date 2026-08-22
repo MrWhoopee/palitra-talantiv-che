@@ -10,9 +10,33 @@ import { MAIN_NAV } from '@/lib/studio';
 export interface Track {
   href: string;
   label: string;
+  /**
+   * The colour this track's cover is lit in. The player wears it, so the
+   * transport belongs to the scene it is standing in front of rather than
+   * being one grey bar in front of all seven.
+   *
+   * Stated here rather than in the stylesheet because it is a property of the
+   * track, and the scenes will read the same values when they are built.
+   */
+  tint: string;
 }
 
-export const TRACKS: readonly Track[] = [{ href: '/', label: 'Головна' }, ...MAIN_NAV];
+/** The curtain's own red, measured off the cloth in `scene/curtains.ts`. */
+const CURTAIN_RED = '#6b1020';
+
+const TINTS: Record<string, string> = {
+  '/': CURTAIN_RED,
+  '/teachers': '#7546d0',
+  '/directions': '#3a5b4a',
+  '/groups': '#5b33a8',
+  '/events': '#3a5b4a',
+  '/about': '#f08a2c',
+  '/contacts': '#1c1b22',
+};
+
+export const TRACKS: readonly Track[] = [{ href: '/', label: 'Головна' }, ...MAIN_NAV].map(
+  (entry) => ({ ...entry, tint: TINTS[entry.href] ?? CURTAIN_RED }),
+);
 
 /**
  * Which track a page belongs to, or `null` for a page that is not one - the
