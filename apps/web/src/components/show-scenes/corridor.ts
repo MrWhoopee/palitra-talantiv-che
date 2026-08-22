@@ -48,6 +48,15 @@ export interface CorridorOptions {
 export interface CorridorScene {
   /** Which door is in front of you. Fractional values are the step itself. */
   setIndex(index: number): void;
+  /**
+   * A door being opened, and how far along it is.
+   *
+   * `null` puts the corridor back to rest. Otherwise light grows under that
+   * door and its window brightens, which is the whole loader: the room behind
+   * it is arriving, and the corridor says so without a spinner standing in
+   * front of the show.
+   */
+  setOpening(index: number | null, progress: number): void;
   resize(width: number, height: number, portrait: boolean): void;
   dispose(): void;
 }
@@ -127,6 +136,11 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
   ceiling.position.set(centre, CEILING, 0);
   ceiling.rotation.x = Math.PI / 2;
 
+  const keepFloor = <T extends { dispose(): void }>(item: T): T => {
+    disposables.push(item);
+    return item;
+  };
+
   const floorGeometry = new PlaneGeometry(length, WIDTH);
   disposables.push(floorGeometry);
 
@@ -145,9 +159,18 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
   room.scene.add(left, right, ceiling, floor);
 
   // The doors: one mesh, drawn once, however many tracks there turn out to be.
+  //
+  // Leaf and frame are separate meshes because a door that opens has to be:
+  // the leaf swings on its hinge and the casing stays in the wall. Joined into
+  // one - which is how the first door was modelled - swinging it would swing
+  // the hole it hangs in.
   const leaves = library.instance('door_leaf', doors.length);
   leaves.mesh.castShadow = room.high;
   leaves.mesh.receiveShadow = room.high;
+
+  const frames = library.instance('door_frame', doors.length);
+  frames.mesh.castShadow = room.high;
+  frames.mesh.receiveShadow = room.high;
 
   // The glass is unlit on purpose. It is standing in for light coming through
   // from the other side, and a surface that takes the corridor's own lamp on
@@ -173,6 +196,7 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
     const turn = side < 0 ? 0 : Math.PI;
 
     leaves.place(index, matrix.makeRotationY(turn).setPosition(x, 0, side * wallZ));
+    frames.place(index, matrix.makeRotationY(turn).setPosition(x, 0, side * wallZ));
     glass.place(index, matrix.makeRotationY(turn).setPosition(x, 0, side * (wallZ - 0.012)));
     lamps.setMatrixAt(
       index,
@@ -183,10 +207,11 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
   });
 
   leaves.commit();
+  frames.commit();
   glass.commit();
   lamps.instanceMatrix.needsUpdate = true;
 
-  room.scene.add(leaves.mesh, glass.mesh, lamps);
+  room.scene.add(leaves.mesh, frames.mesh, glass.mesh, lamps);
 
   // The name goes on the door, not on the wall next to it.
   //
@@ -215,6 +240,22 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
 
     return sign;
   });
+
+  // The light under the door. Flat on the floor in front of one door, and
+  // nothing at all until that door is being opened.
+  const spillMaterial = new MeshBasicMaterial({
+    color: 0xffd9a6,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  disposables.push(spillMaterial);
+
+  const spill = new Mesh(keepFloor(new PlaneGeometry(1.1, 0.9)), spillMaterial);
+  spill.rotation.x = -Math.PI / 2;
+  spill.visible = false;
+  spill.renderOrder = 2;
+  room.scene.add(spill);
 
   // One light, and it walks with you. Seven would flatten the corridor into an
   // evenly lit room, and the references are unanimous that it is not one.
@@ -293,6 +334,36 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
       target = Math.max(0, Math.min(doors.length - 1, index));
     },
 
+    setOpening(index, progress) {
+      if (index === null) {
+        spill.visible = false;
+        spillMaterial.opacity = 0;
+
+        for (const [at, door] of doors.entries()) glass.paint(at, lit(tint, door.tint));
+        glass.commit();
+        return;
+      }
+
+      const at = Math.max(0, Math.min(doors.length - 1, index));
+      const open = Math.max(0, Math.min(1, progress));
+      const side = sideOf(at);
+
+      spill.visible = true;
+      // Grows out of the doorway rather than fading up in place: light under a
+      // door arrives as a widening wedge, because the gap it comes through is
+      // at the bottom and the source is deep in the room.
+      spill.position.set(at * STRIDE, 0.012, side * (wallZ - 0.12 - open * 0.62));
+      spill.scale.set(0.55 + open * 0.75, 0.3 + open * 1.5, 1);
+      spillMaterial.opacity = 0.05 + open * 0.5;
+
+      // And the window over it comes up with it: the room behind is waking.
+      const door = doors[at];
+      if (door !== undefined) {
+        glass.paint(at, lit(tint, door.tint).multiplyScalar(1 + open * 1.5));
+        glass.commit();
+      }
+    },
+
     resize(width, height, next) {
       frame(width, height, next);
     },
@@ -302,6 +373,7 @@ export async function createCorridor(options: CorridorOptions): Promise<Corridor
 
       for (const sign of signs) room.scene.remove(sign);
       leaves.mesh.dispose();
+      frames.mesh.dispose();
       glass.mesh.dispose();
       lamps.dispose();
       for (const item of disposables) item.dispose();
