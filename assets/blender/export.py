@@ -60,6 +60,38 @@ def append_collection(blend: Path, name: str) -> None:
     bpy.context.scene.collection.children.link(collection)
 
 
+def check_transforms() -> None:
+    """
+    Кожен об'єкт має віддавати геометрію у власних координатах, з початком там,
+    де предмет стоїть на підлозі.
+
+    Це не педантизм. `InstancedMesh` бере геометрію й сам ставить матриці —
+    трансформ об'єкта до нього не доїжджає взагалі, тож предмет, у якого він
+    не застосований, з'являється в сцені зміщеним і мовчки. Так уже сталося
+    двічі: стілець приїхав без ніжок, двері втопились у підлозі. Дешевше
+    зупинити експорт, ніж шукати це втретє.
+
+    Лагодиться в Blender: виділити об'єкт, Object → Apply → All Transforms.
+    """
+    broken = [
+        ob.name
+        for ob in bpy.data.objects
+        if ob.type == 'MESH'
+        and (
+            any(abs(v) > 1e-6 for v in ob.location)
+            or any(abs(v) > 1e-6 for v in ob.rotation_euler)
+            or any(abs(v - 1.0) > 1e-6 for v in ob.scale)
+        )
+    ]
+
+    if broken:
+        raise SystemExit(
+            'Незастосований трансформ: '
+            + ', '.join(broken)
+            + '.\nУ Blender: Object → Apply → All Transforms, зберегти .blend, повторити експорт.'
+        )
+
+
 def collect() -> list[str]:
     names: list[str] = []
 
@@ -102,6 +134,7 @@ def main() -> None:
 
     clear_scene()
     names = collect()
+    check_transforms()
 
     if not names:
         raise SystemExit(f'У {PROPS_DIR} немає жодного .blend — нема чого експортувати.')

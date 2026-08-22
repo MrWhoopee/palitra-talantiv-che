@@ -1,4 +1,4 @@
-import { Mesh, type BufferGeometry, type Material, type Object3D } from 'three';
+import { InstancedMesh, Matrix4, Mesh, type Color, type Material, type Object3D } from 'three';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
@@ -20,9 +20,26 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const URL = '/show/props.glb';
 
-export interface PropSource {
-  readonly geometry: BufferGeometry;
-  readonly material: Material;
+/**
+ * Copies of one prop, placed by matrix.
+ *
+ * The whole reason this is a helper rather than a `new InstancedMesh` at every
+ * call site: gltfpack stores positions as integers and leaves the scale that
+ * turns them back into metres on the mesh's own node. An `InstancedMesh` is
+ * handed a geometry and nothing else, so that scale has to be folded into
+ * every instance matrix - and folding it into the geometry instead does not
+ * work, because writing transformed floats back into a `Uint16Array` truncates
+ * the prop to a point. Six more rooms will want instances; none of them should
+ * have to know this.
+ */
+export interface PropInstances {
+  readonly mesh: InstancedMesh;
+  /** Where this copy stands. The dequantisation is applied on top. */
+  place(index: number, matrix: Matrix4): void;
+  /** Per-copy colour. Only materials that read it - `MeshBasicMaterial` - show it. */
+  paint(index: number, color: Color): void;
+  /** Call once the copies are placed. */
+  commit(): void;
 }
 
 export interface PropLibrary {
@@ -32,11 +49,15 @@ export interface PropLibrary {
    */
   take(name: string): Object3D;
   /**
-   * The geometry and material behind the prop, for `InstancedMesh`. Use for
-   * the props whose number comes from the data - chairs, mirrors, sheets.
-   * Thirty chairs drawn as one is the reason the rooms can afford to be rooms.
+   * Many copies of the prop, drawn as one. Use for the props whose number comes
+   * from the data - chairs, mirrors, sheets. Thirty chairs drawn as one is the
+   * reason the rooms can afford to be rooms.
+   *
+   * `material` replaces the prop's own, for the cases where the copies are not
+   * the same as the model: the door's glass is unlit in the corridor because it
+   * stands in for light coming through from the other side.
    */
-  sourceOf(name: string): PropSource;
+  instance(name: string, count: number, material?: Material): PropInstances;
   dispose(): void;
 }
 
@@ -114,18 +135,39 @@ async function fetchLibrary(onProgress?: OnProgress): Promise<PropLibrary> {
       return find(name).clone(true);
     },
 
-    sourceOf(name) {
+    instance(name, count, material) {
       const node = find(name);
       const mesh = meshIn(node, name);
-      const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
 
-      if (material === undefined) throw new Error(`У предмета «${name}» немає матеріалу.`);
+      const own = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      const use = material ?? own;
 
-      // The geometry is handed over in its own local space, so an
-      // `InstancedMesh` built from it lands where its matrices say only if the
-      // prop was exported with its transforms applied and its origin on the
-      // floor. `export.py` and the props' own `.blend` files hold that end up.
-      return { geometry: mesh.geometry, material };
+      if (use === undefined) throw new Error(`У предмета «${name}» немає матеріалу.`);
+
+      // The mesh's place in the file, which for a packed glb is the scale and
+      // offset that turn quantised integers back into metres.
+      mesh.updateWorldMatrix(true, false);
+      const dequantise = mesh.matrixWorld.clone();
+
+      const instances = new InstancedMesh(mesh.geometry, use, count);
+      const composed = new Matrix4();
+
+      return {
+        mesh: instances,
+
+        place(index, matrix) {
+          instances.setMatrixAt(index, composed.multiplyMatrices(matrix, dequantise));
+        },
+
+        paint(index, color) {
+          instances.setColorAt(index, color);
+        },
+
+        commit() {
+          instances.instanceMatrix.needsUpdate = true;
+          if (instances.instanceColor !== null) instances.instanceColor.needsUpdate = true;
+        },
+      };
     },
 
     dispose() {
