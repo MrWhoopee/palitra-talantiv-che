@@ -9,11 +9,10 @@ import {
   type Texture,
 } from 'three';
 import { SpotLight } from 'three';
-import { createCameraProp } from './camera-prop';
+import { createDoorProp } from './door-prop';
 import {
   approach,
   createBackdrop,
-  createIris,
   createRoom,
   fitCamera,
   runLoop,
@@ -90,42 +89,37 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
   const streaks = makeStreaks(scene);
 
-  // The way this track opens: a camera pointed at whoever is looking. The
-  // flash fires, the lens comes at us, and we go through the glass - which is
-  // what a page about portraits should feel like being let into.
-  // The cover's own ground, standing between the camera and the room: what is
-  // waiting in there is not part of this picture.
+  // The way this track opens: a door you knock on, and somebody lets you in.
+  // The cover's own ground, standing behind the wall: what is waiting in
+  // there is not part of this picture.
   const backdrop = createBackdrop('rgba(122, 96, 190, 0.55)', '#0b0913');
-  // In front of the row and behind the camera: standing it behind the figure
-  // left the figure showing on the cover, which is the one thing it is for.
-  backdrop.mesh.position.set(0, 2.4, 0.55);
+  // Between the row and the wall: it fills the doorway while the leaves are
+  // shut, so nothing of the room shows through the crack.
+  backdrop.mesh.position.set(0, 2.4, 1.5);
   scene.add(backdrop.mesh);
 
-  const prop = createCameraProp();
-  prop.group.position.set(0, 2.5, 1.2);
-  prop.group.scale.setScalar(0.9);
-  scene.add(prop.group);
+  const door = createDoorProp();
+  // Far enough back, and small enough, that the whole doorway is in the
+  // frame. Standing it at arm's length filled the screen with one panel and
+  // the leaves could swing without anybody being able to tell.
+  door.group.position.set(0, 1.4, 2.2);
+  door.group.scale.setScalar(0.5);
+  scene.add(door.group);
 
-  // The room is dark by design, so the prop needs its own key or it is a
-  // silhouette of a camera rather than a camera.
-  const key = new SpotLight(0xfff0d8, 130, 26, 0.7, 0.55, 1.2);
-  key.position.set(4, 6.4, 7.5);
-  key.target.position.set(0, 2.5, 1.2);
+  // The room is dark by design, so the door needs its own light or it is a
+  // silhouette of a door rather than a door.
+  const key = new SpotLight(0xffe8c4, 150, 30, 0.85, 0.5, 1.1);
+  key.position.set(3.6, 6.4, 8.5);
+  key.target.position.set(0, 2, 2.2);
   scene.add(key, key.target);
 
-  // A cold fill from the other side, so the body has two sides rather than a
-  // lit half and a black one.
-  const fill = new SpotLight(0x8f9dff, 45, 24, 0.8, 0.6, 1.2);
-  fill.position.set(-5, 3.4, 6);
-  fill.target.position.set(0, 2.5, 1.2);
+  const fill = new SpotLight(0x8f9dff, 45, 26, 0.9, 0.6, 1.2);
+  fill.position.set(-5, 3.2, 7.5);
+  fill.target.position.set(0, 2, 2.2);
   scene.add(fill, fill.target);
 
-  // Once we are through the glass, the aperture is what opens onto the row.
-  const iris = createIris();
-  scene.add(iris.mesh);
-
-  // Nearly black while the camera is still out there: the teacher's colour
-  // arrives with the teacher, not before.
+  // Nearly black while the door is still shut: the teacher's colour arrives
+  // with the teacher, not before.
   const DARK = new Color(0x05040a);
   const wash = new Color(0x05040a);
   const washTarget = new Color(0x05040a);
@@ -149,35 +143,25 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
     const drawn = openT < 0.5 ? 4 * openT * openT * openT : 1 - Math.pow(-2 * openT + 2, 3) / 2;
 
-    // The flash goes off first, then the lens comes at us, and only then does
-    // the aperture open. Three beats in one movement, which is why they are
-    // stated as ranges of the same number rather than as three timers.
-    prop.setFlash(Math.max(0, 1 - Math.abs(drawn - 0.08) / 0.09));
-    prop.group.visible = drawn < 0.82;
-
-    // A slow turn, so the cover is an object standing in a room rather than a
-    // picture of one. Straight on and still, a body this flat reads as card.
-    prop.group.rotation.y = Math.sin(time * 0.32) * 0.16;
-    prop.group.rotation.x = Math.sin(time * 0.21) * 0.05;
-    // The ground goes while we are inside the barrel, where the frame is
-    // black anyway - so the room is never seen arriving.
-    backdrop.setOpacity(Math.min(Math.max((0.66 - drawn) / 0.14, 0), 1));
-
-    // In through the glass, then out into the room. Stopping at the glass is
-    // what left the row being looked at from two metres away, with the
-    // teachers three times the size of the frame.
-    const inward = Math.min(Math.max((drawn - 0.12) / 0.56, 0), 1);
-    const outward = Math.min(Math.max((drawn - 0.7) / 0.3, 0), 1);
+    // Knock, then the leaves swing, then the wall passes us. Three beats of
+    // one number rather than three timers, so pause runs them backwards for
+    // free.
+    const knock = Math.min(Math.max(drawn / 0.16, 0), 1);
+    const swing = Math.min(Math.max((drawn - 0.18) / 0.42, 0), 1);
+    const through = Math.min(Math.max((drawn - 0.5) / 0.42, 0), 1);
     const ease = (t: number) => t * t * (3 - 2 * t);
 
-    camera.position.z = 7.2 - ease(inward) * 4.6 + ease(outward) * 4.6;
-    camera.position.y = 2.5;
-    camera.lookAt(0, 2.5, 0);
+    if (swing > 0) door.setOpen(ease(swing));
+    else door.setKnock(knock < 1 ? knock : 0);
 
-    // Wide open while the camera is still out there in the room - the blades
-    // are not part of that picture. They shut only once we are inside the
-    // barrel, where the frame is black anyway, and then open onto the row.
-    iris.setOpen(drawn < 0.66 ? 1 : Math.min(Math.max((drawn - 0.7) / 0.3, 0), 1));
+    // The wall comes at us and passes, rather than the camera walking
+    // through: the row is framed from here, and moving the camera would
+    // reframe it.
+    door.group.position.z = 2.2 + ease(through) * 7;
+    door.group.visible = through < 0.98;
+
+    // The ground goes with the wall it stands behind.
+    backdrop.setOpacity(1 - ease(through));
 
     shown = approach(shown, index, 6, delta);
 
@@ -194,8 +178,8 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
     const current = teachers[clamp(Math.round(shown), teachers.length)];
     if (current) washTarget.set(current.tint);
-    // The colour arrives as the aperture does: outside the lens the room is
-    // the dark the camera is standing in.
+    // The colour arrives as the doorway does: on the landing outside, the
+    // room is only the dark you are standing in.
     wash.lerp(DARK.clone().lerp(washTarget, drawn), 1 - Math.exp(-4 * delta));
     renderer.setClearColor(wash, 1);
 
@@ -228,7 +212,6 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
   }
 
   fitCamera(room, window.innerWidth, window.innerHeight, options.portrait);
-  iris.setAspect(window.innerWidth / window.innerHeight);
 
   return {
     setOpen(open) {
@@ -241,7 +224,6 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
     resize(width, height, portrait) {
       fitCamera(room, width, height, portrait);
-      iris.setAspect(width / height);
       // Standing to one side only works where there is a side; on a phone the
       // figure comes to the middle and the words go over it.
       for (const plane of planes) plane.scale.setScalar(portrait ? 0.78 : 1);
@@ -249,8 +231,7 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
     dispose() {
       loop.stop();
-      iris.dispose();
-      prop.dispose();
+      door.dispose();
       backdrop.dispose();
       for (const texture of textures.values()) texture.dispose();
       scene.traverse((object) => {

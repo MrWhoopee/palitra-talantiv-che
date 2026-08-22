@@ -16,8 +16,10 @@ import {
 /**
  * A camera, pointed at whoever is looking.
  *
- * This is the teachers' cover: a photograph is about to be taken, and the
- * person behind it is who the page is about.
+ * Written for the teachers' cover and moved off it: a door somebody opens
+ * says more about being welcomed than a lens does. It is kept for the
+ * playbill, where a photograph really is the subject - nothing imports it
+ * yet, so it costs the bundle nothing until that track is built.
  *
  * Drawn from the outline of a Canon AT-1 rather than loaded from a file. A
  * downloaded model arrived with textures that were not shipped beside it and
