@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Onest, Rubik } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { SITE_URL } from '@/lib/seo';
+import { SKIN_SCRIPT } from '@/lib/skin';
 import '../styles/globals.css';
 
 /**
@@ -48,8 +49,23 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // `suppressHydrationWarning` is here for exactly one attribute: the inline
+  // script below stamps `data-skin` before React hydrates, so the server HTML
+  // and the live document differ by design. Without it React reports a
+  // mismatch on every page load - and a warning that is always there is a
+  // warning nobody reads when it finally means something.
   return (
-    <html lang="uk" className={`${rubik.variable} ${onest.variable}`}>
+    <html lang="uk" className={`${rubik.variable} ${onest.variable}`} suppressHydrationWarning>
+      <head>
+        {/*
+          Stamps `data-skin` before the first frame. It runs here rather than
+          on the server because `cookies()` in this layout would make every
+          page dynamic, and /rules and /contacts are static - the copy the
+          studio writes is cached and rebuilt when the cabinet says so, not
+          fetched again for every visitor.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: SKIN_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

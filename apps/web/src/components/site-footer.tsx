@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
+import { SkinSwitch } from '@/components/skin-switch';
 import { readSiteSettings } from '@/lib/site-content';
 import { FOOTER_NAV, MAIN_NAV, STUDIO } from '@/lib/studio';
 
@@ -87,6 +88,10 @@ export async function SiteFooter() {
         <p className="site-footer__note">
           © {STUDIO.since}–{new Date().getFullYear()} {STUDIO.name}. Записуючись на заняття, ви
           погоджуєтесь із <Link href="/rules">правилами студії</Link>.
+        </p>
+
+        <p className="site-footer__note">
+          <SkinSwitch />
         </p>
       </div>
     </footer>

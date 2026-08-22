@@ -1,0 +1,149 @@
+/* The site's motion language: arrival, the light that runs around a border,
+   and the states everything interactive shares.
+
+   Two rules hold this file together. Every duration comes from a token, and
+   every moving thing has a still counterpart - `prefers-reduced-motion` in
+   `globals.css` flattens the durations, and what is left must still be a
+   design rather than the wreckage of one. */
+
+/* --- Arrival ---------------------------------------------------------------
+
+   Hiding is armed by the observer itself, never by the stylesheet alone. The
+   arming attribute goes on `<html>` only once the module is running and has
+   already marked everything currently on screen as seen.
+
+   Which means all three failure modes end with a readable page: no
+   JavaScript, a module that never loaded, a module that threw on the way in.
+   A stylesheet that hides content and waits for a script to un-hide it is one
+   failed request away from a blank site.
+--------------------------------------------------------------------------- */
+
+[data-reveal] {
+  transition:
+    opacity var(--pt-dur-move) var(--pt-ease-out),
+    transform var(--pt-dur-move) var(--pt-ease-out);
+  /* Rows of a list follow each other; `--pt-reveal-delay` is set per row. */
+  transition-delay: var(--pt-reveal-delay, 0ms);
+}
+
+:root[data-reveal-armed] [data-reveal]:not([data-seen]) {
+  opacity: 0;
+  /* The box is kept - only the paint waits - so nothing below shifts when it
+     arrives, and no layout shift lands in the Lighthouse score. */
+  transform: translateY(var(--pt-rise));
+}
+
+/* --- Light around a border -------------------------------------------------
+
+   A conic gradient turned by an animated custom property, masked to the
+   outline. Where `@property` is not supported the angle never animates and
+   the border simply stands - the outline is there either way.
+--------------------------------------------------------------------------- */
+
+@property --pt-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.lit-edge {
+  position: relative;
+  isolation: isolate;
+}
+
+.lit-edge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--pt-angle),
+    transparent 0deg,
+    transparent 250deg,
+    var(--pt-primary) 300deg,
+    var(--pt-tangerine) 330deg,
+    transparent 360deg
+  );
+  /* Two boxes, one subtracted from the other: what is left is the outline. */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+/* Hover and focus are the same event as far as this effect is concerned. An
+   effect only the mouse can reach is an effect that does not exist for
+   anyone arriving by keyboard. */
+.lit-edge:hover::after,
+.lit-edge:focus-visible::after,
+.lit-edge:focus-within::after {
+  opacity: 1;
+  animation: pt-turn 1.6s linear infinite;
+}
+
+@keyframes pt-turn {
+  to {
+    --pt-angle: 360deg;
+  }
+}
+
+/* --- States ---------------------------------------------------------------- */
+
+.pressable {
+  transition: transform var(--pt-dur-instant) var(--pt-ease-out);
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* The playhead runs to the end of any track whose row is being considered.
+   The hero has done this since stage 5; here it becomes the rule rather than
+   one page's flourish. */
+.track {
+  --track-fill: var(--track-rest, 0%);
+}
+
+.track__fill {
+  transition: width var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.track__knob {
+  transition: left var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+/* --- The skin switch -------------------------------------------------------
+
+   It exists before the show does. A switch added afterwards is a switch
+   retrofitted into every page that already assumed one skin.
+--------------------------------------------------------------------------- */
+
+.skin-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pt-space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.skin-switch__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-tangerine);
+  transition: background var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+:root[data-skin='calm'] .skin-switch__dot {
+  background: var(--pt-line);
+}
