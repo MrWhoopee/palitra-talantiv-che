@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { RevealObserver } from '@/components/reveal-observer';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import '@/styles/site.css';
@@ -13,6 +14,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <SiteHeader />
       {children}
       <SiteFooter />
+      <RevealObserver />
     </div>
   );
 }

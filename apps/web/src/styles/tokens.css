@@ -58,6 +58,26 @@
      extra graphics - which is why there is no third typeface. */
   --pt-tracking-mark: 0.077em;
 
+  /* --- Motion ----------------------------------------------------------
+     Durations and curves live beside the colours because the show (stage 8)
+     is built from these same values. Two tables would drift.
+
+     The rule that makes this a system: no component writes a duration as a
+     number. A number in a component is a value nobody will ever change
+     together with the others.
+  ------------------------------------------------------------------ */
+  --pt-dur-instant: 120ms; /* a button under the finger */
+  --pt-dur-quick: 220ms; /* hover, focus, a hint */
+  --pt-dur-move: 420ms; /* a section arriving, a page changing */
+  --pt-dur-stage: 900ms; /* a scene opening - stage 8 only */
+
+  --pt-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --pt-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --pt-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* The travel of anything that arrives from below. */
+  --pt-rise: 0.75rem;
+
   /* --- Spacing: 4px step through --pt-space-4, then a widening curve -- */
   --pt-space-1: 0.25rem;
   --pt-space-2: 0.5rem;
