@@ -1,5 +1,4 @@
 import {
-  Box3,
   BoxGeometry,
   CircleGeometry,
   CylinderGeometry,
@@ -10,20 +9,22 @@ import {
   MeshStandardMaterial,
   PointLight,
   RingGeometry,
+  SphereGeometry,
   TorusGeometry,
-  Vector3,
 } from 'three';
 
 /**
  * A camera, pointed at whoever is looking.
  *
  * This is the teachers' cover: a photograph is about to be taken, and the
- * person behind it is who the page is about. It is built from primitives on
- * purpose - a body, a barrel and a few rings is what a camera is from the
- * front, and at this angle nothing here has to pretend to be a model.
+ * person behind it is who the page is about.
  *
- * The flash is a real light as well as a lit box: firing it has to throw
- * something onto the room, or it is a white square coming on.
+ * Drawn from the outline of a Canon AT-1 rather than loaded from a file. A
+ * downloaded model arrived with textures that were not shipped beside it and
+ * an origin nobody had tidied, and it read as a silver tin can. The shape of
+ * that camera is a wide two-tone body, a prism between two dials, and one big
+ * ringed barrel - all four of them boxes and cylinders. Drawing it costs a
+ * hundred lines, owes nobody a licence, and weighs nothing.
  */
 
 export interface CameraProp {
@@ -33,133 +34,170 @@ export interface CameraProp {
   dispose(): void;
 }
 
-export interface CameraPropOptions {
-  /**
-   * A real camera, if the studio has licensed one. It replaces the shapes
-   * below the moment it arrives; until then, and if it fails to load, the
-   * shapes are what is on screen. A cover that waits for a file is a cover
-   * that is blank on a slow connection.
-   */
-  readonly modelUrl?: string | undefined;
-  /** How wide the camera should end up, whatever the file thinks it is. */
-  readonly width?: number | undefined;
-}
+/** Half the body: every other measurement is stated against it. */
+const HALF = 2.1;
 
-export function createCameraProp(options: CameraPropOptions = {}): CameraProp {
+export function createCameraProp(): CameraProp {
   const group = new Group();
-  // Everything drawn by hand goes in here, so a loaded model can take its
-  // place with one line rather than by hunting through the tree.
-  const built = new Group();
-  group.add(built);
 
-  // Metalness stays low. A metal in three.js reflects an environment map, and
-  // this room has none - crank it up and the camera renders as a black
-  // cut-out, which is exactly how the first screenshot came back.
-  const shell = new MeshStandardMaterial({ color: 0x2a2733, roughness: 0.5, metalness: 0.25 });
-  const grain = new MeshStandardMaterial({ color: 0x1a1822, roughness: 0.9, metalness: 0.1 });
-  const chrome = new MeshStandardMaterial({ color: 0xb9bfd0, roughness: 0.3, metalness: 0.35 });
+  // The two finishes the camera is actually made of: a brushed top plate and
+  // the black covering under it. Metalness stays low - there is an
+  // environment to reflect now, but a mirror is not what either of these is.
+  //
+  // The black is very dark on purpose. Between the environment and two lights
+  // this room is bright, and a merely dark grey came back looking like a grey
+  // camera - which is a different camera.
+  const chrome = new MeshStandardMaterial({ color: 0xa8adba, roughness: 0.34, metalness: 0.6 });
+  const black = new MeshStandardMaterial({ color: 0x090910, roughness: 0.82, metalness: 0.1 });
+  const barrelMetal = new MeshStandardMaterial({
+    color: 0x1d1c23,
+    roughness: 0.42,
+    metalness: 0.4,
+  });
 
-  const body = new Mesh(new BoxGeometry(3.1, 2, 1.1), shell);
-  body.position.y = 0.1;
-  built.add(body);
+  const body = new Mesh(new BoxGeometry(HALF * 2, 2.5, 1.15), black);
+  group.add(body);
 
-  // The grip, which is the one asymmetry that stops a box reading as a box.
-  const grip = new Mesh(new BoxGeometry(0.7, 1.9, 1.24), grain);
-  grip.position.set(-1.28, 0.05, 0.02);
-  built.add(grip);
+  // The top plate: the band of brushed metal that makes an AT-1 an AT-1.
+  const plate = new Mesh(new BoxGeometry(HALF * 2, 0.62, 1.17), chrome);
+  plate.position.y = 1.28;
+  group.add(plate);
 
-  // The prism hump, and the flash sitting on it.
-  const hump = new Mesh(new BoxGeometry(1.15, 0.55, 0.95), shell);
-  hump.position.set(0.1, 1.24, 0);
-  built.add(hump);
+  // The prism, centred - it sits over the mirror, and the mirror is behind
+  // the lens.
+  const prism = new Mesh(new BoxGeometry(1.06, 0.46, 0.98), chrome);
+  prism.position.set(0, 1.76, 0);
+  group.add(prism);
 
-  const flashMaterial = new MeshBasicMaterial({ color: 0xfff4e2 });
-  const flash = new Mesh(new BoxGeometry(0.86, 0.16, 0.5), flashMaterial);
-  flash.position.set(0.1, 1.55, 0.16);
-  built.add(flash);
+  const prismCap = new Mesh(new BoxGeometry(0.78, 0.14, 0.86), chrome);
+  prismCap.position.set(0, 2.03, 0);
+  group.add(prismCap);
 
-  const flashLight = new PointLight(0xfff3e0, 0, 26, 1.8);
-  flashLight.position.set(0.1, 1.6, 1.6);
-  built.add(flashLight);
+  // The flash shoe on top of the prism, and the light it throws.
+  const shoe = new Mesh(new BoxGeometry(0.5, 0.1, 0.44), barrelMetal);
+  shoe.position.set(0, 2.14, 0);
+  group.add(shoe);
 
-  // The shutter release, because a camera nobody can imagine pressing is a
-  // prop rather than an invitation.
-  const release = new Mesh(new CylinderGeometry(0.12, 0.12, 0.12, 20), chrome);
-  release.position.set(-1.28, 1.06, 0.2);
-  built.add(release);
+  const flashMaterial = new MeshBasicMaterial({ color: 0x2a2833 });
+  const flash = new Mesh(new BoxGeometry(0.46, 0.09, 0.4), flashMaterial);
+  flash.position.set(0, 2.21, 0);
+  group.add(flash);
 
-  // The barrel, pointed at whoever is looking: rings of falling radius, which
-  // is what a lens looks like head on.
+  const flashLight = new PointLight(0xfff3e0, 0, 30, 1.7);
+  flashLight.position.set(0, 2.4, 1.4);
+  group.add(flashLight);
+
+  // Two dials: the rewind knob on the left, the speed dial on the right.
+  const rewind = new Mesh(new CylinderGeometry(0.3, 0.3, 0.16, 28), chrome);
+  rewind.position.set(-1.5, 1.66, 0);
+  group.add(rewind);
+
+  const rewindStem = new Mesh(new CylinderGeometry(0.12, 0.12, 0.2, 20), chrome);
+  rewindStem.position.set(-1.5, 1.52, 0);
+  group.add(rewindStem);
+
+  const speed = new Mesh(new CylinderGeometry(0.34, 0.34, 0.2, 28), chrome);
+  speed.position.set(1.44, 1.68, 0);
+  group.add(speed);
+
+  const release = new Mesh(new CylinderGeometry(0.13, 0.13, 0.1, 20), chrome);
+  release.position.set(1.44, 1.82, 0);
+  group.add(release);
+
+  // The film advance lever: the one thing that says this camera takes film.
+  const lever = new Mesh(new BoxGeometry(0.66, 0.09, 0.2), chrome);
+  lever.position.set(1.86, 1.5, 0.28);
+  lever.rotation.z = -0.12;
+  group.add(lever);
+
+  // The barrel: rings of falling radius, which is what a lens is head on.
   const barrel = new Group();
-  barrel.position.set(0.1, 0.05, 0);
-  built.add(barrel);
+  barrel.position.z = 0.56;
+  group.add(barrel);
 
-  const rings: Array<[number, number, number]> = [
-    [1.02, 0.42, 0.62],
-    [0.94, 0.34, 0.98],
-    [0.86, 0.26, 1.26],
-  ];
+  const mount = new Mesh(new CylinderGeometry(0.8, 0.8, 0.26, 56), barrelMetal);
+  mount.rotation.x = Math.PI / 2;
+  mount.position.z = 0.1;
+  barrel.add(mount);
 
-  for (const [radius, depth, z] of rings) {
-    const ring = new Mesh(new CylinderGeometry(radius, radius, depth, 48), shell);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.z = z;
-    barrel.add(ring);
+  const aperture = new Mesh(new CylinderGeometry(0.74, 0.77, 0.3, 56), black);
+  aperture.rotation.x = Math.PI / 2;
+  aperture.position.z = 0.36;
+  barrel.add(aperture);
+
+  // The knurled focus ring: the widest thing on the lens, and the only part
+  // of it anybody actually holds.
+  const focus = new Mesh(new CylinderGeometry(0.78, 0.78, 0.44, 56), black);
+  focus.rotation.x = Math.PI / 2;
+  focus.position.z = 0.7;
+  barrel.add(focus);
+
+  for (const z of [0.56, 0.7, 0.84]) {
+    const grip = new Mesh(new TorusGeometry(0.79, 0.02, 8, 64), barrelMetal);
+    grip.position.z = z;
+    barrel.add(grip);
   }
 
-  // A knurled grip ring, the way a focus ring is knurled.
-  const knurl = new Mesh(new TorusGeometry(0.98, 0.07, 12, 64), grain);
-  knurl.position.z = 0.8;
-  barrel.add(knurl);
+  const front = new Mesh(new CylinderGeometry(0.72, 0.75, 0.22, 56), barrelMetal);
+  front.rotation.x = Math.PI / 2;
+  front.position.z = 1.03;
+  barrel.add(front);
 
-  const rim = new Mesh(new RingGeometry(0.74, 0.86, 64), chrome);
-  rim.position.z = 1.4;
-  barrel.add(rim);
+  const lip = new Mesh(new RingGeometry(0.6, 0.71, 64), chrome);
+  lip.position.z = 1.15;
+  barrel.add(lip);
 
-  // The glass: dark, and just reflective enough to catch the room.
+  // The glass. Nearly black, and green where the coating catches the room -
+  // the one detail that stops a lens reading as a hole.
   const glass = new Mesh(
-    new CircleGeometry(0.75, 64),
+    new CircleGeometry(0.61, 64),
     new MeshPhysicalMaterial({
-      color: 0x0a0a16,
-      roughness: 0.08,
-      metalness: 0.2,
+      color: 0x070a0c,
+      roughness: 0.05,
+      metalness: 0.1,
       clearcoat: 1,
-      clearcoatRoughness: 0.05,
+      clearcoatRoughness: 0.03,
     }),
   );
-  glass.position.z = 1.39;
+  glass.position.z = 1.14;
   barrel.add(glass);
 
-  // The violet the whole site is built on, caught in the coating.
-  // The coating catches the studio's violet, and no more than catches it: a
-  // filled disc reads as a purple lamp rather than as glass.
-  const bloom = new Mesh(
-    new CircleGeometry(0.34, 64),
-    new MeshBasicMaterial({ color: 0x6b4bc4, transparent: true, opacity: 0.32 }),
+  const coating = new Mesh(
+    new CircleGeometry(0.53, 64),
+    new MeshBasicMaterial({ color: 0x1d3a2f, transparent: true, opacity: 0.5 }),
   );
-  bloom.position.z = 1.4;
-  barrel.add(bloom);
+  coating.position.z = 1.15;
+  barrel.add(coating);
 
-  if (options.modelUrl !== undefined) {
-    void loadModel(options.modelUrl, options.width ?? 4.2)
-      .then((model) => {
-        // The shapes step aside rather than being deleted: the flash light
-        // lives among them, and it belongs to the prop, not to the model.
-        built.visible = false;
-        group.add(model);
-      })
-      .catch(() => {
-        // Keep the shapes. A missing or unreadable model is a cover that
-        // looks handmade, not a cover that is missing.
-      });
-  }
+  // The reflection of a window, which is in every photograph of a lens ever
+  // taken.
+  const catchlight = new Mesh(
+    new CircleGeometry(0.15, 32),
+    new MeshBasicMaterial({ color: 0xdfe6ff, transparent: true, opacity: 0.16 }),
+  );
+  catchlight.position.set(-0.22, 0.24, 1.16);
+  barrel.add(catchlight);
+
+  // The red dot beside the mount, the way there is one on the body.
+  const dot = new Mesh(
+    new SphereGeometry(0.05, 16, 16),
+    new MeshBasicMaterial({ color: 0xc0392b }),
+  );
+  dot.position.set(0, 1.02, 0.6);
+  group.add(dot);
 
   return {
     group,
 
     setFlash(strength) {
-      flashMaterial.color.setRGB(1, 0.96 + strength * 0.04, 0.89 + strength * 0.11);
-      flashLight.intensity = strength * 240;
+      // Dark until it fires: a flash that glows while nothing is happening is
+      // a lamp.
+      flashMaterial.color.setRGB(
+        0.16 + strength * 0.84,
+        0.157 + strength * 0.8,
+        0.2 + strength * 0.8,
+      );
+      flashLight.intensity = strength * 260;
     },
 
     dispose() {
@@ -172,57 +210,4 @@ export function createCameraProp(options: CameraPropOptions = {}): CameraProp {
       });
     },
   };
-}
-
-/**
- * A camera from a file, normalised: centred on its own middle and scaled to
- * the width the scene expects.
- *
- * Neither is optional. A model exported from anywhere arrives at whatever
- * size and offset its author left it in - metres, centimetres or inches, and
- * an origin that may be anywhere at all - and a scene that trusts the file is
- * a scene that looks right for exactly one file.
- */
-async function loadModel(url: string, targetWidth: number): Promise<Group> {
-  const { FBXLoader } = await import('three/examples/jsm/loaders/FBXLoader.js');
-  const model = await new FBXLoader().loadAsync(url);
-
-  // The file arrives with the lens pointing along -X. Turned before it is
-  // measured, because the width being normalised has to be the width the
-  // scene will actually see.
-  model.rotation.y = Math.PI / 2;
-  model.updateMatrixWorld(true);
-
-  // Its own materials reference texture maps that were not shipped beside it,
-  // and a map that never loads renders black - which is how the camera first
-  // arrived. Given the site's own finish instead: a dark body, low metalness,
-  // and the room's environment to reflect. That costs the model's colours and
-  // keeps its shape, which is the half worth having.
-  const shell = new MeshStandardMaterial({
-    color: 0x23212b,
-    roughness: 0.46,
-    metalness: 0.28,
-    envMapIntensity: 1.1,
-  });
-
-  model.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
-    object.material = shell;
-    object.castShadow = true;
-  });
-
-  const bounds = new Box3().setFromObject(model);
-  const size = bounds.getSize(new Vector3());
-  const centre = bounds.getCenter(new Vector3());
-
-  model.position.sub(centre);
-
-  // Wrapped rather than scaled in place: the rotation already sits on the
-  // model, and stacking a scale and an offset on top of it is how a model
-  // ends up sliding out of frame the moment either is touched.
-  const holder = new Group();
-  holder.add(model);
-  holder.scale.setScalar(size.x > 0 ? targetWidth / size.x : 1);
-
-  return holder;
 }

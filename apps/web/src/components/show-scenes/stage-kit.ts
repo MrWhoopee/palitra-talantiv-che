@@ -100,7 +100,9 @@ export function createRoom(
   // what will make an imported model look like the object it is.
   const pmrem = new PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.35;
+  // Low. It is here so metal has something to reflect, not to light the room:
+  // at a third, a body painted almost black came back mid-grey.
+  scene.environmentIntensity = 0.14;
   pmrem.dispose();
 
   const camera = new PerspectiveCamera(42, 1, 0.1, 120);

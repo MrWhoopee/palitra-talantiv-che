@@ -48,8 +48,6 @@ export interface TeachersSceneOptions {
   readonly quality: Quality;
   readonly portrait: boolean;
   readonly teachers: readonly TeacherCard[];
-  /** The camera on the cover, if the studio has licensed a model for it. */
-  readonly modelUrl?: string | undefined;
 }
 
 export interface TeachersScene {
@@ -103,21 +101,21 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
   backdrop.mesh.position.set(0, 2.4, 0.55);
   scene.add(backdrop.mesh);
 
-  const prop = createCameraProp({ modelUrl: options.modelUrl, width: 4.2 });
+  const prop = createCameraProp();
   prop.group.position.set(0, 2.5, 1.2);
   prop.group.scale.setScalar(0.9);
   scene.add(prop.group);
 
   // The room is dark by design, so the prop needs its own key or it is a
   // silhouette of a camera rather than a camera.
-  const key = new SpotLight(0xfff0d8, 220, 26, 0.7, 0.55, 1.2);
+  const key = new SpotLight(0xfff0d8, 130, 26, 0.7, 0.55, 1.2);
   key.position.set(4, 6.4, 7.5);
   key.target.position.set(0, 2.5, 1.2);
   scene.add(key, key.target);
 
   // A cold fill from the other side, so the body has two sides rather than a
   // lit half and a black one.
-  const fill = new SpotLight(0x8f9dff, 90, 24, 0.8, 0.6, 1.2);
+  const fill = new SpotLight(0x8f9dff, 45, 24, 0.8, 0.6, 1.2);
   fill.position.set(-5, 3.4, 6);
   fill.target.position.set(0, 2.5, 1.2);
   scene.add(fill, fill.target);
@@ -156,6 +154,11 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
     // stated as ranges of the same number rather than as three timers.
     prop.setFlash(Math.max(0, 1 - Math.abs(drawn - 0.08) / 0.09));
     prop.group.visible = drawn < 0.82;
+
+    // A slow turn, so the cover is an object standing in a room rather than a
+    // picture of one. Straight on and still, a body this flat reads as card.
+    prop.group.rotation.y = Math.sin(time * 0.32) * 0.16;
+    prop.group.rotation.x = Math.sin(time * 0.21) * 0.05;
     // The ground goes while we are inside the barrel, where the frame is
     // black anyway - so the room is never seen arriving.
     backdrop.setOpacity(Math.min(Math.max((0.66 - drawn) / 0.14, 0), 1));
