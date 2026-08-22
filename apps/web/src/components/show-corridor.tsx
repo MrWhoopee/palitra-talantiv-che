@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { CorridorScene } from '@/components/show-scenes/corridor';
 import { isCurtainOpen, setCurtainOpen, watchAttributes } from '@/lib/show';
-import { TRACKS } from '@/lib/tracks';
+import { doorHref, TRACKS } from '@/lib/tracks';
 import '@/styles/show-scene.css';
 
 /**
@@ -98,11 +98,8 @@ export function ShowCorridor() {
       }
 
       if (event.key === 'Enter' || event.key === ' ') {
-        const track = TRACKS[index];
-        if (track === undefined) return;
-
         event.preventDefault();
-        router.push(track.href);
+        router.push(doorHref(index));
         return;
       }
 
@@ -130,8 +127,7 @@ export function ShowCorridor() {
     return watchAttributes(root, () => {
       if (!isCurtainOpen(root)) return;
 
-      const track = TRACKS[chosen.current];
-      if (track !== undefined) router.push(track.href);
+      router.push(doorHref(chosen.current));
     });
   }, [router]);
 
@@ -160,7 +156,7 @@ export function ShowCorridor() {
         {TRACKS.map((entry, at) => (
           <Link
             key={entry.href}
-            href={entry.href}
+            href={doorHref(at)}
             onFocus={() => setIndex(at)}
             aria-current={at === index ? 'true' : undefined}
           >

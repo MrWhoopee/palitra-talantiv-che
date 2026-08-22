@@ -1,9 +1,11 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ShowCorridor } from '@/components/show-corridor';
+import { ShowHall } from '@/components/show-hall';
 import { readSkin, watchAttributes } from '@/lib/show';
+import { isHall } from '@/lib/tracks';
 
 /**
  * The home page in the show: the studio's corridor, and nothing before it.
@@ -20,9 +22,13 @@ import { readSkin, watchAttributes } from '@/lib/show';
  * Not a cover laid over the ordinary page: the ordinary page is not rendered
  * at all while this is on screen, and is still in the HTML for anything that
  * reads rather than looks.
+ *
+ * Two screens live here: the corridor, and the hall behind its first door.
+ * Nothing else - the other six rooms are their own pages.
  */
 export function ShowHome() {
   const pathname = usePathname();
+  const search = useSearchParams();
   const [showing, setShowing] = useState(false);
 
   useEffect(() => {
@@ -47,5 +53,9 @@ export function ShowHome() {
 
   if (!live) return null;
 
-  return <ShowCorridor />;
+  // The hall is the one room whose page is the home page, so it is the one
+  // room the corridor cannot simply link to. It gets a query string instead -
+  // the same mechanism the curtain-and-wall pair used and lost, restored here
+  // for a better reason: this is a room, not a second way of navigating.
+  return isHall(search.get('room')) ? <ShowHall /> : <ShowCorridor />;
 }

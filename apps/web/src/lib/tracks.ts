@@ -93,6 +93,30 @@ export function neighbours(index: number | null): { previous: Track | null; next
   };
 }
 
+/**
+ * Where the hall lives.
+ *
+ * Six of the seven rooms are their own pages, and a door to them is an
+ * ordinary link. The seventh cannot be: the hall is the home track, its page
+ * is `/`, and `/` is the corridor those doors stand in. So the hall is the one
+ * room that has to be told apart from the corridor by something other than a
+ * path.
+ *
+ * In the address rather than in memory, for the reasons stage 8 gave and this
+ * still needs: back walks out of the hall into the corridor rather than off
+ * the site, and the hall can be sent to somebody.
+ */
+export const HALL_HREF = '/?room=hall';
+
+export function isHall(room: string | null | undefined): boolean {
+  return room === 'hall';
+}
+
+/** Where a door leads. The hall is the one that is not simply its own page. */
+export function doorHref(index: number): string {
+  return index === 0 ? HALL_HREF : (TRACKS[index]?.href ?? '/');
+}
+
 /** Without the query string, and without a trailing slash except at the root. */
 function normalise(pathname: string): string {
   const path = (pathname.split('?')[0] ?? '').split('#')[0] ?? '';

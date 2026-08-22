@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import '@/styles/demo-stage.css';
 
 /**
  * The demo shell. No header, no footer: these pages are experiments that take
