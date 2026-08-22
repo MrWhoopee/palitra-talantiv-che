@@ -144,6 +144,12 @@ model TeacherProfile {
   bio             String?
   experienceYears Int?
   photoUrl        String?
+  /// The same teacher, cut out against nothing: a full-length figure with a
+  /// transparent ground, which is what the show's teacher scene stands on
+  /// stage. It is a second photograph rather than a crop of the first - a
+  /// square portrait taken from the chest up cannot become a whole person -
+  /// so it is a field of its own and either may be missing.
+  cutoutUrl       String?
   /// Unpublished profiles exist for teachers who have not sent a photo yet -
   /// they can already be scheduled, they are simply not on the public site.
   isPublished     Boolean  @default(false)

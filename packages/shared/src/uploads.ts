@@ -8,7 +8,7 @@ import { z } from 'zod';
  * owns that row, which is what lets one endpoint serve an event cover, a
  * teacher's portrait and a gallery photo without knowing what any of them are.
  */
-export const UPLOAD_KINDS = ['gallery', 'cover', 'portrait'] as const;
+export const UPLOAD_KINDS = ['gallery', 'cover', 'portrait', 'cutout'] as const;
 
 export type UploadKind = (typeof UPLOAD_KINDS)[number];
 

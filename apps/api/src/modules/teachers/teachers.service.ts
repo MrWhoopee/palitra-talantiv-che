@@ -440,6 +440,7 @@ interface TeacherRow {
   bio: string | null;
   experienceYears: number | null;
   photoUrl: string | null;
+  cutoutUrl: string | null;
   user: { firstName: string; lastName: string };
   directions: { direction: DirectionRow }[];
   locations: { location: LocationRow }[];
@@ -468,6 +469,7 @@ export function toPublicTeacher(profile: TeacherRow): PublicTeacher {
     bio: profile.bio,
     experienceYears: profile.experienceYears,
     photoUrl: profile.photoUrl,
+    cutoutUrl: profile.cutoutUrl,
     directions: profile.directions.map((link) => toDirection(link.direction)),
     locations: profile.locations.map((link) => toLocation(link.location)),
   };

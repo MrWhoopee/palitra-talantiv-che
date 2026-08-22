@@ -571,6 +571,26 @@ details[open] > summary.admin-subrow__title::after {
   object-fit: cover;
 }
 
+/* A cut-out is a shape with nothing behind it, and the studio needs to see
+   that the ground really is gone. Checks behind it say "transparent" the way
+   every editor says it, and the figure reads against them either way. */
+.admin-photo__shot--cutout {
+  aspect-ratio: 3 / 5;
+  object-fit: contain;
+  background-color: #2a2436;
+  background-image:
+    linear-gradient(45deg, #372f47 25%, transparent 25%),
+    linear-gradient(-45deg, #372f47 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #372f47 75%),
+    linear-gradient(-45deg, transparent 75%, #372f47 75%);
+  background-size: 14px 14px;
+  background-position:
+    0 0,
+    0 7px,
+    7px -7px,
+    -7px 0;
+}
+
 .admin-photo__none {
   display: grid;
   place-items: center;

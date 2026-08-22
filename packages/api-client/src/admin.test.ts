@@ -16,6 +16,7 @@ const teacher = {
   bio: null,
   experienceYears: null,
   photoUrl: null,
+  cutoutUrl: null,
   directions: [],
   locations: [],
   email: 'iryna@example.com',

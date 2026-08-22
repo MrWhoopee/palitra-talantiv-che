@@ -80,35 +80,24 @@ export function TeacherForm({ teacher }: { teacher: AdminTeacher }) {
           <span className="field-hint">Кілька речень, які прочитають батьки на сайті.</span>
         </p>
 
-        <div className="admin-photo">
-          {teacher.photoUrl === null ? (
-            <p className="admin-photo__none">Фото ще немає</p>
-          ) : (
-            // A plain <img>: the address comes from our own uploads and the
-            // stored size is known, so there is nothing for next/image to
-            // decide here.
-            <img className="admin-photo__shot" src={teacher.photoUrl} alt="" />
-          )}
+        <PictureBox
+          name="photo"
+          label="Нове фото"
+          missing="Фото ще немає"
+          hint="Портрет із телефона годиться — ми самі його зменшимо. До 8 МБ."
+          remove="Прибрати нинішнє фото"
+          url={teacher.photoUrl}
+        />
 
-          <div className="admin-photo__controls">
-            <p className="field">
-              <label className="field-label" htmlFor="photo">
-                Нове фото
-              </label>
-              <input id="photo" name="photo" type="file" accept="image/*" className="field-input" />
-              <span className="field-hint">
-                Портрет із телефона годиться — ми самі його зменшимо. До 8 МБ.
-              </span>
-            </p>
-
-            {teacher.photoUrl === null ? null : (
-              <label className="admin-check">
-                <input type="checkbox" name="removePhoto" />
-                Прибрати нинішнє фото
-              </label>
-            )}
-          </div>
-        </div>
+        <PictureBox
+          name="cutout"
+          label="Постать для анімації"
+          missing="Постаті ще немає"
+          hint="Викладач на повний зріст із вирізаним фоном — PNG із прозорістю. Ця світлина стоїть на сцені в режимі анімації; поки її немає, там силует. До 8 МБ."
+          remove="Прибрати нинішню постать"
+          url={teacher.cutoutUrl}
+          onDark
+        />
 
         <fieldset className="admin-switches">
           <legend className="field-label">Де показувати</legend>
@@ -146,5 +135,66 @@ export function TeacherForm({ teacher }: { teacher: AdminTeacher }) {
         </SubmitButton>
       </form>
     </>
+  );
+}
+
+/**
+ * One picture on the card: what is there now, a box to replace it, and - only
+ * when there is something to remove - the tick that removes it.
+ *
+ * The card carries two of these and they behave identically, so they are one
+ * component. The names the form submits are read back by the same helper in
+ * the action, which is what keeps `cutout` and `remove-cutout` spelt the same
+ * on both sides.
+ */
+function PictureBox({
+  name,
+  label,
+  missing,
+  hint,
+  remove,
+  url,
+  onDark = false,
+}: {
+  name: string;
+  label: string;
+  missing: string;
+  hint: string;
+  remove: string;
+  url: string | null;
+  /** A cut-out is mostly transparent, and white on white is not a preview. */
+  onDark?: boolean;
+}) {
+  return (
+    <div className="admin-photo">
+      {url === null ? (
+        <p className="admin-photo__none">{missing}</p>
+      ) : (
+        // A plain <img>: the address comes from our own uploads and the stored
+        // size is known, so there is nothing for next/image to decide here.
+        <img
+          className={onDark ? 'admin-photo__shot admin-photo__shot--cutout' : 'admin-photo__shot'}
+          src={url}
+          alt=""
+        />
+      )}
+
+      <div className="admin-photo__controls">
+        <p className="field">
+          <label className="field-label" htmlFor={name}>
+            {label}
+          </label>
+          <input id={name} name={name} type="file" accept="image/*" className="field-input" />
+          <span className="field-hint">{hint}</span>
+        </p>
+
+        {url === null ? null : (
+          <label className="admin-check">
+            <input type="checkbox" name={`remove-${name}`} />
+            {remove}
+          </label>
+        )}
+      </div>
+    </div>
   );
 }

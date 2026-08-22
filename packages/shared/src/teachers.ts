@@ -39,6 +39,12 @@ export const publicTeacherSchema = z.object({
   bio: z.string().nullable(),
   experienceYears: z.number().int().nonnegative().nullable(),
   photoUrl: z.string().nullable(),
+  /**
+   * The same teacher standing against nothing, for the show. Either picture
+   * may be missing, and the site reads them separately: a card falls back to
+   * initials, the show falls back to a drawn figure.
+   */
+  cutoutUrl: z.string().nullable(),
   directions: z.array(directionSchema),
   locations: z.array(locationSchema),
 });
@@ -96,6 +102,7 @@ const teacherFields = z.object({
   bio: optionalText(4000),
   experienceYears: z.coerce.number().int().min(0).max(70).nullish().default(null),
   photoUrl: optionalText(500),
+  cutoutUrl: optionalText(500),
   isPublished: z.boolean(),
   isActive: z.boolean(),
   sortOrder: sortOrderSchema,

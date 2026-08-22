@@ -1,6 +1,11 @@
 'use server';
 
-import { teacherInviteSchema, teacherPatchSchema, type TeacherPatch } from '@palitra/shared';
+import {
+  teacherInviteSchema,
+  teacherPatchSchema,
+  type TeacherPatch,
+  type UploadKind,
+} from '@palitra/shared';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { flattenError } from 'zod';
@@ -95,16 +100,18 @@ export async function updateTeacherAction(
   }
 
   const accessToken = await requireToken();
-  const photo = formData.get('photo');
 
   try {
     const patch: TeacherPatch = { ...parsed.data };
 
-    if (formData.get('removePhoto') === 'on') {
-      patch.photoUrl = null;
-    } else if (photo instanceof File && photo.size > 0) {
-      const stored = await adminApi.uploadImage(photo, 'portrait', accessToken);
-      patch.photoUrl = stored.url;
+    const photoUrl = await pickPicture(formData, 'photo', 'portrait', accessToken);
+    if (photoUrl !== undefined) {
+      patch.photoUrl = photoUrl;
+    }
+
+    const cutoutUrl = await pickPicture(formData, 'cutout', 'cutout', accessToken);
+    if (cutoutUrl !== undefined) {
+      patch.cutoutUrl = cutoutUrl;
     }
 
     await adminApi.updateTeacher(teacherId, patch, accessToken);
@@ -120,6 +127,34 @@ export async function updateTeacherAction(
   revalidatePath('/admin/teachers');
   revalidatePath('/teachers');
   return { done: true };
+}
+
+/**
+ * What a picture box on the card decided this time: an address to store, `null`
+ * to clear the one there, or nothing at all when the box was left alone.
+ *
+ * Both pictures on the card work the same way, which is why they are read by
+ * the same function rather than twice by hand: leaving a file box empty is not
+ * the same as asking for the picture to be removed, and one of the two is easy
+ * to write and easy to get backwards.
+ */
+async function pickPicture(
+  formData: FormData,
+  field: string,
+  kind: UploadKind,
+  accessToken: string,
+): Promise<string | null | undefined> {
+  if (formData.get(`remove-${field}`) === 'on') {
+    return null;
+  }
+
+  const file = formData.get(field);
+  if (!(file instanceof File) || file.size === 0) {
+    return undefined;
+  }
+
+  const stored = await adminApi.uploadImage(file, kind, accessToken);
+  return stored.url;
 }
 
 /**

@@ -21,7 +21,12 @@ import '@/styles/show-scene.css';
  * with its own copy of the roster would be a second thing to keep true.
  */
 
-/** Stand-ins until the studio sends photographs; the shape of a person, no more. */
+/**
+ * Stand-ins until the studio sends cut-outs; the shape of a person, no more.
+ * A teacher with a `cutoutUrl` stands here as themselves - the square card
+ * portrait is not used, because a picture cropped at the chest cannot stand
+ * on a stage.
+ */
 const FIGURES = [
   '/demo/figures/figure-1.png',
   '/demo/figures/figure-2.png',
@@ -88,7 +93,7 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
         portrait: portrait(),
         teachers: teachers.map((teacher, index) => ({
           id: teacher.id,
-          figureUrl: teacher.photoUrl ?? FIGURES[index % FIGURES.length]!,
+          figureUrl: teacher.cutoutUrl ?? FIGURES[index % FIGURES.length]!,
           tint: tintOf(teacher),
         })),
       });
