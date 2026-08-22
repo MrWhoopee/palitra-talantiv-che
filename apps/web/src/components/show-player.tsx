@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { SkinSwitch } from '@/components/skin-switch';
 import { REDUCED_MOTION_QUERY } from '@/lib/skin';
 import { neighbours, trackAt, trackIndex } from '@/lib/tracks';
 
@@ -37,28 +38,35 @@ export function ShowPlayer() {
 
   return (
     <nav className="player" aria-label="Треки студії">
-      <Step track={previous} direction="previous" />
-
-      <Link className="player__wall" href="/?stage=wall">
-        <span aria-hidden="true">●</span>
-        <span className="visually-hidden">До стіни</span>
-      </Link>
-
-      <Step track={next} direction="next" />
-
-      <p className="player__caption">
-        {position === null ? (
-          pageName
-        ) : (
-          <>
-            {position.track.label}
-            <span className="player__count">
-              {' '}
-              · трек {position.number} з {position.total}
-            </span>
-          </>
+      {/* What is playing, on the left, the way a player says it. */}
+      <p className="player__now">
+        <span className="player__label">{position === null ? pageName : position.track.label}</span>
+        {position === null ? null : (
+          <span className="player__count">
+            трек {position.number} з {position.total}
+          </span>
         )}
       </p>
+
+      <div className="player__transport">
+        <Step track={previous} direction="previous" />
+
+        {/* Play opens the cover - the scene a track starts from. It is the
+            middle of the transport because it is the thing the arrows are
+            arranged around, the same way it is on anything that plays. */}
+        <Link className="player__play" href="/?stage=wall">
+          <span aria-hidden="true">▶</span>
+          <span className="visually-hidden">Грати: обкладинка</span>
+        </Link>
+
+        <Step track={next} direction="next" />
+      </div>
+
+      {/* The way out of the show, always within reach. The footer has the
+          same switch, and the footer is a scroll away. */}
+      <div className="player__aside">
+        <SkinSwitch />
+      </div>
     </nav>
   );
 }
