@@ -199,7 +199,10 @@ export function createContentService({ prisma }: ContentServiceDeps): ContentSer
       const endsAt =
         patch.endsAt === undefined ? current.endsAt : patch.endsAt && new Date(patch.endsAt);
       if (endsAt && endsAt <= startsAt) {
-        throw new DomainError('VALIDATION_FAILED', 'Подія не може завершитись раніше, ніж почалась');
+        throw new DomainError(
+          'VALIDATION_FAILED',
+          'Подія не може завершитись раніше, ніж почалась',
+        );
       }
 
       return withUniqueSlug(() =>
@@ -215,7 +218,9 @@ export function createContentService({ prisma }: ContentServiceDeps): ContentSer
     },
 
     async listAllGallery(): Promise<GalleryItemModel[]> {
-      return prisma.galleryItem.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] });
+      return prisma.galleryItem.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      });
     },
 
     async createGalleryItem(input): Promise<GalleryItemModel> {

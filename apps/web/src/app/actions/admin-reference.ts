@@ -1,10 +1,6 @@
 'use server';
 
-import {
-  directionInputSchema,
-  locationInputSchema,
-  pricePlanInputSchema,
-} from '@palitra/shared';
+import { directionInputSchema, locationInputSchema, pricePlanInputSchema } from '@palitra/shared';
 import { adminApi } from '@/lib/admin-api';
 import { removeRow, saveRow, type AdminTable } from '@/lib/admin-table';
 import type { FormState } from '@/lib/form-state';

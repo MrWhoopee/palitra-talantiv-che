@@ -91,7 +91,13 @@ export default async function AdminSchedulePage({
               <label className="field-label" htmlFor="from">
                 Від
               </label>
-              <input id="from" name="from" type="date" className="field-input" defaultValue={from} />
+              <input
+                id="from"
+                name="from"
+                type="date"
+                className="field-input"
+                defaultValue={from}
+              />
             </p>
             <p className="field">
               <label className="field-label" htmlFor="to">
@@ -179,8 +185,8 @@ export default async function AdminSchedulePage({
       <section className="admin-panel">
         <h2 className="admin-panel__title">Записати учня</h2>
         <p className="admin-panel__lede">
-          Для дзвінка до студії. Час перевіряється так само, як при записі із сайту: зайняту
-          годину або час поза графіком викладача система не пропустить.
+          Для дзвінка до студії. Час перевіряється так само, як при записі із сайту: зайняту годину
+          або час поза графіком викладача система не пропустить.
         </p>
         <BookLessonForm
           students={students}

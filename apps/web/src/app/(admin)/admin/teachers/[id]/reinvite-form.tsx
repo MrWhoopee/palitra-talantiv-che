@@ -18,9 +18,7 @@ export function ReinviteForm({ teacherId }: { teacherId: string }) {
     <>
       {state.error ? <FormAlert tone="error">{state.error}</FormAlert> : null}
       {state.done ? (
-        <FormAlert tone="ok">
-          Новий лист надіслано. Попереднє посилання більше не працює.
-        </FormAlert>
+        <FormAlert tone="ok">Новий лист надіслано. Попереднє посилання більше не працює.</FormAlert>
       ) : null}
 
       <form action={action}>

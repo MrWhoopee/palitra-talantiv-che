@@ -44,7 +44,10 @@ export function DeleteRowForm({
     <form className="admin-confirm" action={submit}>
       <input type="hidden" name="id" value={id} />
       <span className="admin-confirm__question">Точно видалити?</span>
-      <SubmitButton className="admin-link-button admin-link-button--danger" pendingLabel="Видаляємо…">
+      <SubmitButton
+        className="admin-link-button admin-link-button--danger"
+        pendingLabel="Видаляємо…"
+      >
         Так, видалити
       </SubmitButton>
       <button type="button" className="admin-link-button" onClick={() => setAsked(false)}>

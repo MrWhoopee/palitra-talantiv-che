@@ -526,7 +526,9 @@ describe('POST /auth/accept-invite', () => {
     await inviteTeacher();
     const token = tokenFromLastMail();
 
-    await request(app).post('/auth/accept-invite').send({ token, password: 'correct horse battery' });
+    await request(app)
+      .post('/auth/accept-invite')
+      .send({ token, password: 'correct horse battery' });
     const again = await request(app)
       .post('/auth/accept-invite')
       .send({ token, password: 'somebody elses password' });

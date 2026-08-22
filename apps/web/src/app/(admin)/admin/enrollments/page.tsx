@@ -55,7 +55,11 @@ export default async function AdminEnrollmentsPage({
       </header>
 
       <nav className="admin-filters">
-        <FilterLink label="Чекають і в групі" href="/admin/enrollments" active={status === undefined} />
+        <FilterLink
+          label="Чекають і в групі"
+          href="/admin/enrollments"
+          active={status === undefined}
+        />
         {GROUP_ENROLLMENT_STATUSES.map((one) => (
           <FilterLink
             key={one}

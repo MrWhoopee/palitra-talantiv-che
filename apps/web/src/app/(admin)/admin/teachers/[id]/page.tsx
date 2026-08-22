@@ -66,7 +66,9 @@ export default async function AdminTeacherPage({ params }: { params: Promise<{ i
 
       <section className="admin-panel">
         <h2 className="admin-panel__title">Напрями</h2>
-        <p className="admin-panel__lede">Те, що викладач веде. Показується на його картці на сайті.</p>
+        <p className="admin-panel__lede">
+          Те, що викладач веде. Показується на його картці на сайті.
+        </p>
         <LinksForm
           teacherId={teacher.id}
           kind="directions"

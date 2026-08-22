@@ -406,8 +406,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
     getAchievements: () => requestParsed(z.array(achievementSchema), '/achievements'),
 
-    getSiteTexts: () =>
-      requestParsed(siteTextListSchema, '/site-texts', { cache: 'force-cache' }),
+    getSiteTexts: () => requestParsed(siteTextListSchema, '/site-texts', { cache: 'force-cache' }),
 
     getSiteSettings: () =>
       requestParsed(siteSettingsSchema, '/site-settings', { cache: 'force-cache' }),
@@ -445,4 +444,3 @@ function rulesPath(teacherId: string): string {
 function exceptionsPath(teacherId: string): string {
   return `/teachers/${encodeURIComponent(teacherId)}/availability/exceptions`;
 }
-

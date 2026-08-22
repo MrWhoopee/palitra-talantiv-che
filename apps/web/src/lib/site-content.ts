@@ -1,4 +1,9 @@
-import { parseMarkdown, type MarkdownBlock, type SiteSettings, type SiteTextKey } from '@palitra/shared';
+import {
+  parseMarkdown,
+  type MarkdownBlock,
+  type SiteSettings,
+  type SiteTextKey,
+} from '@palitra/shared';
 import { api } from '@/lib/api';
 
 /**

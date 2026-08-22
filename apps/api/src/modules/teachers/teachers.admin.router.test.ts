@@ -401,17 +401,14 @@ describe('the reference tables', () => {
       .set('Authorization', admin)
       .send({ slug: 'vokal', name: 'Вокал' });
 
-    await request(app)
-      .post('/admin/price-plans')
-      .set('Authorization', admin)
-      .send({
-        directionId: direction.body.id,
-        name: 'Абонемент 8 занять',
-        lessonsCount: 8,
-        durationMinutes: 60,
-        format: 'INDIVIDUAL',
-        priceUah: 4000,
-      });
+    await request(app).post('/admin/price-plans').set('Authorization', admin).send({
+      directionId: direction.body.id,
+      name: 'Абонемент 8 занять',
+      lessonsCount: 8,
+      durationMinutes: 60,
+      format: 'INDIVIDUAL',
+      priceUah: 4000,
+    });
 
     const response = await request(app)
       .delete(`/admin/directions/${direction.body.id}`)
@@ -429,17 +426,14 @@ describe('the reference tables', () => {
       .set('Authorization', admin)
       .send({ slug: 'vokal', name: 'Вокал' });
 
-    const plan = await request(app)
-      .post('/admin/price-plans')
-      .set('Authorization', admin)
-      .send({
-        directionId: direction.body.id,
-        name: 'Абонемент 8 занять',
-        lessonsCount: 8,
-        durationMinutes: 60,
-        format: 'INDIVIDUAL',
-        priceUah: 4000,
-      });
+    const plan = await request(app).post('/admin/price-plans').set('Authorization', admin).send({
+      directionId: direction.body.id,
+      name: 'Абонемент 8 занять',
+      lessonsCount: 8,
+      durationMinutes: 60,
+      format: 'INDIVIDUAL',
+      priceUah: 4000,
+    });
 
     expect(plan.status).toBe(201);
     expect((await request(app).get('/price-plans')).body).toHaveLength(1);

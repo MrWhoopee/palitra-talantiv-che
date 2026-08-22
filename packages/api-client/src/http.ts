@@ -1,4 +1,9 @@
-import { apiErrorSchema, BAD_RESPONSE_CODE, type BadResponseCode, type DomainErrorCode } from '@palitra/shared';
+import {
+  apiErrorSchema,
+  BAD_RESPONSE_CODE,
+  type BadResponseCode,
+  type DomainErrorCode,
+} from '@palitra/shared';
 import type { ZodType } from 'zod';
 
 /**
@@ -59,7 +64,10 @@ export interface Http {
   requestParsed<T>(schema: ZodType<T>, path: string, options?: RequestOptions): Promise<T>;
 }
 
-export function createHttp({ baseUrl, fetch: fetchImpl = globalThis.fetch }: ApiClientOptions): Http {
+export function createHttp({
+  baseUrl,
+  fetch: fetchImpl = globalThis.fetch,
+}: ApiClientOptions): Http {
   const root = baseUrl.replace(/\/+$/, '');
 
   async function request(
@@ -104,11 +112,7 @@ export function createHttp({ baseUrl, fetch: fetchImpl = globalThis.fetch }: Api
   return {
     request,
 
-    async requestParsed<T>(
-      schema: ZodType<T>,
-      path: string,
-      options?: RequestOptions,
-    ): Promise<T> {
+    async requestParsed<T>(schema: ZodType<T>, path: string, options?: RequestOptions): Promise<T> {
       const { payload, status } = await request(path, options);
       const parsed = schema.safeParse(payload);
       if (!parsed.success) {

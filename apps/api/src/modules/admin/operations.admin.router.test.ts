@@ -161,8 +161,12 @@ describe('GET /admin/lessons', () => {
           studentId: student.id,
           locationId: location.id,
           pricePlanId: plan.id,
-          startsAt: new Date(teacherId === teacher.id ? '2026-09-07T08:00:00Z' : '2026-09-07T12:00:00Z'),
-          endsAt: new Date(teacherId === teacher.id ? '2026-09-07T09:00:00Z' : '2026-09-07T13:00:00Z'),
+          startsAt: new Date(
+            teacherId === teacher.id ? '2026-09-07T08:00:00Z' : '2026-09-07T12:00:00Z',
+          ),
+          endsAt: new Date(
+            teacherId === teacher.id ? '2026-09-07T09:00:00Z' : '2026-09-07T13:00:00Z',
+          ),
           durationMinutes: 60,
           kind: 'SINGLE',
           status: 'CONFIRMED',
@@ -193,17 +197,14 @@ describe('POST /admin/lessons', () => {
     const { location, teacher, plan } = await studioWithATeacher();
     const student = await createUser(prisma, { firstName: 'Остап', lastName: 'Гнатюк' });
 
-    const response = await request(app)
-      .post('/admin/lessons')
-      .set('Authorization', admin)
-      .send({
-        teacherId: teacher.id,
-        locationId: location.id,
-        pricePlanId: plan.id,
-        studentId: student.id,
-        startsAt: '2026-09-07T08:00:00.000Z',
-        kind: 'SINGLE',
-      });
+    const response = await request(app).post('/admin/lessons').set('Authorization', admin).send({
+      teacherId: teacher.id,
+      locationId: location.id,
+      pricePlanId: plan.id,
+      studentId: student.id,
+      startsAt: '2026-09-07T08:00:00.000Z',
+      kind: 'SINGLE',
+    });
 
     expect(response.status).toBe(201);
     expect(response.body.student.firstName).toBe('Остап');
@@ -214,19 +215,16 @@ describe('POST /admin/lessons', () => {
     expect(stored).not.toBeNull();
   });
 
-  it("still books for the caller when no student is named", async () => {
+  it('still books for the caller when no student is named', async () => {
     const { location, teacher, plan } = await studioWithATeacher();
 
-    const response = await request(app)
-      .post('/admin/lessons')
-      .set('Authorization', admin)
-      .send({
-        teacherId: teacher.id,
-        locationId: location.id,
-        pricePlanId: plan.id,
-        startsAt: '2026-09-07T08:00:00.000Z',
-        kind: 'SINGLE',
-      });
+    const response = await request(app).post('/admin/lessons').set('Authorization', admin).send({
+      teacherId: teacher.id,
+      locationId: location.id,
+      pricePlanId: plan.id,
+      startsAt: '2026-09-07T08:00:00.000Z',
+      kind: 'SINGLE',
+    });
 
     expect(response.status).toBe(201);
     // The lesson shape carries no address, so the row is what proves whose it
