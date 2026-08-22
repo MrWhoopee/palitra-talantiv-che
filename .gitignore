@@ -34,3 +34,9 @@ apps/api/var/
 # them yet. Anything the show actually ships gets added back deliberately,
 # converted and compressed, not as a raw FBX.
 /apps/web/public/demo/models/
+
+# Проміжний glTF перед стисненням: відтворюється з .blend за секунду.
+/assets/blender/build/
+
+# Бекапи Blender: він робить їх сам при кожному збереженні.
+*.blend1
