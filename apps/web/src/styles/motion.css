@@ -195,6 +195,55 @@ a.card:focus-visible .track__sweep,
   transform: scaleX(1);
 }
 
+/* --- The layer under the pointer -------------------------------------------
+
+   Behind the document and out of its way: fixed, unclickable, and painted
+   before anything the visitor came to read. `body` gives up its background so
+   the canvas has something to disturb - the paper colour moves up to the root,
+   where it also serves as the answer when there is no canvas at all.
+--------------------------------------------------------------------------- */
+
+.pointer-water,
+.pointer-notes {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The water is behind everything; the notes are in front of it. A note that
+   left a link in the header would otherwise be hidden by the header, which is
+   the one place notes are most likely to be set off. Neither catches the
+   pointer, so being on top costs nothing. */
+.pointer-water {
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+.pointer-notes {
+  z-index: 40;
+}
+
+.pointer-note {
+  position: absolute;
+  color: var(--pt-primary);
+  font-size: var(--pt-text-lg);
+  line-height: 1;
+  translate: -50% -50%;
+  animation: pt-note var(--pt-dur-move) var(--pt-ease-out) forwards;
+}
+
+@keyframes pt-note {
+  from {
+    opacity: 0.9;
+    transform: translateY(0) scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--pt-note-drift, 0), -2.5rem) scale(1.15);
+  }
+}
+
 /* --- Between pages ---------------------------------------------------------
 
    A portrait and a name carry across from the list to the page they lead to,
