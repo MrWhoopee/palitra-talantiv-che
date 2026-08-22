@@ -1,4 +1,4 @@
-import { SpotLight } from 'three';
+import { Box3, SpotLight, Vector3 } from 'three';
 import { loadProps, type OnProgress } from './props';
 import { createRoom, fitCamera, runLoop, type Loop, type Quality } from './stage-kit';
 
@@ -29,8 +29,8 @@ export interface PropStandScene {
   dispose(): void;
 }
 
-/** Enough room between props that neither stands in the other's shadow. */
-const SPACING = 0.9;
+/** Between one prop and the next, so neither stands in the other's shadow. */
+const GAP = 0.45;
 
 export async function createPropStand(options: PropStandOptions): Promise<PropStandScene> {
   const { canvas, quality, portrait, names, onProgress } = options;
@@ -45,17 +45,38 @@ export async function createPropStand(options: PropStandOptions): Promise<PropSt
   key.castShadow = room.high;
   room.scene.add(key, key.target);
 
-  const stand = names.map((name, index) => {
+  // Measured rather than assumed. A fixed step and a fixed camera worked while
+  // the library was one chair; a door is twice as tall and the chair would
+  // have been standing inside it. The bench has to hold whatever is modelled
+  // next without being adjusted for it.
+  const taken = names.map((name) => {
     const prop = library.take(name);
-    prop.position.x = (index - (names.length - 1) / 2) * SPACING;
+    const size = new Box3().setFromObject(prop).getSize(new Vector3());
+
+    return { prop, size };
+  });
+
+  const span = taken.reduce((total, { size }) => total + size.x, 0) + GAP * (taken.length - 1);
+  const tallest = taken.reduce((high, { size }) => Math.max(high, size.y), 0);
+
+  let cursor = -span / 2;
+  const stand = taken.map(({ prop, size }) => {
+    prop.position.x = cursor + size.x / 2;
+    cursor += size.x + GAP;
     prop.castShadow = room.high;
     room.scene.add(prop);
 
     return prop;
   });
 
-  room.camera.position.set(0, 1.15, 2.5);
-  room.camera.lookAt(0, 0.5, 0);
+  // Far enough back that the widest of the two - the row across, or the
+  // tallest prop up - fits the frame with a margin.
+  const fov = (room.camera.fov * Math.PI) / 180;
+  const reach = Math.max(tallest, span / room.camera.aspect) / (2 * Math.tan(fov / 2));
+
+  room.camera.position.set(0, tallest * 0.55, reach * 1.35 + 1);
+  room.camera.lookAt(0, tallest * 0.45, 0);
+  key.target.position.set(0, tallest * 0.4, 0);
 
   // Fitted before the first frame: the library takes a moment to arrive, and a
   // canvas that renders once at the wrong aspect flashes a stretched prop.

@@ -16,7 +16,7 @@ import '@/styles/show-scene.css';
  */
 
 /** Grows as `assets/blender/props/` does. */
-const NAMES = ['chair'];
+const NAMES = ['chair', 'door'];
 
 export function DemoProps() {
   const canvasRef = useRef<HTMLCanvasElement>(null);

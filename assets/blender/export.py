@@ -87,6 +87,10 @@ def export(out: Path) -> None:
         export_cameras=False,
         export_lights=False,
         export_animations=False,
+        # Колекція має стати вузлом із своєю назвою. Без цього предмет із
+        # кількох об'єктів — двері з полотна й скла — приїжджає в сцену без
+        # спільного імені, і дістати його за назвою вже неможливо.
+        export_hierarchy_full_collections=True,
         # Позиції в half float: різниця непомітна на предметі завбільшки зі
         # стілець, а файл менший. Стиснення Meshopt робиться далі, gltfpack'ом.
         export_image_format='WEBP',
