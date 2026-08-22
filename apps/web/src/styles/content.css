@@ -211,6 +211,13 @@
    Photographs and video in one grid. Both are framed the same way: whatever
    the studio sends, the page keeps its rhythm. */
 
+/* The wall. Its device is the rhythm rather than any one frame: every fifth
+   picture runs double width at the same height, so the grid reads as a wall
+   somebody hung rather than a folder somebody uploaded - and it still reads
+   as one at the size of a cover.
+
+   Same height, twice the width: a double-wide tile keeping 16/10 would set
+   the height of its whole row and leave the tiles beside it stranded. */
 .gallery {
   display: grid;
   gap: var(--pt-space-5);
@@ -218,6 +225,21 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+@media (min-width: 60rem) {
+  .gallery {
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  }
+
+  .gallery__item:nth-child(5n + 1) {
+    grid-column: span 2;
+  }
+
+  .gallery__item:nth-child(5n + 1) .gallery__media,
+  .gallery__item:nth-child(5n + 1) .gallery__fallback {
+    aspect-ratio: 32 / 10;
+  }
 }
 
 .gallery__media {
@@ -251,20 +273,29 @@
    Grouped by year, with the year set large in the margin: the list is a
    history, and the date is the thing that makes it one. */
 
+/* The year is this page's device: a number large enough to be the thing you
+   navigate by, and the thing that still reads when the page is shrunk to a
+   cover. It stays beside its own list while that list scrolls past, so the
+   answer to "which year am I looking at" is never above the fold. */
 .year {
   display: grid;
   gap: var(--pt-space-5);
-  grid-template-columns: 6rem 1fr;
+  grid-template-columns: 8rem 1fr;
   padding-block: var(--pt-space-6);
   border-top: 1px solid var(--pt-line);
 }
 
 .year__number {
+  position: sticky;
+  top: var(--pt-space-6);
+  align-self: start;
   margin: 0;
-  font-size: var(--pt-text-xl);
-  font-weight: 500;
-  color: var(--pt-data);
+  font-size: var(--pt-text-3xl);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--pt-data) 40%, transparent);
   line-height: 1;
+  letter-spacing: var(--pt-tracking-display);
+  font-variant-numeric: tabular-nums;
 }
 
 .year__list {
@@ -283,6 +314,12 @@
   .year {
     grid-template-columns: 1fr;
     gap: var(--pt-space-3);
+  }
+
+  /* Sticky in a single column would park the year over its own list. */
+  .year__number {
+    position: static;
+    font-size: var(--pt-text-2xl);
   }
 }
 
@@ -384,4 +421,83 @@
     grid-template-columns: 1fr;
     gap: var(--pt-space-4);
   }
+}
+
+/* --- The playbill: the date set as a date ----------------------------------
+
+   A playbill is scanned for a day, so the day is what the eye lands on. It is
+   also what makes this page recognisable at the size of a cover, where a
+   title would be unreadable and a number never is.
+--------------------------------------------------------------------------- */
+
+.playbill {
+  margin: var(--pt-space-7) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--pt-line);
+  list-style: none;
+}
+
+.playbill__row {
+  display: grid;
+  align-items: start;
+  gap: var(--pt-space-5);
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  padding-block: var(--pt-space-5);
+  border-bottom: 1px solid var(--pt-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.playbill__date {
+  display: grid;
+  justify-items: center;
+  gap: var(--pt-space-1);
+  padding-block: var(--pt-space-2);
+  border-radius: var(--pt-radius-md);
+  background: color-mix(in srgb, var(--pt-data) 10%, transparent);
+  transition: background var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.playbill__row:hover .playbill__date,
+.playbill__row:focus-visible .playbill__date {
+  background: color-mix(in srgb, var(--pt-data) 18%, transparent);
+}
+
+.playbill__day {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-2xl);
+  font-weight: 600;
+  line-height: var(--pt-leading-tight);
+  color: var(--pt-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.playbill__month {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+  color: var(--pt-data);
+}
+
+.playbill__about {
+  display: grid;
+  gap: var(--pt-space-2);
+}
+
+.playbill__title {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-lg);
+  font-weight: 500;
+  transition: color var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.playbill__row:hover .playbill__title,
+.playbill__row:focus-visible .playbill__title {
+  color: var(--pt-primary);
+}
+
+.playbill__when {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
 }

@@ -10,7 +10,7 @@ import {
   readPlaybillView,
   type PlaybillView,
 } from '@/lib/events';
-import { formatEventRange } from '@/lib/studio-time';
+import { eventDayParts, formatEventRange } from '@/lib/studio-time';
 import '@/styles/content.css';
 
 const TITLE = 'Події — Палітра талантів';
@@ -67,19 +67,36 @@ export default async function EventsPage({ searchParams }: PageProps) {
       {events.length === 0 ? (
         <EmptyPlaybill when={when} />
       ) : (
-        <ul className="card-grid card-grid--plain" data-reveal-group>
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link href={`/events/${event.slug}`} className="card">
-                <p className="eyebrow">{EVENT_KIND_LABELS[event.kind]}</p>
-                <ViewTransition name={`event-title-${event.slug}`}>
-                  <p className="card__title">{event.title}</p>
-                </ViewTransition>
-                <p className="card__text">{formatEventRange(event.startsAt, event.endsAt)}</p>
-                {event.location ? <p className="card__text">{event.location.address}</p> : null}
-              </Link>
-            </li>
-          ))}
+        // The date is set as a date rather than read as a sentence in the
+        // third line of a card. A playbill is scanned for a day, so the day is
+        // what the eye should land on - which is also what makes this page
+        // recognisable when it is shrunk to a cover.
+        <ul className="playbill" data-reveal-group>
+          {events.map((event) => {
+            const opens = eventDayParts(event.startsAt);
+
+            return (
+              <li key={event.id}>
+                <Link href={`/events/${event.slug}`} className="playbill__row">
+                  <span className="playbill__date">
+                    <span className="playbill__day">{opens.day}</span>
+                    <span className="playbill__month">{opens.month}</span>
+                  </span>
+
+                  <span className="playbill__about">
+                    <span className="eyebrow">{EVENT_KIND_LABELS[event.kind]}</span>
+                    <ViewTransition name={`event-title-${event.slug}`}>
+                      <span className="playbill__title">{event.title}</span>
+                    </ViewTransition>
+                    <span className="playbill__when">
+                      {formatEventRange(event.startsAt, event.endsAt)}
+                      {event.location ? ` · ${event.location.address}` : ''}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>
