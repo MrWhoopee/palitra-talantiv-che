@@ -29,3 +29,8 @@ Thumbs.db
 
 # Завантажені зображення: локальне сховище, не вміст репозиторію
 apps/api/var/
+
+# Downloaded source models and their archives: heavy, and nothing imports
+# them yet. Anything the show actually ships gets added back deliberately,
+# converted and compressed, not as a raw FBX.
+/apps/web/public/demo/models/
