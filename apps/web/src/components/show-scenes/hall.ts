@@ -237,6 +237,15 @@ export async function createHall(options: HallOptions): Promise<HallScene> {
   let current = 0;
   let target = 0;
 
+  // The curtain has a speed of its own.
+  //
+  // Set straight from the attribute it jumped: play put it at fully open in
+  // one frame, and cloth that arrives instantly is a cloth-shaped image being
+  // swapped. It also has to travel the same way in both directions, so pause
+  // draws it shut along the path it opened by rather than snapping back.
+  let curtain = 0;
+  let curtainTarget = 0;
+
   const place = (at: number) => {
     // From the back of the hall, by the door, walking down the aisle. The eye
     // stays on the stage the whole way, because that is what the room is for.
@@ -258,9 +267,30 @@ export async function createHall(options: HallOptions): Promise<HallScene> {
   place(0);
   frame(canvas.clientWidth, canvas.clientHeight, portrait);
 
+  const draw = (open: number) => {
+    for (const { half, towards } of halves) {
+      // Never to nothing: cloth drawn fully back is still a bolt of fabric
+      // standing at the edge of the opening, and a curtain that vanishes was
+      // a wall pretending.
+      half.scale.x = towards * 1.04 * (1 - open * 0.82);
+      // And it thickens as it goes. Squeezed on one axis alone the folds
+      // compress below a pixel and the bunch comes back as a flat strip
+      // crawling with moire; cloth gathered against an edge gets deeper,
+      // not thinner.
+      half.scale.z = 1 + open * 2.6;
+    }
+  };
+
+  draw(0);
+
   const loop: Loop = runLoop((delta) => {
     current = approach(current, target, 3.2, delta);
     place(current);
+
+    // Slower than the walk: a curtain is heavy, and it is the one thing in
+    // this room the eye is meant to wait for.
+    curtain = approach(curtain, curtainTarget, 1.7, delta);
+    draw(curtain);
 
     room.renderer.render(room.scene, room.camera);
   });
@@ -271,19 +301,7 @@ export async function createHall(options: HallOptions): Promise<HallScene> {
     },
 
     setCurtain(value) {
-      const open = Math.max(0, Math.min(1, value));
-
-      for (const { half, towards } of halves) {
-        // Never to nothing: cloth drawn fully back is still a bolt of fabric
-        // standing at the edge of the opening, and a curtain that vanishes was
-        // a wall pretending.
-        half.scale.x = towards * 1.04 * (1 - open * 0.82);
-        // And it thickens as it goes. Squeezed on one axis alone the folds
-        // compress below a pixel and the bunch comes back as a flat strip
-        // crawling with moire; cloth gathered against an edge gets deeper,
-        // not thinner.
-        half.scale.z = 1 + open * 2.6;
-      }
+      curtainTarget = Math.max(0, Math.min(1, value));
     },
 
     resize(width, height, next) {
