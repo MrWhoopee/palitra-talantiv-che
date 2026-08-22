@@ -9,11 +9,15 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* The paper colour lives here rather than on `body` so that the pointer
+     layer, which is painted behind the body, has something to disturb - and
+     so that a page without the layer looks exactly the same. */
+  background: var(--pt-bg);
 }
 
 body {
   margin: 0;
-  background: var(--pt-bg);
+  background: transparent;
   color: var(--pt-text);
   font-family: var(--pt-font-body);
   font-size: var(--pt-text-base);

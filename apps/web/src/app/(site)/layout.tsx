@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { PointerLayer } from '@/components/pointer-layer';
 import { RevealObserver } from '@/components/reveal-observer';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
@@ -15,6 +16,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       {children}
       <SiteFooter />
       <RevealObserver />
+      <PointerLayer />
     </div>
   );
 }
