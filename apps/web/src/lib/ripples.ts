@@ -21,6 +21,19 @@ const LIFETIME = 1.9;
 /** Distance the pointer must travel before it drops another ring. */
 const SPACING_PX = 38;
 
+/**
+ * The widest the drawing buffer is ever allowed to be.
+ *
+ * Without a ceiling the buffer is the viewport times the device pixel ratio,
+ * which on a 4K screen is a shader running over eight million pixels every
+ * frame for a decoration behind the text. CSS stretches whatever is drawn to
+ * fill the window and nobody can tell: the rings are soft to begin with.
+ *
+ * It is also what keeps the scene from coming apart under browser zoom, where
+ * the ratio climbs as the viewport shrinks.
+ */
+const MAX_BUFFER_WIDTH = 1600;
+
 const VERTEX_SHADER = `#version 300 es
 in vec2 a_position;
 void main() {
@@ -109,23 +122,30 @@ export function startRipples(canvas: HTMLCanvasElement, tint: [number, number, n
   // (x, y, bornAt, strength) per ring, flat, because that is the shape the
   // uniform wants and building it every frame would allocate every frame.
   const ripples = new Float32Array(MAX_RIPPLES * 4);
+  // Buffer pixels per CSS pixel, held in one place so that a ring dropped by
+  // the pointer lands where the shader draws it. Two separate calculations
+  // would drift apart the moment the ceiling bit.
+  let scale = 1;
   let next = 0;
   let last: { x: number; y: number } | null = null;
   let frame = 0;
   let running = true;
 
   function resize() {
-    // Capped at 2: past that the pixels are smaller than the effect and only
-    // the battery notices.
-    const scale = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(window.innerWidth * scale);
-    canvas.height = Math.floor(window.innerHeight * scale);
+    const width = Math.max(window.innerWidth, 1);
+
+    // Two ceilings. Two device pixels per CSS pixel, past which the detail is
+    // finer than the effect and only the battery notices; and a hard width, so
+    // a wide screen does not turn a background into a workload.
+    scale = Math.min(window.devicePixelRatio || 1, 2, MAX_BUFFER_WIDTH / width);
+
+    canvas.width = Math.floor(width * scale);
+    canvas.height = Math.floor(Math.max(window.innerHeight, 1) * scale);
     gl!.viewport(0, 0, canvas.width, canvas.height);
     gl!.uniform2f(resolutionUniform, canvas.width, canvas.height);
   }
 
   function drop(clientX: number, clientY: number, strength: number) {
-    const scale = Math.min(window.devicePixelRatio || 1, 2);
     const slot = next * 4;
 
     ripples[slot] = clientX * scale;
