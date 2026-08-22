@@ -295,7 +295,11 @@
   margin: 0;
   font-size: var(--pt-text-3xl);
   font-weight: 600;
-  color: color-mix(in srgb, var(--pt-data) 40%, transparent);
+  /* Full strength, not a tint. Lightened to 40% it looked like a quiet
+     marker and failed contrast - Lighthouse put accessibility at 96 on this
+     page and named this element. A number this large is still a number
+     somebody reads. */
+  color: var(--pt-data);
   line-height: 1;
   letter-spacing: var(--pt-tracking-display);
   font-variant-numeric: tabular-nums;
