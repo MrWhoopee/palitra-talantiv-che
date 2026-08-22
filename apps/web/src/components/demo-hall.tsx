@@ -44,9 +44,15 @@ export function DemoHall() {
     const onResize = () =>
       sceneRef.current?.resize(window.innerWidth, window.innerHeight, portrait());
 
+    // One gesture, two acts: the first two thirds walk down the aisle, the
+    // last third draws the curtain. Walking and opening at once would be two
+    // things moving for one scroll, and neither would read.
     const onScroll = () => {
       const span = document.documentElement.scrollHeight - window.innerHeight;
-      sceneRef.current?.setApproach(span > 0 ? window.scrollY / span : 0);
+      const progress = span > 0 ? window.scrollY / span : 0;
+
+      sceneRef.current?.setApproach(Math.min(1, progress / 0.66));
+      sceneRef.current?.setCurtain(Math.max(0, (progress - 0.66) / 0.34));
     };
 
     window.addEventListener('resize', onResize);
@@ -68,7 +74,7 @@ export function DemoHall() {
       <div className="scene__panel">
         <p className="scene__eyebrow">трек 1 з 7</p>
         <h1 className="scene__title">Зала</h1>
-        <p className="scene__meta">{failed ?? 'Прокрути, щоб пройти проходом'}</p>
+        <p className="scene__meta">{failed ?? 'Прокрути: пройти залою, потім відкрити завісу'}</p>
       </div>
     </main>
   );

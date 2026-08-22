@@ -41,6 +41,8 @@ export interface HallOptions {
 export interface HallScene {
   /** 0 is the back of the hall, 1 is standing at the stage. */
   setApproach(value: number): void;
+  /** 0 is shut, 1 is fully drawn back. */
+  setCurtain(value: number): void;
   resize(width: number, height: number, portrait: boolean): void;
   dispose(): void;
 }
@@ -66,6 +68,9 @@ const SEAT_PITCH = 0.56;
 const AISLE = 0.9;
 /** Each row a little higher than the one in front, so row four can see. */
 const RAKE = 0.11;
+
+/** The modelled height of one curtain half, from `assets/blender/props/curtain.blend`. */
+const CURTAIN_HEIGHT = 3.6;
 
 export async function createHall(options: HallOptions): Promise<HallScene> {
   const { canvas, quality, portrait, onProgress } = options;
@@ -144,6 +149,41 @@ export async function createHall(options: HallOptions): Promise<HallScene> {
   );
   mark.position.set(0, STAGE_HEIGHT + 1.7, -DEPTH / 2 + 0.15);
   room.scene.add(mark);
+
+  // The curtain: two halves of one cloth, the second mirrored.
+  //
+  // Drawn back by gathering rather than sliding. A stage curtain does not
+  // travel sideways as a flat sheet - it bunches towards the edge it hangs
+  // from, and its folds crowd together as it goes. Scaling each half towards
+  // its own outer edge is that gesture, and it is why the model's origin sits
+  // on that edge rather than in the middle of the cloth.
+  const OPENING_TOP = CEILING - headerHeight;
+  const cloth = OPENING_TOP - STAGE_HEIGHT;
+  const halves = [-1, 1].map((edge) => {
+    // `edge` is which side the cloth hangs from; the mesh runs from its own
+    // outer edge inwards, so the half on the left is *not* mirrored and the
+    // half on the right is. Getting this backwards sends both halves out past
+    // the piers, where they read as two red threads and nothing else.
+    const towards = -edge;
+    const half = library.take('curtain_half');
+
+    half.traverse((child) => {
+      if (child instanceof Mesh) {
+        const material = child.material;
+        // A cloth is one surface, and from the wings you see its back.
+        if (!Array.isArray(material)) material.side = DoubleSide;
+        child.castShadow = room.high;
+      }
+    });
+
+    // A little wider than half the opening, so the two meet rather than
+    // leaving a seam of lit stage up the middle.
+    half.position.set(edge * (STAGE_WIDTH / 2), STAGE_HEIGHT, STAGE_FRONT - 0.4);
+    half.scale.set(towards * 1.04, cloth / CURTAIN_HEIGHT, 1);
+    room.scene.add(half);
+
+    return { half, towards };
+  });
 
   // The seats. One chair, forty-eight times, which is the whole reason the
   // rooms can afford to be rooms.
@@ -228,6 +268,22 @@ export async function createHall(options: HallOptions): Promise<HallScene> {
   return {
     setApproach(value) {
       target = Math.max(0, Math.min(1, value));
+    },
+
+    setCurtain(value) {
+      const open = Math.max(0, Math.min(1, value));
+
+      for (const { half, towards } of halves) {
+        // Never to nothing: cloth drawn fully back is still a bolt of fabric
+        // standing at the edge of the opening, and a curtain that vanishes was
+        // a wall pretending.
+        half.scale.x = towards * 1.04 * (1 - open * 0.82);
+        // And it thickens as it goes. Squeezed on one axis alone the folds
+        // compress below a pixel and the bunch comes back as a flat strip
+        // crawling with moire; cloth gathered against an edge gets deeper,
+        // not thinner.
+        half.scale.z = 1 + open * 2.6;
+      }
     },
 
     resize(width, height, next) {
