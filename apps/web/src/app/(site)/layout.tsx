@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { CurtainCover } from '@/components/curtain-cover';
 import { PointerLayer } from '@/components/pointer-layer';
 import { RevealObserver } from '@/components/reveal-observer';
 import { ShowPlayer } from '@/components/show-player';
+import { StageCover } from '@/components/stage-cover';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import '@/styles/site.css';
@@ -20,7 +20,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <RevealObserver />
       <PointerLayer />
       <ShowPlayer />
-      <CurtainCover />
+      <StageCover />
     </div>
   );
 }

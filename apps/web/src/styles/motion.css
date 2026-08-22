@@ -421,99 +421,35 @@ a.card:focus-visible .track__sweep,
   }
 }
 
-/* --- The curtain -------------------------------------------------------------
+/* --- The cover ---------------------------------------------------------------
 
-   The home page's cover: two halves of velvet with the studio's mark between
-   them. Play draws them back, pause draws them shut.
+   The home page's cover is the stage itself, drawn in WebGL: cloth, mark,
+   instruments and all. It covers the viewport while it is shut, and steps
+   aside once the curtain has finished drawing back - what is behind it is the
+   page the visitor came for.
 
-   Velvet is a dark ground with a run of soft folds over it, and a warmer edge
-   where the light of the hall catches the pleats. All of it is gradients: a
-   fabric is exactly the kind of thing a gradient is good at, and three.js on
-   the one page that gets measured is a hundred and fifty kilobytes for two
-   seconds of screen.
+   It fades rather than disappearing, because the cloth has just spent two and
+   a half seconds moving and a cut at the end of that would undo it.
 --------------------------------------------------------------------------- */
 
-.curtain {
+.stage-cover {
   position: fixed;
   z-index: 35;
   inset: 0;
-  overflow: hidden;
+  background: #05040a;
+  transition:
+    opacity var(--pt-dur-stage) var(--pt-ease-in-out),
+    visibility 0s linear var(--pt-dur-stage);
 }
 
-/* Drawn back and out of the way, including out of the way of the pointer. */
-.curtain[data-open] {
-  pointer-events: none;
+.stage-cover__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.curtain__half {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 52%;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(0, 0, 0, 0.32) 0 6px,
-      rgba(255, 255, 255, 0.05) 14px,
-      rgba(0, 0, 0, 0.3) 26px
-    ),
-    linear-gradient(180deg, var(--pt-violet-deep) 0%, #2b1553 55%, #1b0d36 100%);
-  /* Slow, because a curtain is heavy. The ease is the one thing that decides
-     whether this reads as fabric or as two rectangles sliding. */
-  transition: transform var(--pt-dur-stage) var(--pt-ease-in-out);
-}
-
-.curtain__half--left {
-  left: 0;
-  box-shadow: inset -18px 0 34px -12px rgba(0, 0, 0, 0.55);
-}
-
-.curtain__half--right {
-  right: 0;
-  box-shadow: inset 18px 0 34px -12px rgba(0, 0, 0, 0.55);
-}
-
-.curtain[data-open] .curtain__half--left {
-  transform: translateX(-100%);
-}
-
-.curtain[data-open] .curtain__half--right {
-  transform: translateX(100%);
-}
-
-.curtain__mark {
-  position: absolute;
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  justify-items: center;
-  gap: var(--pt-space-5);
-  translate: -50% -50%;
-  color: var(--pt-white);
-  text-align: center;
-  transition: opacity var(--pt-dur-move) var(--pt-ease-out);
-}
-
-/* The mark is white on the velvet, which the inline SVG paints in its own
-   colours - so it is the fill that has to be overridden, not the text. */
-.curtain__mark svg [fill]:not([fill='none']),
-.curtain__mark svg path {
-  fill: currentcolor;
-}
-
-.curtain__hint {
-  margin: 0;
-  color: color-mix(in srgb, var(--pt-white) 72%, transparent);
-  font-family: var(--pt-font-display);
-  font-size: var(--pt-text-xs);
-  letter-spacing: var(--pt-tracking-mark);
-  text-transform: uppercase;
-}
-
-/* The mark goes first and quickly: it is on the fabric, and the fabric is
-   leaving. */
-.curtain[data-open] .curtain__mark {
+.stage-cover[data-gone] {
   opacity: 0;
-  transition-duration: var(--pt-dur-quick);
+  visibility: hidden;
+  pointer-events: none;
 }

@@ -63,8 +63,10 @@ export interface StageOptions {
 export interface Stage {
   /** Where along the 0..1 journey the scroll is asking the camera to be. */
   setProgress(progress: number): void;
-  /** Draw the curtain back. Does nothing once it is already going. */
+  /** Draw the curtain back. Does nothing once it is already open. */
   open(): void;
+  /** Draw it shut again, by the same path and at the same pace. */
+  close(): void;
   resize(width: number, height: number, portrait: boolean): void;
   dispose(): void;
 }
@@ -231,7 +233,11 @@ export async function createStage(options: StageOptions): Promise<Stage> {
   let path: readonly Keyframe[] = options.portrait ? PORTRAIT_PATH : LANDSCAPE_PATH;
   let targetProgress = 0;
   let currentProgress = 0;
-  let openedAt: number | null = null;
+  // The curtain is driven by a target rather than by the moment it started:
+  // a one-way timestamp can only open, and the player's pause has to shut it
+  // again by the same path and at the same pace.
+  let curtainTarget = 0;
+  let curtainT = 0;
   let curtain = 0;
   let announced = false;
 
@@ -248,12 +254,18 @@ export async function createStage(options: StageOptions): Promise<Stage> {
     const delta = Math.min(clock.getDelta(), 0.05);
     time += delta;
 
-    if (openedAt !== null) {
-      curtain = easeInOutCubic(Math.min((time - openedAt) / OPEN_SECONDS, 1));
-      if (curtain >= 1 && !announced) {
-        announced = true;
-        onOpened?.();
-      }
+    if (curtainT !== curtainTarget) {
+      const step = delta / OPEN_SECONDS;
+      curtainT =
+        curtainTarget > curtainT
+          ? Math.min(curtainT + step, curtainTarget)
+          : Math.max(curtainT - step, curtainTarget);
+      curtain = easeInOutCubic(curtainT);
+    }
+
+    if (curtainT >= 1 && !announced) {
+      announced = true;
+      onOpened?.();
     }
     curtains.setOpen(curtain);
     curtains.update(time);
@@ -306,7 +318,14 @@ export async function createStage(options: StageOptions): Promise<Stage> {
     },
 
     open() {
-      if (openedAt === null) openedAt = time;
+      curtainTarget = 1;
+    },
+
+    close() {
+      curtainTarget = 0;
+      // So that opening it again announces itself again: whoever is listening
+      // is waiting for the stage to be in view, not for a first time.
+      announced = false;
     },
 
     resize(width, height, portrait) {
