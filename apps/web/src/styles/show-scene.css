@@ -108,3 +108,11 @@
 .scene__panel {
   transition: opacity var(--pt-dur-move) var(--pt-ease-out);
 }
+
+/* The words wait for the flight to land. Play sets the attribute at the
+   moment the flash fires, and a name appearing while the lens is still coming
+   at us reads as two things happening rather than one. Shutting is immediate:
+   the cover should not be caught with a caption on it. */
+.scene[data-open] .scene__panel {
+  transition-delay: 1.15s;
+}

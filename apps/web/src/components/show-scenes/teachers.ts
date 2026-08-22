@@ -10,7 +10,15 @@ import {
 } from 'three';
 import { SpotLight } from 'three';
 import { createCameraProp } from './camera-prop';
-import { approach, createIris, createRoom, fitCamera, runLoop, type Quality } from './stage-kit';
+import {
+  approach,
+  createBackdrop,
+  createIris,
+  createRoom,
+  fitCamera,
+  runLoop,
+  type Quality,
+} from './stage-kit';
 
 /**
  * The teachers, as a screen you pick somebody from.
@@ -85,6 +93,14 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
   // The way this track opens: a camera pointed at whoever is looking. The
   // flash fires, the lens comes at us, and we go through the glass - which is
   // what a page about portraits should feel like being let into.
+  // The cover's own ground, standing between the camera and the room: what is
+  // waiting in there is not part of this picture.
+  const backdrop = createBackdrop('rgba(122, 96, 190, 0.55)', '#0b0913');
+  // In front of the row and behind the camera: standing it behind the figure
+  // left the figure showing on the cover, which is the one thing it is for.
+  backdrop.mesh.position.set(0, 2.4, 0.55);
+  scene.add(backdrop.mesh);
+
   const prop = createCameraProp();
   prop.group.position.set(0, 2.5, 1.2);
   prop.group.scale.setScalar(0.9);
@@ -138,6 +154,9 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
     // stated as ranges of the same number rather than as three timers.
     prop.setFlash(Math.max(0, 1 - Math.abs(drawn - 0.08) / 0.09));
     prop.group.visible = drawn < 0.82;
+    // The ground goes while we are inside the barrel, where the frame is
+    // black anyway - so the room is never seen arriving.
+    backdrop.setOpacity(Math.min(Math.max((0.66 - drawn) / 0.14, 0), 1));
 
     const approachT = Math.min(Math.max((drawn - 0.12) / 0.56, 0), 1);
     const eased = approachT * approachT * (3 - 2 * approachT);
@@ -222,6 +241,7 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
       loop.stop();
       iris.dispose();
       prop.dispose();
+      backdrop.dispose();
       for (const texture of textures.values()) texture.dispose();
       scene.traverse((object) => {
         if (!(object instanceof Mesh)) return;

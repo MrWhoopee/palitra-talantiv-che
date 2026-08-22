@@ -1,11 +1,13 @@
 import {
   ACESFilmicToneMapping,
   AmbientLight,
+  CanvasTexture,
   Clock,
   Color,
   DirectionalLight,
   FogExp2,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PCFSoftShadowMap,
   PerspectiveCamera,
@@ -13,6 +15,7 @@ import {
   PMREMGenerator,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
@@ -255,6 +258,73 @@ export function createIris(): Iris {
 
     dispose() {
       mesh.geometry.dispose();
+      material.dispose();
+    },
+  };
+}
+
+/**
+ * A backdrop to stand a cover against.
+ *
+ * A cover has to be a picture in its own right: whatever the scene behind it
+ * is made of - a figure waiting, light running past - must not show through,
+ * or the cover gives away the room before the door is opened.
+ *
+ * It is a photographer's sweep: one dark ground with a pool of light where
+ * the subject stands, which is the backdrop the object in front of it belongs
+ * to. Painted into a canvas rather than fetched, so there is no file and no
+ * licence, and the colour comes from the site's own palette.
+ */
+export interface Backdrop {
+  readonly mesh: Mesh;
+  /** Fades out as the cover is left behind. */
+  setOpacity(opacity: number): void;
+  dispose(): void;
+}
+
+export function createBackdrop(pool: string, ground: string): Backdrop {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d')!;
+  context.fillStyle = ground;
+  context.fillRect(0, 0, size, size);
+
+  // The pool sits a little above centre, where a light aimed at somebody
+  // standing would put it.
+  const glow = context.createRadialGradient(
+    size / 2,
+    size * 0.42,
+    0,
+    size / 2,
+    size * 0.42,
+    size * 0.62,
+  );
+  glow.addColorStop(0, pool);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  context.fillStyle = glow;
+  context.fillRect(0, 0, size, size);
+
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+
+  const material = new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+  // Wide enough to fill any window it is asked to stand behind.
+  const mesh = new Mesh(new PlaneGeometry(34, 20), material);
+
+  return {
+    mesh,
+
+    setOpacity(opacity) {
+      material.opacity = opacity;
+      mesh.visible = opacity > 0.01;
+    },
+
+    dispose() {
+      mesh.geometry.dispose();
+      texture.dispose();
       material.dispose();
     },
   };
