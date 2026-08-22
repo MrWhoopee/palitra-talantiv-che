@@ -27,7 +27,7 @@ export default async function ContactsPage() {
   const copy = await readSiteCopy('contacts');
 
   return (
-    <main className="page">
+    <main className="page contacts">
       <JsonLd data={musicSchoolJsonLd()} />
 
       {/* The studio's own words where it has written any, and the wording
