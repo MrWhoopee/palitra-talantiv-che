@@ -2,9 +2,10 @@
  * The pointer writes Shchedryk.
  *
  * Five lines follow the cursor, a clef and two flats open the bar, and the
- * melody is set on it in beamed quavers. Not glyphs out of a font: heads,
- * stems and beams are drawn, because `♫` is a fixed pair of notes at a fixed
- * pitch, and a bar of real music is four notes at four pitches under one beam.
+ * melody is set on it in its own rhythm - crotchet, two quavers, crotchet to
+ * the bar. Not glyphs out of a font: heads, stems and beams are drawn,
+ * because `♫` is a fixed pair of notes at a fixed pitch, and this needs four
+ * pitches, two lengths and a beam over only the middle two.
  *
  * Drawn on a 2D canvas. Lines, ellipses and a slanted beam are what notation
  * is made of, and a browser draws all three sharply - WebGL is kept for the
@@ -30,9 +31,6 @@ const LINE_GAP = 11;
 /** Below this the pointer has not really moved and nothing is written. */
 const MIN_STEP_PX = 5;
 
-/** Travel between one note and the next. Close, the way a bar is engraved. */
-const NOTE_SPACING_PX = 30;
-
 /** A stroke that paused this long starts a new bar, with its own clef. */
 const NEW_BAR_AFTER_MS = 700;
 
@@ -40,16 +38,10 @@ const NEW_BAR_AFTER_MS = 700;
 const STEM = LINE_GAP * 3;
 
 /**
- * Quavers to a beat, and beats to a bar.
- *
- * Shchedryk is in three-four and runs in even quavers, so a bar holds six of
- * them and an engraver beams them in pairs - one beam per beat. The melody's
- * figure is four notes long, which is why it never lines up with the bar: four
- * against six is the hemiola the whole piece rocks on, and drawing the beams
- * by the beat rather than by the figure is what makes that visible.
+ * A quaver's worth of horizontal room. A crotchet gets two of them, which is
+ * what makes the spacing say the rhythm rather than just the order.
  */
-const QUAVERS_PER_BEAT = 2;
-const QUAVERS_PER_BAR = 6;
+const QUAVER_PX = 17;
 
 const CLEF = '\u{1D11E}';
 const FLAT = '♭';
@@ -64,17 +56,29 @@ const G4 = 2;
 const E5 = -3;
 
 /**
- * Shchedryk, note for note.
+ * Shchedryk, note for note and beat for beat.
  *
  * Leontovych built the whole piece on one four-note figure inside a minor
  * third - B flat, A, B flat, G in G minor - and repeated it sixty-eight
- * times. That figure is the melody as every edition writes it, and it is why
- * this reads as music rather than as scattered glyphs: the shape repeats, and
- * a repeating shape is what a reader recognises.
+ * times. In three-four the figure fills exactly one bar: crotchet, two
+ * quavers, crotchet. That rhythm is the piece. Written as six even quavers it
+ * is merely four notes going up and down, which is what this drew until
+ * somebody who knows the tune said so.
+ *
+ * `quavers` is how long a note is, counted in quavers - which is also how
+ * much room it takes on the page.
  *
  * Written in 1916, and long out of copyright.
  */
-const MELODY = [B4, A4, B4, G4];
+const MELODY = [
+  { step: B4, quavers: 2 },
+  { step: A4, quavers: 1 },
+  { step: B4, quavers: 1 },
+  { step: G4, quavers: 2 },
+];
+
+/** One bar of three-four is one turn of the figure. */
+const NOTES_PER_BAR = MELODY.length;
 
 /** Two flats after the clef: G minor, in the order scores write them. */
 const KEY_SIGNATURE = [B4, E5];
@@ -93,6 +97,8 @@ interface Note {
   born: number;
   /** Its place in the run, which is what decides where a beam ends. */
   slot: number;
+  /** Its length. Only quavers are beamed; a crotchet stands on its own. */
+  quavers: number;
 }
 
 interface Glyph {
@@ -168,15 +174,24 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
     } else {
       sinceLastNote += step;
 
-      // A bar line takes room of its own, the way it does on paper.
-      const opensBar = written >= KEY_SIGNATURE.length && slotOf(written) % QUAVERS_PER_BAR === 0;
-      const due = opensBar ? NOTE_SPACING_PX * 1.6 : NOTE_SPACING_PX;
+      // How much room the note just written was entitled to: a crotchet takes
+      // twice a quaver's, which is what makes the spacing say the rhythm.
+      const previous = notes[notes.length - 1];
+      const room = (previous?.quavers ?? 1) * QUAVER_PX;
+
+      // A bar line divides one bar from the next, so the first note of the
+      // piece does not get one: the clef and the flats stand at the head of
+      // the opening bar rather than forming a bar of their own, which is what
+      // they looked like while they were being counted as places in it.
+      const slot = slotOf(written);
+      const opensBar = slot > 0 && slot % NOTES_PER_BAR === 0;
+      const due = opensBar ? room + QUAVER_PX : room;
 
       if (sinceLastNote >= due) {
         sinceLastNote = 0;
 
         if (opensBar) {
-          bars.push({ x: event.clientX - NOTE_SPACING_PX * 0.55, y: event.clientY, born: now });
+          bars.push({ x: event.clientX - QUAVER_PX * 0.6, y: event.clientY, born: now });
         }
 
         write(written, event.clientX, event.clientY, now);
@@ -199,13 +214,15 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
     }
 
     const slot = index - KEY_SIGNATURE.length;
+    const note = MELODY[slot % MELODY.length]!;
 
     notes.push({
       x,
       // The pitch belongs to the melody and the moment to the hand.
-      y: y + stepToPixels(MELODY[slot % MELODY.length]!),
+      y: y + stepToPixels(note.step),
       born: now,
       slot,
+      quavers: note.quavers,
     });
   }
 
@@ -327,12 +344,12 @@ function drawBeams(context: CanvasRenderingContext2D, notes: Note[], now: number
     const from = notes[i - 1]!;
     const to = notes[i]!;
 
-    // Consecutive, and inside the same beat. A beam that crossed a beat would
-    // be a beam saying something else about the rhythm.
+    // Only quavers are beamed, and only to a neighbour inside the same bar.
+    // A crotchet carries a plain stem: joining it to anything would be a beam
+    // claiming a rhythm the piece does not have.
     if (to.slot - from.slot !== 1) continue;
-    if (Math.floor(from.slot / QUAVERS_PER_BEAT) !== Math.floor(to.slot / QUAVERS_PER_BEAT)) {
-      continue;
-    }
+    if (from.quavers !== 1 || to.quavers !== 1) continue;
+    if (Math.floor(from.slot / NOTES_PER_BAR) !== Math.floor(to.slot / NOTES_PER_BAR)) continue;
 
     context.globalAlpha = Math.min(fade(now, from.born), fade(now, to.born)) * 0.85;
     context.beginPath();
