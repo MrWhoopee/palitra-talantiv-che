@@ -502,7 +502,10 @@ a.card:focus-visible .track__sweep,
 
 :root[data-show-home] .site-body > header,
 :root[data-show-home] .site-body > footer,
-:root[data-show-home] .site-body > main:not(.stage),
+/* The show's home is two screens now - the hall behind the curtain (.stage)
+   and the corridor it opens into (.scene) - so both have to survive the rule
+   that hides the ordinary page under them. */
+:root[data-show-home] .site-body > main:not(.stage):not(.scene),
 :root[data-show-scene] .site-body > header,
 :root[data-show-scene] .site-body > footer,
 :root[data-show-scene] .site-body > main:not(.scene) {

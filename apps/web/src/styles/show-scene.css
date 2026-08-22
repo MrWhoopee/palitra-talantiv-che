@@ -143,3 +143,39 @@
 .scene[data-open] .scene__panel {
   transition-delay: 1.15s;
 }
+
+/* The seven doors as seven links.
+
+   Out of the way but never out of reach: a canvas cannot be reached by Tab,
+   read by a screen reader or opened in a new tab, and the show is meant to be
+   navigation rather than a picture of it. Focus brings a link back into the
+   frame, so keyboard users see where they are instead of chasing an invisible
+   ring. */
+.scene__doors a {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.scene__doors a:focus-visible {
+  position: fixed;
+  z-index: 3;
+  top: var(--pt-space-5);
+  left: 50%;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: var(--pt-space-2) var(--pt-space-4);
+  border-radius: var(--pt-radius-pill, 999px);
+  background: #0d0a12;
+  color: #f4f2f7;
+  clip-path: none;
+  translate: -50% 0;
+  outline: 2px solid #8f6bf0;
+  outline-offset: 2px;
+}
