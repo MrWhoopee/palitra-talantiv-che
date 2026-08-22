@@ -376,6 +376,20 @@
   translate: -50% -50%;
 }
 
+/* The light that crosses the bar while a row is being considered. Never the
+   fill itself - see `track.tsx` for why it cannot be, and why it should not
+   be. */
+.track__sweep {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--pt-primary) 22%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
 .track-row {
   display: flex;
   align-items: center;

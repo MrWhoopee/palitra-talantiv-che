@@ -46,16 +46,25 @@
   initial-value: 0deg;
 }
 
-.lit-edge {
+.lit-edge,
+.button-primary,
+.button-quiet,
+a.card {
   position: relative;
-  isolation: isolate;
 }
 
-.lit-edge::after {
+.lit-edge::after,
+.button-primary::after,
+.button-quiet::after,
+a.card::after {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -1;
+  /* Painted over the element's own edge, never behind it: a card carries a
+     white background, and a pseudo-element pushed to `z-index: -1` would be
+     hidden by it. The mask leaves only the ring, so nothing inside is
+     covered - and nothing here should catch the pointer. */
+  pointer-events: none;
   border-radius: inherit;
   padding: 1px;
   background: conic-gradient(
@@ -80,9 +89,22 @@
    anyone arriving by keyboard. */
 .lit-edge:hover::after,
 .lit-edge:focus-visible::after,
-.lit-edge:focus-within::after {
+.lit-edge:focus-within::after,
+.button-primary:hover::after,
+.button-primary:focus-visible::after,
+.button-quiet:hover::after,
+.button-quiet:focus-visible::after,
+a.card:hover::after,
+a.card:focus-visible::after {
   opacity: 1;
   animation: pt-turn 1.6s linear infinite;
+}
+
+/* A disabled button is not offering anything, so nothing runs around it. */
+.button-primary:disabled::after,
+.button-quiet:disabled::after {
+  opacity: 0;
+  animation: none;
 }
 
 @keyframes pt-turn {
@@ -93,27 +115,84 @@
 
 /* --- States ---------------------------------------------------------------- */
 
-.pressable {
-  transition: transform var(--pt-dur-instant) var(--pt-ease-out);
+.pressable,
+.button-primary,
+.button-quiet {
+  transition:
+    transform var(--pt-dur-instant) var(--pt-ease-out),
+    box-shadow var(--pt-dur-quick) var(--pt-ease-out),
+    border-color var(--pt-dur-quick) var(--pt-ease-out);
 }
 
-.pressable:active {
+.pressable:active,
+.button-primary:active,
+.button-quiet:active {
   transform: scale(0.97);
 }
 
-/* The playhead runs to the end of any track whose row is being considered.
-   The hero has done this since stage 5; here it becomes the rule rather than
-   one page's flourish. */
-.track {
-  --track-fill: var(--track-rest, 0%);
+/* A card lifts towards the pointer. The colour and shadow it lifts into are
+   the ones stage 5 already chose - this only gives them a moment to happen
+   in, instead of snapping. */
+a.card {
+  transition:
+    transform var(--pt-dur-quick) var(--pt-ease-out),
+    box-shadow var(--pt-dur-quick) var(--pt-ease-out),
+    border-color var(--pt-dur-quick) var(--pt-ease-out);
 }
 
-.track__fill {
-  transition: width var(--pt-dur-quick) var(--pt-ease-out);
+a.card:hover,
+a.card:focus-visible {
+  transform: translateY(-2px);
 }
 
-.track__knob {
-  transition: left var(--pt-dur-quick) var(--pt-ease-out);
+/* The menu answers before it is clicked: the line grows from the side the
+   reading came from. */
+.site-nav a {
+  position: relative;
+  transition: color var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.site-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.25rem;
+  height: 2px;
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.site-nav a:hover::after,
+.site-nav a:focus-visible::after,
+.site-nav a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+/* The sweep crosses the bar wherever a track means time - the hero, a
+   direction's card, a row in the price list.
+
+   Stage 5 asked the fill itself to run to the end and never got it, for two
+   reasons that had to be found in that order. The fill was written inline,
+   where no stylesheet can reach it. And transitioning the custom property
+   instead - registered with `@property` - froze it at its starting value
+   rather than interpolating: with the transition switched off the same hover
+   jumped straight to the end. So the moving part is its own element, and what
+   moves is a `transform` between two literals. */
+.track__sweep {
+  transition: transform var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.hero-track__item:hover .track__sweep,
+.hero-track__item:focus-visible .track__sweep,
+a.card:hover .track__sweep,
+a.card:focus-visible .track__sweep,
+.track-row:hover .track__sweep,
+.track-row:focus-within .track__sweep {
+  transform: scaleX(1);
 }
 
 /* --- The skin switch -------------------------------------------------------

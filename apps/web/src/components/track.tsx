@@ -11,9 +11,16 @@ import type { CSSProperties } from 'react';
 export function Track({ percent }: { percent: number }) {
   const filled = Math.min(100, Math.max(0, percent));
 
-  // Through a custom property rather than `width` and `left` directly: an
-  // inline style can only be overridden with `!important`, and the hero needs
-  // to run the playhead to the end on hover without shouting.
+  // The sweep is a third element rather than the fill running to the end on
+  // hover, and that is not a stylistic choice. A custom property written
+  // inline cannot be overridden from a stylesheet, and transitioning the
+  // property instead - registered with `@property`, as the light around a
+  // border is - freezes it at its starting value in Chrome rather than
+  // interpolating. Both were measured. A plain `transform` between two
+  // literals is the one thing that reliably moves.
+  //
+  // It also tells the truth better: the filled part means a length of time,
+  // and time does not grow because a pointer passed over it.
   return (
     <span
       className="track"
@@ -22,6 +29,7 @@ export function Track({ percent }: { percent: number }) {
     >
       <span className="track__fill" />
       <span className="track__knob" />
+      <span className="track__sweep" />
     </span>
   );
 }
