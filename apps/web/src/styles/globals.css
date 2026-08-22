@@ -35,6 +35,21 @@ h3 {
   letter-spacing: var(--pt-tracking-display);
 }
 
+/* Present to a screen reader, absent to everyone else. It lived in
+   `booking.css` until the player needed it: that sheet is loaded by the pages
+   that book lessons, and the player is on every page - a name meant to be
+   heard and not seen would simply have been seen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 :focus-visible {
   outline: 3px solid var(--pt-violet);
   outline-offset: 3px;

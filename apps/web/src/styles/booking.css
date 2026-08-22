@@ -502,19 +502,6 @@
   font-weight: 600;
 }
 
-/* Present to a screen reader, absent to everyone else: each row's marks need
-   a name, and the name is already on the row in plain sight. */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* A badge inside a card is a label, not a bar: the card is a one-column grid,
    so without this the pill stretches the full width of it. */
 .teacher-card .badge {

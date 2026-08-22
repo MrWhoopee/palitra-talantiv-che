@@ -295,3 +295,87 @@ a.card:focus-visible .track__sweep,
 :root[data-skin='calm'] .skin-switch__dot {
   background: var(--pt-line);
 }
+
+/* --- The player -------------------------------------------------------------
+
+   The transport that stays after a page opens. Its arrows go straight to the
+   neighbouring track, which is what makes the show navigable rather than a
+   thing you enter and then have to leave.
+--------------------------------------------------------------------------- */
+
+.player {
+  position: fixed;
+  z-index: 30;
+  right: 0;
+  bottom: var(--pt-space-4);
+  left: 0;
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: var(--pt-space-2);
+  margin-inline: auto;
+  padding: var(--pt-space-2) var(--pt-space-3);
+  border: 1px solid var(--pt-line);
+  border-radius: var(--pt-radius-pill);
+  /* Slightly translucent, so the page keeps moving underneath it rather than
+     ending in a bar. */
+  background: color-mix(in srgb, var(--pt-surface) 88%, transparent);
+  box-shadow: var(--pt-shadow-md);
+  backdrop-filter: blur(8px);
+}
+
+.player__step,
+.player__wall {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: var(--pt-radius-pill);
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+  text-decoration: none;
+  transition:
+    color var(--pt-dur-quick) var(--pt-ease-out),
+    background var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.player__step:hover,
+.player__wall:hover {
+  background: color-mix(in srgb, var(--pt-primary) 10%, transparent);
+  color: var(--pt-primary);
+}
+
+/* An end of the album keeps its arrow rather than dropping it: a row that
+   changes width under the pointer is a row that moves while being aimed at. */
+.player__step[data-spent] {
+  opacity: 0.3;
+}
+
+.player__wall {
+  color: var(--pt-primary);
+}
+
+.player__caption {
+  margin: 0 var(--pt-space-2) 0 var(--pt-space-1);
+  color: var(--pt-text);
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+}
+
+.player__count {
+  color: var(--pt-text-muted);
+}
+
+/* Room for it at the end of the page, so the last line of the footer is not
+   read through glass. Only in the skin that has a player. */
+:root[data-skin='show'] .site-body {
+  padding-bottom: var(--pt-space-9);
+}
+
+@media (max-width: 30rem) {
+  .player__count {
+    display: none;
+  }
+}
