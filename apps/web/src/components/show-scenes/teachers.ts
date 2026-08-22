@@ -8,7 +8,8 @@ import {
   type Scene,
   type Texture,
 } from 'three';
-import { createLogo, type LogoMark } from '@/components/demo-stage/scene/logo';
+import { SpotLight } from 'three';
+import { createCameraProp } from './camera-prop';
 import { approach, createIris, createRoom, fitCamera, runLoop, type Quality } from './stage-kit';
 
 /**
@@ -39,8 +40,6 @@ export interface TeachersSceneOptions {
   readonly quality: Quality;
   readonly portrait: boolean;
   readonly teachers: readonly TeacherCard[];
-  /** What hangs on this track's curtain: an SVG, extruded in front of it. */
-  readonly posterUrl: string;
 }
 
 export interface TeachersScene {
@@ -83,26 +82,37 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
   const streaks = makeStreaks(scene);
 
-  // The way this track opens: a lens, not the house curtain. The hall has a
-  // curtain because it is a hall; a page about portraits opens the way a
-  // portrait is taken, and every track is meant to have its own door.
+  // The way this track opens: a camera pointed at whoever is looking. The
+  // flash fires, the lens comes at us, and we go through the glass - which is
+  // what a page about portraits should feel like being let into.
+  const prop = createCameraProp();
+  prop.group.position.set(0, 2.5, 1.2);
+  prop.group.scale.setScalar(0.9);
+  scene.add(prop.group);
+
+  // The room is dark by design, so the prop needs its own key or it is a
+  // silhouette of a camera rather than a camera.
+  const key = new SpotLight(0xfff0d8, 220, 26, 0.7, 0.55, 1.2);
+  key.position.set(4, 6.4, 7.5);
+  key.target.position.set(0, 2.5, 1.2);
+  scene.add(key, key.target);
+
+  // A cold fill from the other side, so the body has two sides rather than a
+  // lit half and a black one.
+  const fill = new SpotLight(0x8f9dff, 90, 24, 0.8, 0.6, 1.2);
+  fill.position.set(-5, 3.4, 6);
+  fill.target.position.set(0, 2.5, 1.2);
+  scene.add(fill, fill.target);
+
+  // Once we are through the glass, the aperture is what opens onto the row.
   const iris = createIris();
   scene.add(iris.mesh);
 
-  let poster: LogoMark | null = null;
-  void createLogo(options.posterUrl, 2.2)
-    .then((mark) => {
-      poster = mark;
-      poster.group.position.set(0, 2.6, 3.2);
-      scene.add(poster.group);
-    })
-    .catch(() => {
-      // A cover worth showing without its mark; a mark not worth failing the
-      // whole scene over.
-    });
-
-  const wash = new Color(0x1a1230);
-  const washTarget = new Color(0x1a1230);
+  // Nearly black while the camera is still out there: the teacher's colour
+  // arrives with the teacher, not before.
+  const DARK = new Color(0x05040a);
+  const wash = new Color(0x05040a);
+  const washTarget = new Color(0x05040a);
   renderer.setClearColor(wash, 1);
 
   let index = 0;
@@ -122,10 +132,23 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
     }
 
     const drawn = openT < 0.5 ? 4 * openT * openT * openT : 1 - Math.pow(-2 * openT + 2, 3) / 2;
-    iris.setOpen(drawn);
-    // The mark on the blades goes before they do, so it is not still hanging
-    // in the middle of the frame once there is a scene behind it.
-    poster?.setReveal(Math.min(drawn * 2.2, 1));
+
+    // The flash goes off first, then the lens comes at us, and only then does
+    // the aperture open. Three beats in one movement, which is why they are
+    // stated as ranges of the same number rather than as three timers.
+    prop.setFlash(Math.max(0, 1 - Math.abs(drawn - 0.08) / 0.09));
+    prop.group.visible = drawn < 0.82;
+
+    const approachT = Math.min(Math.max((drawn - 0.12) / 0.56, 0), 1);
+    const eased = approachT * approachT * (3 - 2 * approachT);
+    camera.position.z = 7.2 - eased * 4.6;
+    camera.position.y = 2.5 - eased * 0.1;
+    camera.lookAt(0, camera.position.y, 0);
+
+    // Wide open while the camera is still out there in the room - the blades
+    // are not part of that picture. They shut only once we are inside the
+    // barrel, where the frame is black anyway, and then open onto the row.
+    iris.setOpen(drawn < 0.66 ? 1 : Math.min(Math.max((drawn - 0.7) / 0.3, 0), 1));
 
     shown = approach(shown, index, 6, delta);
 
@@ -142,7 +165,9 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
 
     const current = teachers[clamp(Math.round(shown), teachers.length)];
     if (current) washTarget.set(current.tint);
-    wash.lerp(washTarget, 1 - Math.exp(-3 * delta));
+    // The colour arrives as the aperture does: outside the lens the room is
+    // the dark the camera is standing in.
+    wash.lerp(DARK.clone().lerp(washTarget, drawn), 1 - Math.exp(-4 * delta));
     renderer.setClearColor(wash, 1);
 
     for (let i = 0; i < streaks.length; i += 1) {
@@ -196,7 +221,7 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
     dispose() {
       loop.stop();
       iris.dispose();
-      poster?.dispose();
+      prop.dispose();
       for (const texture of textures.values()) texture.dispose();
       scene.traverse((object) => {
         if (!(object instanceof Mesh)) return;

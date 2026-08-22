@@ -86,7 +86,6 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
         canvas,
         quality: window.matchMedia('(pointer: coarse)').matches ? 'low' : 'high',
         portrait: portrait(),
-        posterUrl: '/demo/covers/teachers.svg',
         teachers: teachers.map((teacher, index) => ({
           id: teacher.id,
           figureUrl: teacher.photoUrl ?? FIGURES[index % FIGURES.length]!,

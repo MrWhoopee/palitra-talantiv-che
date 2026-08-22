@@ -10,10 +10,12 @@ import {
   PCFSoftShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  PMREMGenerator,
   Scene,
   ShaderMaterial,
   WebGLRenderer,
 } from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 /**
  * What every scene in the show is built on.
@@ -85,6 +87,18 @@ export function createRoom(
   const rim = new DirectionalLight(0x6f78ff, 0.35);
   rim.position.set(-6, 7, -8);
   scene.add(rim);
+
+  // Something for metal to reflect.
+  //
+  // A `MeshStandardMaterial` with metalness reflects an environment and
+  // nothing else; in a room with no environment it renders black, which is
+  // exactly how the camera prop first came back. `RoomEnvironment` is
+  // generated in memory - no file to fetch, no HDRI to license - and it is
+  // what will make an imported model look like the object it is.
+  const pmrem = new PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.35;
+  pmrem.dispose();
 
   const camera = new PerspectiveCamera(42, 1, 0.1, 120);
 
@@ -210,6 +224,11 @@ export function createIris(): Iris {
     fragmentShader: IRIS_FRAGMENT,
     depthTest: false,
     depthWrite: false,
+    // Marked transparent although it never blends. three.js draws every
+    // transparent object after every opaque one, so an opaque mask ends up
+    // *under* anything with transparency on it - which is how the cover came
+    // back with the camera body hidden and its glass floating over the mask.
+    transparent: true,
     uniforms: {
       u_open: { value: 0 },
       u_aspect: { value: 1 },
