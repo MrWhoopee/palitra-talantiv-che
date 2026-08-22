@@ -188,7 +188,10 @@
 
 .site-copy h3 {
   margin: var(--pt-space-6) 0 0;
-  font-size: var(--pt-text-md);
+  /* `--pt-text-md` was written here and never existed - the declaration was
+     invalid, so a third-level heading has been the size of body text since
+     stage 6. One step under `h2`, which is `--pt-text-lg`. */
+  font-size: var(--pt-text-base);
 }
 
 .site-copy ul,
@@ -500,4 +503,24 @@
 .playbill__when {
   color: var(--pt-text-muted);
   font-size: var(--pt-text-sm);
+}
+
+/* --- Contacts: an address is the page ---------------------------------------
+
+   Nothing here is browsed, so nothing here is a thumbnail with a caption. The
+   address and the hours are what somebody came for, and they are set at the
+   size of the thing they are. This is the page's device: type, and no
+   picture, which is also what its cover will be.
+--------------------------------------------------------------------------- */
+
+.contacts .card__title {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xl);
+  font-weight: 500;
+  line-height: var(--pt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+.contacts .card__text {
+  font-size: var(--pt-text-base);
 }
