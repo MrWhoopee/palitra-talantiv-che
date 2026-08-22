@@ -12,29 +12,44 @@
  */
 
 /** Positions kept in the trail. Older ones are dropped from the front. */
-const MAX_POINTS = 60;
+const MAX_POINTS = 90;
 
 /** How long anything stays on the page, in milliseconds. */
 const LIFETIME = 2200;
 
-/** Lines in a stave, and the gap between them in CSS pixels. */
+/**
+ * Lines in a stave, and the gap between them in CSS pixels.
+ *
+ * The gap decides everything else. Shchedryk's whole melody lives inside a
+ * minor third, which is two gaps: set the stave small and the tune collapses
+ * into a stripe with no shape in it.
+ */
 const LINES = 5;
-const LINE_GAP = 8;
+const LINE_GAP = 11;
 
 /** Below this the pointer has not really moved and nothing is written. */
 const MIN_STEP_PX = 5;
 
 /** Travel between one note and the next. Close, the way a bar is engraved. */
-const NOTE_SPACING_PX = 26;
+const NOTE_SPACING_PX = 30;
 
 /** A stroke that paused this long starts a new bar, with its own clef. */
 const NEW_BAR_AFTER_MS = 700;
 
 /** How far a stem rises above its head. */
-const STEM = LINE_GAP * 3.2;
+const STEM = LINE_GAP * 3;
 
-/** Quavers under one beam. Shchedryk's figure is four notes long. */
-const BEAM_GROUP = 4;
+/**
+ * Quavers to a beat, and beats to a bar.
+ *
+ * Shchedryk is in three-four and runs in even quavers, so a bar holds six of
+ * them and an engraver beams them in pairs - one beam per beat. The melody's
+ * figure is four notes long, which is why it never lines up with the bar: four
+ * against six is the hemiola the whole piece rocks on, and drawing the beams
+ * by the beat rather than by the figure is what makes that visible.
+ */
+const QUAVERS_PER_BEAT = 2;
+const QUAVERS_PER_BAR = 6;
 
 const CLEF = '\u{1D11E}';
 const FLAT = '♭';
@@ -99,6 +114,7 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
   const trail: Point[] = [];
   const notes: Note[] = [];
   const glyphs: Glyph[] = [];
+  const bars: Point[] = [];
 
   // A font with a clef in it is not a given. Asked once, rather than drawing
   // a row of empty boxes and finding out from a screenshot.
@@ -139,13 +155,30 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
       written = 0;
 
       if (clefAvailable) {
-        glyphs.push({ x: event.clientX, y: event.clientY, born: now, text: CLEF, size: 34 });
+        // A treble clef reaches well above and below the stave it opens; at
+        // the size of a note head it reads as a squiggle rather than a clef.
+        glyphs.push({
+          x: event.clientX,
+          y: event.clientY,
+          born: now,
+          text: CLEF,
+          size: LINE_GAP * 6.2,
+        });
       }
     } else {
       sinceLastNote += step;
 
-      if (sinceLastNote >= NOTE_SPACING_PX) {
+      // A bar line takes room of its own, the way it does on paper.
+      const opensBar = written >= KEY_SIGNATURE.length && slotOf(written) % QUAVERS_PER_BAR === 0;
+      const due = opensBar ? NOTE_SPACING_PX * 1.6 : NOTE_SPACING_PX;
+
+      if (sinceLastNote >= due) {
         sinceLastNote = 0;
+
+        if (opensBar) {
+          bars.push({ x: event.clientX - NOTE_SPACING_PX * 0.55, y: event.clientY, born: now });
+        }
+
         write(written, event.clientX, event.clientY, now);
         written += 1;
       }
@@ -161,7 +194,7 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
     const flat = KEY_SIGNATURE[index];
 
     if (flat !== undefined) {
-      glyphs.push({ x, y: y + stepToPixels(flat), born: now, text: FLAT, size: 17 });
+      glyphs.push({ x, y: y + stepToPixels(flat), born: now, text: FLAT, size: LINE_GAP * 2.2 });
       return;
     }
 
@@ -182,8 +215,15 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
     // Everything expires from the front, which is what makes the bar trail
     // away behind the pointer instead of hanging on the page.
     while (trail.length > 0 && now - trail[0]!.born > LIFETIME) trail.shift();
-    while (notes.length > 0 && now - notes[0]!.born > LIFETIME) notes.shift();
-    while (glyphs.length > 0 && now - glyphs[0]!.born > LIFETIME) glyphs.shift();
+
+    // And nothing outlives the stave it stands on. The trail is capped by
+    // count, so a fast hand fills it in less time than the lifetime allows -
+    // without this, notes were left hanging over blank paper behind it.
+    const earliest = trail[0]?.born ?? Number.POSITIVE_INFINITY;
+
+    while (notes.length > 0 && notes[0]!.born < earliest) notes.shift();
+    while (glyphs.length > 0 && glyphs[0]!.born < earliest) glyphs.shift();
+    while (bars.length > 0 && bars[0]!.born < earliest) bars.shift();
 
     context!.clearRect(0, 0, window.innerWidth, window.innerHeight);
     context!.strokeStyle = ink;
@@ -191,12 +231,15 @@ export function startStaff(canvas: HTMLCanvasElement, ink: string): StaffLayer |
     context!.lineCap = 'round';
     context!.lineJoin = 'round';
 
-    // A little light on the ink: enough to lift it off the paper, not enough
-    // to compete with the words the page is actually for.
-    context!.shadowColor = ink;
-    context!.shadowBlur = 6;
-
     drawStave(context!, trail, now);
+
+    // The light goes on the notes and not on the stave. Five glowing lines
+    // over a paragraph turn into one smear, and the words underneath are what
+    // the page is actually for.
+    context!.shadowColor = ink;
+    context!.shadowBlur = 5;
+
+    drawBars(context!, bars, now);
     drawBeams(context!, notes, now);
 
     for (const note of notes) drawNote(context!, note, fade(now, note.born));
@@ -253,7 +296,7 @@ function drawStave(context: CanvasRenderingContext2D, trail: Point[], now: numbe
       const point = trail[i]!;
       const next = trail[i + 1]!;
 
-      context.globalAlpha = fade(now, point.born) * 0.4;
+      context.globalAlpha = fade(now, point.born) * 0.3;
       context.beginPath();
       context.moveTo((previous.x + point.x) / 2, (previous.y + point.y) / 2 + offset);
       context.quadraticCurveTo(
@@ -269,7 +312,7 @@ function drawStave(context: CanvasRenderingContext2D, trail: Point[], now: numbe
 
 /** Where a stem stands on its head, and where its beam meets it. */
 function stemX(note: Note): number {
-  return note.x + LINE_GAP * 0.62;
+  return note.x + LINE_GAP * 0.52;
 }
 
 /**
@@ -278,16 +321,18 @@ function stemX(note: Note): number {
  * engraver applies, and the reason it looks right.
  */
 function drawBeams(context: CanvasRenderingContext2D, notes: Note[], now: number) {
-  context.lineWidth = 3;
+  context.lineWidth = 2.4;
 
   for (let i = 1; i < notes.length; i += 1) {
     const from = notes[i - 1]!;
     const to = notes[i]!;
 
-    // Consecutive, and inside the same group of four. A beam across the group
-    // would be a beam that says something else about the rhythm.
+    // Consecutive, and inside the same beat. A beam that crossed a beat would
+    // be a beam saying something else about the rhythm.
     if (to.slot - from.slot !== 1) continue;
-    if (Math.floor(from.slot / BEAM_GROUP) !== Math.floor(to.slot / BEAM_GROUP)) continue;
+    if (Math.floor(from.slot / QUAVERS_PER_BEAT) !== Math.floor(to.slot / QUAVERS_PER_BEAT)) {
+      continue;
+    }
 
     context.globalAlpha = Math.min(fade(now, from.born), fade(now, to.born)) * 0.85;
     context.beginPath();
@@ -305,11 +350,13 @@ function drawNote(context: CanvasRenderingContext2D, note: Note, alpha: number) 
   context.translate(note.x, note.y);
   context.rotate(-0.32);
   context.beginPath();
-  context.ellipse(0, 0, LINE_GAP * 0.68, LINE_GAP * 0.5, 0, 0, Math.PI * 2);
+  // A head is one stave space tall and a little wider than it is tall. Any
+  // bigger and it swallows the lines it is supposed to sit on.
+  context.ellipse(0, 0, LINE_GAP * 0.56, LINE_GAP * 0.42, 0, 0, Math.PI * 2);
   context.fill();
   context.restore();
 
-  context.lineWidth = 1.4;
+  context.lineWidth = 1.2;
   context.beginPath();
   context.moveTo(stemX(note), note.y - 1);
   context.lineTo(stemX(note), note.y - STEM);
@@ -325,6 +372,35 @@ function fade(now: number, born: number): number {
   if (life <= 0) return 0;
 
   return life * life;
+}
+
+/**
+ * Which quaver of the run a written place is, with the key signature taken
+ * off the front: the clef and the flats stand before the music starts, and
+ * counting them would put the bar lines in the wrong places.
+ */
+function slotOf(index: number): number {
+  return index - KEY_SIGNATURE.length;
+}
+
+/**
+ * The line that divides one bar from the next, drawn through the stave.
+ *
+ * Vertical rather than square to the stave's slope: a bar line is vertical on
+ * paper, and matching the slope would read as a lean rather than as a rule.
+ */
+function drawBars(context: CanvasRenderingContext2D, bars: Point[], now: number) {
+  context.lineWidth = 1.2;
+
+  for (const bar of bars) {
+    const half = ((LINES - 1) / 2) * LINE_GAP;
+
+    context.globalAlpha = fade(now, bar.born) * 0.45;
+    context.beginPath();
+    context.moveTo(bar.x, bar.y - half);
+    context.lineTo(bar.x, bar.y + half);
+    context.stroke();
+  }
 }
 
 /** A step on the stave in pixels: one step is half the gap between lines. */
