@@ -1,6 +1,7 @@
 import { eventSharePercent, type StudioEvent } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ViewTransition } from 'react';
 import { notFound } from 'next/navigation';
 import { JsonLd } from '@/components/json-ld';
 import { Track } from '@/components/track';
@@ -68,7 +69,9 @@ export default async function EventPage({ params }: PageProps) {
           <Link href={isOver ? '/events?when=past' : '/events'}>{isOver ? 'Архів' : 'Афіша'}</Link>{' '}
           · {EVENT_KIND_LABELS[event.kind]}
         </p>
-        <h1 className="page-title">{event.title}</h1>
+        <ViewTransition name={`event-title-${event.slug}`}>
+          <h1 className="page-title">{event.title}</h1>
+        </ViewTransition>
 
         <p className="event-when">
           <time dateTime={event.startsAt}>{formatEventRange(event.startsAt, event.endsAt)}</time>
@@ -87,7 +90,7 @@ export default async function EventPage({ params }: PageProps) {
       {event.description === null ? null : <p className="prose">{event.description}</p>}
 
       {event.location === null ? null : (
-        <section className="section">
+        <section className="section" data-reveal>
           <div className="section-head">
             <h2>Де</h2>
           </div>

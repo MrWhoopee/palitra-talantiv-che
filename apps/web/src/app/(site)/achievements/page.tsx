@@ -47,7 +47,7 @@ export default async function AchievementsPage() {
       ) : null}
 
       {years.map(([year, won]) => (
-        <section key={year} className="section year">
+        <section key={year} className="section year" data-reveal>
           <h2 className="year__number">{year}</h2>
           <ul className="year__list">
             {won.map((achievement) => (
@@ -63,11 +63,11 @@ export default async function AchievementsPage() {
       ))}
 
       {testimonials.length === 0 ? null : (
-        <section className="section">
+        <section className="section" data-reveal>
           <div className="section-head">
             <h2>Що кажуть</h2>
           </div>
-          <ul className="card-grid card-grid--plain">
+          <ul className="card-grid card-grid--plain" data-reveal-group>
             {testimonials.map((testimonial) => (
               <li key={testimonial.id}>
                 <figure className="card quote">

@@ -48,7 +48,7 @@ export default async function DirectionsPage() {
           вільний час видно одразу.
         </p>
       ) : (
-        <ul className="card-grid card-grid--plain">
+        <ul className="card-grid card-grid--plain" data-reveal-group>
           {directions.map((direction) => {
             const own = plans.filter((plan) => plan.directionId === direction.id);
             const minutes = shortestLesson(own);

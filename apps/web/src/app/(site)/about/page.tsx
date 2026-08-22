@@ -59,14 +59,14 @@ export default async function AboutPage() {
         </div>
       ) : null}
 
-      <section className="section facts">
+      <section className="section facts" data-reveal>
         <Fact value={`з ${STUDIO.since}`} label={`${years} років у Черкасах`} />
         <Fact value={`${teachers.length}`} label="викладачів" />
         <Fact value={`${STUDIO.locations.length}`} label="локації" />
         <Fact value="4" label="напрями" />
       </section>
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Як проходять заняття</h2>
         </div>
@@ -82,12 +82,12 @@ export default async function AboutPage() {
         </p>
       </section>
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Де ми працюємо</h2>
           <Link href="/contacts">Контакти →</Link>
         </div>
-        <ul className="card-grid card-grid--plain">
+        <ul className="card-grid card-grid--plain" data-reveal-group>
           {STUDIO.locations.map((location) => (
             <li key={location.name}>
               <div className="card">

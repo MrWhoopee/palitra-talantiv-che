@@ -28,6 +28,14 @@ export function RevealObserver() {
     // armed, so nothing can be left hidden.
     if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return;
 
+    // A grid says once that its rows arrive one after another, rather than
+    // every row inside a `map()` saying it for itself. The attribute lands
+    // here so that everything below - the hiding rule, the index, the delay -
+    // sees one kind of element and not two.
+    for (const group of document.querySelectorAll('[data-reveal-group]')) {
+      for (const child of group.children) child.setAttribute('data-reveal', '');
+    }
+
     const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
     if (nodes.length === 0) return;
 

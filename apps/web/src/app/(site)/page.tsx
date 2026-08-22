@@ -108,7 +108,7 @@ export default async function HomePage() {
             <h2>Хто навчає</h2>
             <Link href="/teachers">Усі викладачі →</Link>
           </div>
-          <ul className="card-grid card-grid--plain">
+          <ul className="card-grid card-grid--plain" data-reveal-group>
             {teachers.slice(0, 4).map((teacher) => (
               <li key={teacher.id}>
                 <Link href={`/teachers/${teacher.id}`} className="card">
@@ -132,7 +132,7 @@ export default async function HomePage() {
             <h2>Найближчі події</h2>
             <Link href="/events">Уся афіша →</Link>
           </div>
-          <ul className="card-grid card-grid--plain">
+          <ul className="card-grid card-grid--plain" data-reveal-group>
             {events.slice(0, 3).map((event) => (
               <li key={event.id}>
                 <Link href={`/events/${event.slug}`} className="card">
