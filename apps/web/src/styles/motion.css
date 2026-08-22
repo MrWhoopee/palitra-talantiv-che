@@ -478,12 +478,17 @@ a.card:focus-visible .track__sweep,
 
 :root[data-show-home] .site-body > header,
 :root[data-show-home] .site-body > footer,
-:root[data-show-home] .site-body > main:not(.stage) {
+:root[data-show-home] .site-body > main:not(.stage),
+:root[data-show-scene] .site-body > header,
+:root[data-show-scene] .site-body > footer,
+:root[data-show-scene] .site-body > main:not(.scene) {
   display: none;
 }
 
 /* The stave belongs on paper, not over a lit stage. */
 :root[data-show-home] .pointer-staff,
-:root[data-show-home] .pointer-notes {
+:root[data-show-home] .pointer-notes,
+:root[data-show-scene] .pointer-staff,
+:root[data-show-scene] .pointer-notes {
   display: none;
 }

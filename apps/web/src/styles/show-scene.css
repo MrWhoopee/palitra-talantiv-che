@@ -1,0 +1,99 @@
+/* The frame every scene in the show shares: a canvas filling the window, one
+   panel of words over it, and a rail to scroll along. The hall keeps its own
+   sheet because it came first and has a curtain to draw; everything after it
+   is laid out here. */
+
+.scene {
+  position: relative;
+  min-height: 100dvh;
+  color: #f4f2f7;
+}
+
+.scene__canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Left of the figure, where the eye lands first in a language read from the
+   left - the picture holds the other side. */
+.scene__panel {
+  position: fixed;
+  z-index: 2;
+  top: 50%;
+  left: max(var(--pt-space-7), 6vw);
+  display: grid;
+  max-width: min(30rem, 42vw);
+  gap: var(--pt-space-4);
+  translate: 0 -50%;
+}
+
+.scene__eyebrow {
+  margin: 0;
+  color: color-mix(in srgb, #fff 62%, transparent);
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  font-variant-numeric: tabular-nums;
+}
+
+.scene__title {
+  margin: 0;
+  font-size: var(--pt-text-3xl);
+  line-height: var(--pt-leading-tight);
+  /* Set against a lit ground, so it carries its own shadow rather than
+     trusting whatever colour happens to be behind it this second. */
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.65);
+}
+
+.scene__meta {
+  margin: 0;
+  color: color-mix(in srgb, #fff 74%, transparent);
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-sm);
+  letter-spacing: 0.02em;
+}
+
+.scene__body {
+  margin: 0;
+  max-width: 34ch;
+  color: color-mix(in srgb, #fff 82%, transparent);
+  line-height: var(--pt-leading-normal);
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.6);
+}
+
+.scene__cta {
+  justify-self: start;
+  padding: var(--pt-space-3) var(--pt-space-5);
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.scene__cta:hover {
+  transform: translateY(-2px);
+}
+
+.scene__rail {
+  position: relative;
+  z-index: 0;
+}
+
+/* On a phone the figure comes to the middle, so the words move off it: down
+   to the bottom, where a caption goes. */
+@media (max-width: 48rem) {
+  .scene__panel {
+    top: auto;
+    bottom: var(--pt-space-9);
+    left: var(--pt-space-5);
+    width: calc(100% - var(--pt-space-5) * 2);
+    max-width: none;
+    translate: none;
+  }
+}
