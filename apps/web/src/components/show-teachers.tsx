@@ -85,6 +85,7 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
       const scene = createTeachersScene({
         canvas,
         quality: window.matchMedia('(pointer: coarse)').matches ? 'low' : 'high',
+        modelUrl: '/demo/models/camera.fbx',
         portrait: portrait(),
         teachers: teachers.map((teacher, index) => ({
           id: teacher.id,

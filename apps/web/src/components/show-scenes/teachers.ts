@@ -48,6 +48,8 @@ export interface TeachersSceneOptions {
   readonly quality: Quality;
   readonly portrait: boolean;
   readonly teachers: readonly TeacherCard[];
+  /** The camera on the cover, if the studio has licensed a model for it. */
+  readonly modelUrl?: string | undefined;
 }
 
 export interface TeachersScene {
@@ -101,7 +103,7 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
   backdrop.mesh.position.set(0, 2.4, 0.55);
   scene.add(backdrop.mesh);
 
-  const prop = createCameraProp();
+  const prop = createCameraProp({ modelUrl: options.modelUrl, width: 4.2 });
   prop.group.position.set(0, 2.5, 1.2);
   prop.group.scale.setScalar(0.9);
   scene.add(prop.group);
@@ -158,11 +160,16 @@ export function createTeachersScene(options: TeachersSceneOptions): TeachersScen
     // black anyway - so the room is never seen arriving.
     backdrop.setOpacity(Math.min(Math.max((0.66 - drawn) / 0.14, 0), 1));
 
-    const approachT = Math.min(Math.max((drawn - 0.12) / 0.56, 0), 1);
-    const eased = approachT * approachT * (3 - 2 * approachT);
-    camera.position.z = 7.2 - eased * 4.6;
-    camera.position.y = 2.5 - eased * 0.1;
-    camera.lookAt(0, camera.position.y, 0);
+    // In through the glass, then out into the room. Stopping at the glass is
+    // what left the row being looked at from two metres away, with the
+    // teachers three times the size of the frame.
+    const inward = Math.min(Math.max((drawn - 0.12) / 0.56, 0), 1);
+    const outward = Math.min(Math.max((drawn - 0.7) / 0.3, 0), 1);
+    const ease = (t: number) => t * t * (3 - 2 * t);
+
+    camera.position.z = 7.2 - ease(inward) * 4.6 + ease(outward) * 4.6;
+    camera.position.y = 2.5;
+    camera.lookAt(0, 2.5, 0);
 
     // Wide open while the camera is still out there in the room - the blades
     // are not part of that picture. They shut only once we are inside the
