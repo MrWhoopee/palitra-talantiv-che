@@ -57,11 +57,11 @@ export default async function ContactsPage() {
         </div>
       ) : null}
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Локації</h2>
         </div>
-        <ul className="card-grid card-grid--plain">
+        <ul className="card-grid card-grid--plain" data-reveal-group>
           {STUDIO.locations.map((location) => (
             <li key={location.name}>
               <div className="card">
@@ -75,11 +75,11 @@ export default async function ContactsPage() {
       </section>
 
       {STUDIO.phone === null && STUDIO.instagram === null ? null : (
-        <section className="section">
+        <section className="section" data-reveal>
           <div className="section-head">
             <h2>Зв’язок</h2>
           </div>
-          <ul className="card-grid card-grid--plain">
+          <ul className="card-grid card-grid--plain" data-reveal-group>
             {STUDIO.phone === null ? null : (
               <li>
                 <a className="card" href={`tel:${STUDIO.phone}`}>
@@ -100,7 +100,7 @@ export default async function ContactsPage() {
         </section>
       )}
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Питання про заняття</h2>
         </div>

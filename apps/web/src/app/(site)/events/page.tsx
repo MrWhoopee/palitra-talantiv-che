@@ -1,6 +1,7 @@
 import type { StudioEvent } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ViewTransition } from 'react';
 import { api } from '@/lib/api';
 import { openGraphFor } from '@/lib/seo';
 import {
@@ -66,12 +67,14 @@ export default async function EventsPage({ searchParams }: PageProps) {
       {events.length === 0 ? (
         <EmptyPlaybill when={when} />
       ) : (
-        <ul className="card-grid card-grid--plain">
+        <ul className="card-grid card-grid--plain" data-reveal-group>
           {events.map((event) => (
             <li key={event.id}>
               <Link href={`/events/${event.slug}`} className="card">
                 <p className="eyebrow">{EVENT_KIND_LABELS[event.kind]}</p>
-                <p className="card__title">{event.title}</p>
+                <ViewTransition name={`event-title-${event.slug}`}>
+                  <p className="card__title">{event.title}</p>
+                </ViewTransition>
                 <p className="card__text">{formatEventRange(event.startsAt, event.endsAt)}</p>
                 {event.location ? <p className="card__text">{event.location.address}</p> : null}
               </Link>

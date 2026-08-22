@@ -195,6 +195,26 @@ a.card:focus-visible .track__sweep,
   transform: scaleX(1);
 }
 
+/* --- Between pages ---------------------------------------------------------
+
+   A portrait and a name carry across from the list to the page they lead to,
+   which is what says "this is the same person" without the visitor having to
+   read the heading to check. React assigns the names only while a transition
+   is running, so nothing is stamped on the document at rest.
+
+   The blanket reduced-motion rule in `globals.css` cannot reach these: it
+   flattens `*`, and a view transition animates pseudo-elements that no
+   selector for elements matches.
+--------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* --- The skin switch -------------------------------------------------------
 
    It exists before the show does. A switch added afterwards is a switch

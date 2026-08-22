@@ -2,6 +2,7 @@ import type { Lesson, PricePlan, PublicTeacher, Slot, Subscription } from '@pali
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ViewTransition } from 'react';
 import { api } from '@/lib/api';
 import { getCurrentUser } from '@/lib/current-user';
 import { readAccessToken } from '@/lib/session';
@@ -86,13 +87,17 @@ export default async function TeacherPage({ params, searchParams }: PageProps) {
       <header className="page-head teacher-head">
         {/* Only where there is one - see the note on the list page. */}
         {teacher.photoUrl === null ? null : (
-          <img className="teacher-portrait" src={teacher.photoUrl} alt="" />
+          <ViewTransition name={`teacher-photo-${teacher.id}`}>
+            <img className="teacher-portrait" src={teacher.photoUrl} alt="" />
+          </ViewTransition>
         )}
 
         <div className="teacher-head__text">
-          <h1 className="page-title">
-            {teacher.firstName} {teacher.lastName}
-          </h1>
+          <ViewTransition name={`teacher-name-${teacher.id}`}>
+            <h1 className="page-title">
+              {teacher.firstName} {teacher.lastName}
+            </h1>
+          </ViewTransition>
           <p className="chip-row">
             {teacher.directions.map((direction) => (
               <span key={direction.id} className="chip">

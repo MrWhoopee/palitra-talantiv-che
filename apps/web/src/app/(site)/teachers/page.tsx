@@ -1,6 +1,7 @@
 import type { PublicTeacher } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ViewTransition } from 'react';
 import { api } from '@/lib/api';
 import '@/styles/booking.css';
 
@@ -49,12 +50,16 @@ export default async function TeachersPage() {
                   studio is sending pictures one at a time, and a placeholder
                   in every other card would look like the site is broken. */}
               {teacher.photoUrl === null ? null : (
-                <img className="teacher-photo" src={teacher.photoUrl} alt="" loading="lazy" />
+                <ViewTransition name={`teacher-photo-${teacher.id}`}>
+                  <img className="teacher-photo" src={teacher.photoUrl} alt="" loading="lazy" />
+                </ViewTransition>
               )}
 
-              <span className="teacher-name">
-                {teacher.firstName} {teacher.lastName}
-              </span>
+              <ViewTransition name={`teacher-name-${teacher.id}`}>
+                <span className="teacher-name">
+                  {teacher.firstName} {teacher.lastName}
+                </span>
+              </ViewTransition>
 
               <span className="chip-row">
                 {teacher.directions.map((direction) => (

@@ -49,7 +49,7 @@ export default async function RulesPage() {
         </div>
       ) : null}
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Пробне заняття</h2>
         </div>
@@ -60,7 +60,7 @@ export default async function RulesPage() {
         </p>
       </section>
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Запис</h2>
         </div>
@@ -75,7 +75,7 @@ export default async function RulesPage() {
         </p>
       </section>
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Скасування й перенесення</h2>
         </div>
@@ -90,7 +90,7 @@ export default async function RulesPage() {
         </p>
       </section>
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Абонементи</h2>
         </div>
@@ -105,7 +105,7 @@ export default async function RulesPage() {
         </p>
       </section>
 
-      <section className="section">
+      <section className="section" data-reveal>
         <div className="section-head">
           <h2>Групи</h2>
         </div>

@@ -89,7 +89,7 @@ export default async function DirectionPage({ params }: PageProps) {
       </header>
 
       {own.length === 0 ? null : (
-        <section className="section">
+        <section className="section" data-reveal>
           <div className="section-head">
             <h2>Скільки коштує</h2>
           </div>
@@ -99,12 +99,12 @@ export default async function DirectionPage({ params }: PageProps) {
       )}
 
       {theirs.length === 0 ? null : (
-        <section className="section">
+        <section className="section" data-reveal>
           <div className="section-head">
             <h2>Хто навчає</h2>
             <Link href="/teachers">Усі викладачі →</Link>
           </div>
-          <ul className="card-grid card-grid--plain">
+          <ul className="card-grid card-grid--plain" data-reveal-group>
             {theirs.map((teacher) => (
               <li key={teacher.id}>
                 <Link href={`/teachers/${teacher.id}`} className="card">
@@ -123,12 +123,12 @@ export default async function DirectionPage({ params }: PageProps) {
       )}
 
       {open.length === 0 ? null : (
-        <section className="section">
+        <section className="section" data-reveal>
           <div className="section-head">
             <h2>Групи, що набирають</h2>
             <Link href="/groups">Усі групи →</Link>
           </div>
-          <ul className="card-grid card-grid--plain">
+          <ul className="card-grid card-grid--plain" data-reveal-group>
             {open.map((group) => (
               <li key={group.id}>
                 <Link href={`/groups/${group.id}`} className="card">
