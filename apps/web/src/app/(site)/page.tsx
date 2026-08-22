@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { readSiteCopy } from '@/lib/site-content';
 import { musicSchoolJsonLd } from '@/lib/seo';
 import { formatEventDate } from '@/lib/studio-time';
-import { STUDIO } from '@/lib/studio';
+import { formatMinutes, formatUah, STUDIO } from '@/lib/studio';
 import '@/styles/home.css';
 
 export const metadata: Metadata = {
@@ -43,6 +43,7 @@ export default async function HomePage() {
   const tracks = directions.map((direction) => ({
     direction,
     minutes: shortestLesson(plans, direction.id),
+    perLesson: cheapestLesson(plans, direction.id),
   }));
 
   return (
@@ -69,6 +70,31 @@ export default async function HomePage() {
             </p>
           )}
 
+          {/* The studio's mark is a playhead on a bar, so what it teaches is
+              set as the thing that mark belongs to: a list of tracks. Each
+              row answers the two questions asked before any other - how long
+              a lesson runs, and what one costs - and the bar answers the
+              first without being read, because it is the length itself
+              against an hour. */}
+          {tracks.length === 0 ? null : (
+            <ul className="tracklist" data-reveal-group>
+              {tracks.map(({ direction, minutes, perLesson }) => (
+                <li key={direction.id}>
+                  <Link href={`/directions/${direction.slug}`} className="tracklist__row">
+                    <span className="tracklist__name">{direction.name}</span>
+                    <span className="tracklist__bar">
+                      <Track percent={lessonSharePercent(minutes)} />
+                    </span>
+                    <span className="tracklist__time">{formatMinutes(minutes)}</span>
+                    <span className="tracklist__price">
+                      {perLesson === null ? 'за домовленістю' : `від ${formatUah(perLesson)}`}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <p className="hero__actions">
             <Link href="/teachers" className="button-primary">
               Обрати викладача
@@ -78,20 +104,6 @@ export default async function HomePage() {
             </Link>
             <span className="hero__note">Перше заняття безкоштовне</span>
           </p>
-
-          {tracks.length === 0 ? null : (
-            <ul className="hero-track">
-              {tracks.map(({ direction, minutes }) => (
-                <li key={direction.id}>
-                  <Link href={`/directions/${direction.slug}`} className="hero-track__item">
-                    <span className="hero-track__name">{direction.name}</span>
-                    <Track percent={lessonSharePercent(minutes)} />
-                    <span className="hero-track__time">{minutes} хвилин</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </section>
 
@@ -170,6 +182,19 @@ function shortestLesson(plans: PricePlan[], directionId: string): number {
     .map((plan) => plan.durationMinutes);
 
   return durations.length === 0 ? 60 : Math.min(...durations);
+}
+
+/**
+ * The lowest price per lesson, not the lowest price on the list: a package of
+ * eight costs more than a single lesson and would read as the expensive
+ * option, which is the opposite of what it is.
+ */
+function cheapestLesson(plans: PricePlan[], directionId: string): number | null {
+  const perLesson = plans
+    .filter((plan) => plan.directionId === directionId && plan.format === 'INDIVIDUAL')
+    .map((plan) => Math.round(plan.priceUah / plan.lessonsCount));
+
+  return perLesson.length === 0 ? null : Math.min(...perLesson);
 }
 
 /**

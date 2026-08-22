@@ -32,42 +32,87 @@
   font-size: var(--pt-text-sm);
 }
 
-/* The four directions as four tracks. The bar is not decoration: it is the
-   length of a lesson in that direction against the hour, which is the first
-   thing a parent asks and the last thing a price table answers clearly. */
-.hero-track {
-  display: grid;
-  gap: var(--pt-space-5);
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  margin: var(--pt-space-9) 0 0;
+/* The tracklist: what the studio teaches, set as the thing its own mark
+   belongs to. Four rows, each one a length of time against an hour.
+
+   The bar is not a decoration under a heading - it is the answer to "how long
+   is a lesson", given at a glance and before the number beside it is read. */
+.tracklist {
+  margin: var(--pt-space-8) 0 0;
   padding: 0;
+  border-top: 1px solid var(--pt-line);
   list-style: none;
 }
 
-.hero-track__item {
+.tracklist__row {
   display: grid;
-  gap: var(--pt-space-3);
-  padding-top: var(--pt-space-3);
-  border-top: 1px solid var(--pt-line);
+  align-items: center;
+  gap: var(--pt-space-3) var(--pt-space-5);
+  /* Name, then the bar taking whatever is left, then the two numbers. */
+  grid-template-columns: minmax(6rem, 12rem) 1fr auto auto;
+  padding-block: var(--pt-space-4);
+  border-bottom: 1px solid var(--pt-line);
   color: inherit;
   text-decoration: none;
 }
 
-.hero-track__name {
+.tracklist__name {
   font-family: var(--pt-font-display);
-  font-size: var(--pt-text-lg);
+  font-size: var(--pt-text-xl);
   font-weight: 500;
+  transition: color var(--pt-dur-quick) var(--pt-ease-out);
 }
 
-.hero-track__time {
+.tracklist__time {
   font-family: var(--pt-font-display);
   font-size: var(--pt-text-xs);
   letter-spacing: var(--pt-tracking-mark);
   text-transform: uppercase;
   color: var(--pt-data);
+  /* Four rows of numbers that do not line up read as four accidents. */
+  font-variant-numeric: tabular-nums;
 }
 
-.hero-track__item:hover .hero-track__name,
-.hero-track__item:focus-visible .hero-track__name {
+.tracklist__price {
+  min-width: 6.5rem;
   color: var(--pt-primary);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tracklist__row:hover .tracklist__name,
+.tracklist__row:focus-visible .tracklist__name {
+  color: var(--pt-primary);
+}
+
+/* On a phone the row folds in half rather than shrinking: the name and the
+   price are the line you read, the bar and the length are the line under it. */
+@media (max-width: 40rem) {
+  .tracklist__row {
+    grid-template-areas:
+      'name price'
+      'bar time';
+    grid-template-columns: 1fr auto;
+    gap: var(--pt-space-2) var(--pt-space-4);
+  }
+
+  .tracklist__name {
+    grid-area: name;
+    font-size: var(--pt-text-lg);
+  }
+
+  .tracklist__bar {
+    grid-area: bar;
+  }
+
+  .tracklist__time {
+    grid-area: time;
+  }
+
+  .tracklist__price {
+    grid-area: price;
+    min-width: 0;
+  }
 }

@@ -186,8 +186,8 @@ a.card:focus-visible {
   transition: transform var(--pt-dur-quick) var(--pt-ease-out);
 }
 
-.hero-track__item:hover .track__sweep,
-.hero-track__item:focus-visible .track__sweep,
+.tracklist__row:hover .track__sweep,
+.tracklist__row:focus-visible .track__sweep,
 a.card:hover .track__sweep,
 a.card:focus-visible .track__sweep,
 .track-row:hover .track__sweep,
