@@ -52,7 +52,7 @@ export default async function AdminGroupsPage() {
                   {group.name}
                 </Link>
                 <span className="admin-row__meta">
-                  {group.direction.name} · {group.teacher.firstName} {group.teacher.lastName} ·{' '}
+                  {group.direction.name} · {group.teacher.lastName} {group.teacher.firstName} ·{' '}
                   {group.location.name}
                 </span>
                 <span className="admin-row__meta">{describeGroupSchedule(group.schedule)}</span>
