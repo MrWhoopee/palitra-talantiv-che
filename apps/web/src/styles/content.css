@@ -294,3 +294,94 @@
   margin: 0 0 var(--pt-space-4);
   line-height: var(--pt-leading-normal);
 }
+
+/* --- Directions: the price list as a chart ---------------------------------
+
+   The page's own device, and the one its cover will be made of: every length
+   a direction is taught in, drawn against an hour, stacked. Shrunk to a
+   thumbnail it still reads as a block of bars - which is the test.
+--------------------------------------------------------------------------- */
+
+.directions {
+  margin: var(--pt-space-7) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--pt-line);
+  list-style: none;
+}
+
+.direction {
+  display: grid;
+  align-items: start;
+  gap: var(--pt-space-4) var(--pt-space-7);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  padding-block: var(--pt-space-5);
+  border-bottom: 1px solid var(--pt-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.direction__about {
+  display: grid;
+  gap: var(--pt-space-2);
+}
+
+.direction__name {
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xl);
+  font-weight: 500;
+  transition: color var(--pt-dur-quick) var(--pt-ease-out);
+}
+
+.direction:hover .direction__name,
+.direction:focus-visible .direction__name {
+  color: var(--pt-primary);
+}
+
+.direction__text {
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+.direction__plans {
+  display: grid;
+  gap: var(--pt-space-3);
+}
+
+.direction__plan {
+  display: grid;
+  align-items: center;
+  gap: var(--pt-space-4);
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.direction__minutes {
+  min-width: 4.5rem;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-xs);
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+  color: var(--pt-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.direction__price {
+  min-width: 5rem;
+  color: var(--pt-primary);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.direction__pending {
+  align-self: center;
+  color: var(--pt-text-muted);
+  font-size: var(--pt-text-sm);
+}
+
+@media (max-width: 48rem) {
+  .direction {
+    grid-template-columns: 1fr;
+    gap: var(--pt-space-4);
+  }
+}

@@ -45,11 +45,20 @@ export default async function TeachersPage() {
         {teachers.map((teacher) => (
           <li key={teacher.id}>
             <Link href={`/teachers/${teacher.id}`} className="teacher-card">
-              {/* Only where there is one. A card without a photo keeps the
-                  shape it has always had rather than growing a grey box: the
-                  studio is sending pictures one at a time, and a placeholder
-                  in every other card would look like the site is broken. */}
-              {teacher.photoUrl === null ? null : (
+              {/* A portrait where the studio has sent one, and the person's
+                  initials set in the display face where it has not.
+
+                  Stage 5 refused a placeholder here, and was right about what
+                  it refused: a grey box is the absence of an answer, and in
+                  every other card it reads as a broken site. Type is not that.
+                  It is the same letters the mark is drawn in, it is different
+                  for every teacher, and a page of them holds together while
+                  the photographs arrive one at a time. */}
+              {teacher.photoUrl === null ? (
+                <span className="teacher-initials" aria-hidden="true">
+                  {initials(teacher.firstName, teacher.lastName)}
+                </span>
+              ) : (
                 <ViewTransition name={`teacher-photo-${teacher.id}`}>
                   <img className="teacher-photo" src={teacher.photoUrl} alt="" loading="lazy" />
                 </ViewTransition>
@@ -85,4 +94,12 @@ export default async function TeachersPage() {
       </ul>
     </main>
   );
+}
+
+/**
+ * Two letters, hidden from screen readers: the name is right underneath in
+ * full, and having it read out twice helps nobody.
+ */
+function initials(firstName: string, lastName: string): string {
+  return `${firstName.slice(0, 1)}${lastName.slice(0, 1)}`.toUpperCase();
 }

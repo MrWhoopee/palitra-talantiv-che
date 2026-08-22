@@ -48,30 +48,42 @@ export default async function DirectionsPage() {
           вільний час видно одразу.
         </p>
       ) : (
-        <ul className="card-grid card-grid--plain" data-reveal-group>
+        <ul className="directions" data-reveal-group>
           {directions.map((direction) => {
-            const own = plans.filter((plan) => plan.directionId === direction.id);
-            const minutes = shortestLesson(own);
-            const cheapest = cheapestLesson(own);
+            const own = singleLessons(plans, direction.id);
 
             return (
               <li key={direction.id}>
-                <Link href={`/directions/${direction.slug}`} className="card">
-                  <p className="card__title">{direction.name}</p>
-                  {direction.description ? (
-                    <p className="card__text">{direction.description}</p>
-                  ) : null}
+                <Link href={`/directions/${direction.slug}`} className="direction">
+                  <span className="direction__about">
+                    <span className="direction__name">{direction.name}</span>
+                    {direction.description ? (
+                      <span className="direction__text">{direction.description}</span>
+                    ) : null}
+                  </span>
 
-                  {minutes === null ? null : (
-                    <span className="track-row measure">
-                      <Track percent={lessonSharePercent(minutes)} />
-                      <span className="measure__value">{formatMinutes(minutes)}</span>
+                  {/* Every length this direction is taught in, drawn against
+                      an hour. Not "from 350 UAH": a parent choosing between
+                      thirty minutes and an hour is choosing between two
+                      different lessons, and the price list is the only place
+                      that has ever said so. */}
+                  {own.length === 0 ? (
+                    <span className="direction__pending">Ціни уточнюються</span>
+                  ) : (
+                    <span className="direction__plans">
+                      {own.map((plan) => (
+                        <span className="direction__plan" key={plan.id}>
+                          <Track percent={lessonSharePercent(plan.durationMinutes)} />
+                          <span className="direction__minutes">
+                            {formatMinutes(plan.durationMinutes)}
+                          </span>
+                          <span className="direction__price">
+                            {formatUah(Math.round(plan.priceUah / plan.lessonsCount))}
+                          </span>
+                        </span>
+                      ))}
                     </span>
                   )}
-
-                  <p className="card__price">
-                    {cheapest === null ? 'Ціни уточнюються' : `від ${formatUah(cheapest)}`}
-                  </p>
                 </Link>
               </li>
             );
@@ -82,18 +94,25 @@ export default async function DirectionsPage() {
   );
 }
 
-/** The shortest lesson sold in a direction: what "a lesson" means there. */
-function shortestLesson(plans: PricePlan[]): number | null {
-  const durations = plans.map((plan) => plan.durationMinutes);
-  return durations.length === 0 ? null : Math.min(...durations);
-}
-
 /**
- * The lowest price per lesson, not the lowest price on the list: a package of
- * eight costs more than a single lesson and would read as the expensive
- * option, which is the opposite of what it is.
+ * One row per length a lesson is sold in, shortest first, counted once. A
+ * direction usually has both a single lesson and a package at the same
+ * length, and two identical bars beside each other would read as two
+ * different lessons.
  */
-function cheapestLesson(plans: PricePlan[]): number | null {
-  const perLesson = plans.map((plan) => Math.round(plan.priceUah / plan.lessonsCount));
-  return perLesson.length === 0 ? null : Math.min(...perLesson);
+function singleLessons(plans: PricePlan[], directionId: string): PricePlan[] {
+  const byDuration = new Map<number, PricePlan>();
+
+  for (const plan of plans) {
+    if (plan.directionId !== directionId || plan.format !== 'INDIVIDUAL') continue;
+
+    const perLesson = plan.priceUah / plan.lessonsCount;
+    const kept = byDuration.get(plan.durationMinutes);
+    // The cheaper way to buy that length is the one worth showing.
+    if (kept === undefined || perLesson < kept.priceUah / kept.lessonsCount) {
+      byDuration.set(plan.durationMinutes, plan);
+    }
+  }
+
+  return [...byDuration.values()].sort((a, b) => a.durationMinutes - b.durationMinutes);
 }
