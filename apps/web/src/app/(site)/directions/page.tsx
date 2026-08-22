@@ -1,6 +1,7 @@
 import { lessonSharePercent, type Direction, type PricePlan } from '@palitra/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ShowDirections } from '@/components/show-directions';
 import { Track } from '@/components/track';
 import { api } from '@/lib/api';
 import { openGraphFor } from '@/lib/seo';
@@ -32,65 +33,69 @@ export default async function DirectionsPage() {
   ]);
 
   return (
-    <main className="page">
-      <header className="page-head">
-        <p className="eyebrow">Чого навчаємо</p>
-        <h1 className="page-title">Напрями</h1>
-        <p className="page-lede">
-          Голос і три інструменти. Заняття індивідуальні або в групі — від чотирьох років і без
-          верхньої межі.
-        </p>
-      </header>
+    <>
+      <ShowDirections directions={directions} plans={plans} />
 
-      {directions.length === 0 ? (
-        <p className="empty-state">
-          Перелік напрямів готується. Тим часом <Link href="/teachers">оберіть викладача</Link> —
-          вільний час видно одразу.
-        </p>
-      ) : (
-        <ul className="directions" data-reveal-group>
-          {directions.map((direction) => {
-            const own = singleLessons(plans, direction.id);
+      <main className="page">
+        <header className="page-head">
+          <p className="eyebrow">Чого навчаємо</p>
+          <h1 className="page-title">Напрями</h1>
+          <p className="page-lede">
+            Голос і три інструменти. Заняття індивідуальні або в групі — від чотирьох років і без
+            верхньої межі.
+          </p>
+        </header>
 
-            return (
-              <li key={direction.id}>
-                <Link href={`/directions/${direction.slug}`} className="direction">
-                  <span className="direction__about">
-                    <span className="direction__name">{direction.name}</span>
-                    {direction.description ? (
-                      <span className="direction__text">{direction.description}</span>
-                    ) : null}
-                  </span>
+        {directions.length === 0 ? (
+          <p className="empty-state">
+            Перелік напрямів готується. Тим часом <Link href="/teachers">оберіть викладача</Link> —
+            вільний час видно одразу.
+          </p>
+        ) : (
+          <ul className="directions" data-reveal-group>
+            {directions.map((direction) => {
+              const own = singleLessons(plans, direction.id);
 
-                  {/* Every length this direction is taught in, drawn against
+              return (
+                <li key={direction.id}>
+                  <Link href={`/directions/${direction.slug}`} className="direction">
+                    <span className="direction__about">
+                      <span className="direction__name">{direction.name}</span>
+                      {direction.description ? (
+                        <span className="direction__text">{direction.description}</span>
+                      ) : null}
+                    </span>
+
+                    {/* Every length this direction is taught in, drawn against
                       an hour. Not "from 350 UAH": a parent choosing between
                       thirty minutes and an hour is choosing between two
                       different lessons, and the price list is the only place
                       that has ever said so. */}
-                  {own.length === 0 ? (
-                    <span className="direction__pending">Ціни уточнюються</span>
-                  ) : (
-                    <span className="direction__plans">
-                      {own.map((plan) => (
-                        <span className="direction__plan" key={plan.id}>
-                          <Track percent={lessonSharePercent(plan.durationMinutes)} />
-                          <span className="direction__minutes">
-                            {formatMinutes(plan.durationMinutes)}
+                    {own.length === 0 ? (
+                      <span className="direction__pending">Ціни уточнюються</span>
+                    ) : (
+                      <span className="direction__plans">
+                        {own.map((plan) => (
+                          <span className="direction__plan" key={plan.id}>
+                            <Track percent={lessonSharePercent(plan.durationMinutes)} />
+                            <span className="direction__minutes">
+                              {formatMinutes(plan.durationMinutes)}
+                            </span>
+                            <span className="direction__price">
+                              {formatUah(Math.round(plan.priceUah / plan.lessonsCount))}
+                            </span>
                           </span>
-                          <span className="direction__price">
-                            {formatUah(Math.round(plan.priceUah / plan.lessonsCount))}
-                          </span>
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </main>
+                        ))}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </main>
+    </>
   );
 }
 

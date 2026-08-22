@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { TeachersScene } from '@/components/show-scenes/teachers';
+import { tintOfSlugs } from '@/lib/direction-tints';
 import { isCurtainOpen, readSkin, watchAttributes } from '@/lib/show';
 import { REDUCED_MOTION_QUERY } from '@/lib/skin';
 import '@/styles/show-scene.css';
@@ -33,16 +34,6 @@ const FIGURES = [
   '/demo/figures/figure-3.png',
   '/demo/figures/figure-4.png',
 ];
-
-/** A teacher is lit in the colour of what they teach. */
-const DIRECTION_TINTS: Record<string, string> = {
-  vocal: '#7546d0',
-  piano: '#2f4d8a',
-  guitar: '#8a3f2f',
-  ukulele: '#3a5b4a',
-};
-
-const FALLBACK_TINT = '#2a1f45';
 
 export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] }) {
   const pathname = usePathname();
@@ -94,7 +85,7 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
         teachers: teachers.map((teacher, index) => ({
           id: teacher.id,
           figureUrl: teacher.cutoutUrl ?? FIGURES[index % FIGURES.length]!,
-          tint: tintOf(teacher),
+          tint: tintOfSlugs(teacher.directions.map((direction) => direction.slug)),
         })),
       });
 
@@ -188,13 +179,4 @@ export function ShowTeachers({ teachers }: { teachers: readonly PublicTeacher[] 
       <div className="scene__rail" style={{ height: `${teachers.length * 100}vh` }} />
     </main>
   );
-}
-
-function tintOf(teacher: PublicTeacher): string {
-  for (const direction of teacher.directions) {
-    const tint = DIRECTION_TINTS[direction.slug];
-    if (tint !== undefined) return tint;
-  }
-
-  return FALLBACK_TINT;
 }

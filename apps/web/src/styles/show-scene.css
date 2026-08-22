@@ -64,6 +64,33 @@
   text-shadow: 0 1px 18px rgba(0, 0, 0, 0.6);
 }
 
+/* Two numbers a row: what the scene is drawing, said in words for anyone who
+   is reading rather than watching. */
+.scene__list {
+  display: grid;
+  gap: var(--pt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 20rem;
+}
+
+.scene__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pt-space-4);
+  border-bottom: 1px solid color-mix(in srgb, #fff 16%, transparent);
+  padding-bottom: var(--pt-space-2);
+  color: color-mix(in srgb, #fff 82%, transparent);
+  font-size: var(--pt-text-sm);
+}
+
+.scene__value {
+  font-family: var(--pt-font-display);
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
 .scene__cta {
   justify-self: start;
   padding: var(--pt-space-3) var(--pt-space-5);
