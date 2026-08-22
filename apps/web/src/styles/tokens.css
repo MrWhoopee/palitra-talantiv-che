@@ -78,9 +78,6 @@
   /* The travel of anything that arrives from below. */
   --pt-rise: 0.75rem;
 
-  /* The mat around the show. Its bottom edge is the player, not this. */
-  --pt-frame: 0.625rem;
-
   /* --- Spacing: 4px step through --pt-space-4, then a widening curve -- */
   --pt-space-1: 0.25rem;
   --pt-space-2: 0.5rem;

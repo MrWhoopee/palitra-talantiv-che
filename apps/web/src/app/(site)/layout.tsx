@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CurtainCover } from '@/components/curtain-cover';
 import { PointerLayer } from '@/components/pointer-layer';
 import { RevealObserver } from '@/components/reveal-observer';
 import { ShowPlayer } from '@/components/show-player';
@@ -19,6 +20,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <RevealObserver />
       <PointerLayer />
       <ShowPlayer />
+      <CurtainCover />
     </div>
   );
 }

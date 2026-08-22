@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SkinSwitch } from '@/components/skin-switch';
 import { REDUCED_MOTION_QUERY } from '@/lib/skin';
+import { isCurtainOpen, readSkin, setCurtainOpen, watchAttributes } from '@/lib/show';
 import { neighbours, trackAt, trackIndex } from '@/lib/tracks';
 
 /**
@@ -21,8 +22,12 @@ import { neighbours, trackAt, trackIndex } from '@/lib/tracks';
  */
 export function ShowPlayer() {
   const pathname = usePathname();
-  const showing = useShowSkin();
+  const { showing, open } = useShowState();
   const [pageName, setPageName] = useState('');
+
+  function toggleCurtain() {
+    setCurtainOpen(document.documentElement, !open);
+  }
 
   // For a page that is not a track - the gallery, the rules, the cabinet -
   // the caption is the page's own name, which the document already knows.
@@ -51,13 +56,25 @@ export function ShowPlayer() {
       <div className="player__transport">
         <Step track={previous} direction="previous" />
 
-        {/* Play opens the cover - the scene a track starts from. It is the
-            middle of the transport because it is the thing the arrows are
-            arranged around, the same way it is on anything that plays. */}
-        <Link className="player__play" href="/?stage=wall">
-          <span aria-hidden="true">▶</span>
-          <span className="visually-hidden">Грати: обкладинка</span>
-        </Link>
+        {/* Play draws the curtain back; pause draws it shut and the mark
+            comes back. It sits in the middle because it is the thing the
+            arrows are arranged around, the way it is on anything that plays.
+
+            On a page that has no cover yet it is a link home, where the one
+            cover there is lives. */}
+        {pathname === '/' ? (
+          <button className="player__play" onClick={toggleCurtain} type="button">
+            <span aria-hidden="true">{open ? '❙❙' : '▶'}</span>
+            <span className="visually-hidden">
+              {open ? 'Пауза: засунути завісу' : 'Грати: розсунути завісу'}
+            </span>
+          </button>
+        ) : (
+          <Link className="player__play" href="/">
+            <span aria-hidden="true">▶</span>
+            <span className="visually-hidden">Грати: обкладинка</span>
+          </Link>
+        )}
 
         <Step track={next} direction="next" />
       </div>
@@ -105,12 +122,13 @@ function Step({
 }
 
 /**
- * Whether the show is on, watched rather than read once: the switch in the
- * footer changes the attribute in place, and a player that only looked at
- * mount would stay on screen after somebody turned the show off.
+ * Whether the show is on and whether the curtain is back, watched rather than
+ * read once: the switch in the footer changes the skin in place and this
+ * component changes the curtain in place. Anything that only looked at mount
+ * would be showing the previous answer.
  */
-function useShowSkin(): boolean {
-  const [showing, setShowing] = useState(false);
+function useShowState(): { showing: boolean; open: boolean } {
+  const [state, setState] = useState({ showing: false, open: false });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -120,14 +138,11 @@ function useShowSkin(): boolean {
     // player is the one piece that would otherwise outlive the decision.
     if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return;
 
-    const read = () => setShowing(root.dataset['skin'] === 'show');
+    const read = () => setState({ showing: readSkin(root) === 'show', open: isCurtainOpen(root) });
     read();
 
-    const observer = new MutationObserver(read);
-    observer.observe(root, { attributes: true, attributeFilter: ['data-skin'] });
-
-    return () => observer.disconnect();
+    return watchAttributes(root, read);
   }, []);
 
-  return showing;
+  return state;
 }
