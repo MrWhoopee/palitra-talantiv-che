@@ -111,6 +111,15 @@ export function formatEventDate(iso: string): string {
 }
 
 /**
+ * The day and the month apart, for the playbill, where the date is set as a
+ * date rather than read as a sentence: `{ day: '13', month: 'вересня' }`.
+ */
+export function eventDayParts(iso: string): { day: string; month: string } {
+  const date = toLocalDate(new Date(iso));
+  return { day: String(date.day), month: MONTHS[date.month - 1] ?? '' };
+}
+
+/**
  * `"13 вересня 2026, 18:00 – 20:00"`, and the same without the tail when the
  * studio has not said when the event ends. A concert that runs past midnight
  * gets both dates written out, because "18:00 – 01:00" on one date is a lie.
