@@ -1,0 +1,182 @@
+/*
+ * The welcome stage. A dark page, on purpose: this is the one screen on the
+ * site that is a room rather than a document, and the tokens that serve a light
+ * reading surface would fight it. The violet and the tangerine still come from
+ * tokens.css - only the ground they sit on changes.
+ */
+
+.stage {
+  position: relative;
+  min-height: 100dvh;
+  background: #05040a;
+  color: #f4f2f7;
+}
+
+.stage__canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Darkens the corners so the text always has ground under it, wherever the
+   camera happens to be pointing. */
+.stage__vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 45%, rgba(5, 4, 10, 0.85) 100%),
+    linear-gradient(to top, rgba(5, 4, 10, 0.9) 0%, transparent 42%);
+}
+
+/* --- The way in --------------------------------------------------------- */
+
+.stage__enter {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  padding-bottom: var(--pt-space-9);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stage__enter:disabled {
+  cursor: default;
+}
+
+/* --- The words that ride with the camera -------------------------------- */
+
+.stage__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.stage__block {
+  --pt-presence: 0;
+  position: absolute;
+  left: var(--pt-space-8);
+  bottom: var(--pt-space-9);
+  max-width: 26rem;
+  opacity: var(--pt-presence);
+  /* Arrives from below as the camera settles, rather than switching on. */
+  transform: translateY(calc((1 - var(--pt-presence)) * 1.5rem));
+  will-change: opacity, transform;
+}
+
+.stage__block--finale {
+  left: 50%;
+  transform: translate(-50%, calc((1 - var(--pt-presence)) * 1.5rem));
+  text-align: center;
+}
+
+.stage__eyebrow {
+  margin: 0 0 var(--pt-space-2);
+  color: var(--pt-tangerine);
+  font-size: var(--pt-text-xs);
+  font-weight: 700;
+  letter-spacing: var(--pt-tracking-mark);
+  text-transform: uppercase;
+}
+
+.stage__title {
+  margin: 0;
+  font-family: var(--pt-font-display);
+  font-size: var(--pt-text-2xl);
+  line-height: var(--pt-leading-tight);
+  letter-spacing: var(--pt-tracking-display);
+  /* The stage moves underneath; the shadow is what keeps the text legible when
+     a spotlight sweeps past behind it. */
+  text-shadow: 0 2px 24px rgba(5, 4, 10, 0.95);
+}
+
+.stage__body {
+  margin: var(--pt-space-3) 0 var(--pt-space-4);
+  color: rgba(244, 242, 247, 0.82);
+  font-size: var(--pt-text-base);
+  line-height: var(--pt-leading-normal);
+  text-shadow: 0 2px 18px rgba(5, 4, 10, 0.95);
+}
+
+.stage__cta {
+  display: inline-block;
+  padding: var(--pt-space-3) var(--pt-space-5);
+  border-radius: var(--pt-radius-pill);
+  background: var(--pt-accent-fill);
+  color: var(--pt-on-accent);
+  font-size: var(--pt-text-sm);
+  font-weight: 700;
+}
+
+/* The tall spacer that gives the journey something to scroll through. */
+.stage__journey {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* --- Narrow screens ------------------------------------------------------ */
+
+@media (max-width: 48rem) {
+  .stage__block {
+    left: var(--pt-space-4);
+    right: var(--pt-space-4);
+    bottom: var(--pt-space-7);
+    max-width: none;
+  }
+
+  .stage__block--finale {
+    left: var(--pt-space-4);
+    transform: translateY(calc((1 - var(--pt-presence)) * 1.5rem));
+  }
+}
+
+/* --- No WebGL, or a visitor who asked for less motion -------------------- */
+
+.stage--poster {
+  display: grid;
+  gap: var(--pt-space-8);
+  padding: var(--pt-space-8) var(--pt-space-5) var(--pt-space-9);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(107, 16, 32, 0.55), transparent 70%),
+    repeating-linear-gradient(90deg, #4a0b16 0 2.5rem, #6b1020 2.5rem 5rem), #05040a;
+}
+
+.stage__poster {
+  display: grid;
+  justify-items: center;
+  gap: var(--pt-space-4);
+  padding: var(--pt-space-9) 0;
+  text-align: center;
+}
+
+.stage__poster-mark {
+  width: min(22rem, 70vw);
+  filter: drop-shadow(0 4px 30px rgba(117, 70, 208, 0.6));
+}
+
+.stage__list {
+  display: grid;
+  gap: var(--pt-space-6);
+  max-width: var(--pt-container);
+  margin: 0 auto;
+  padding: var(--pt-space-7);
+  border-radius: var(--pt-radius-lg);
+  background: rgba(5, 4, 10, 0.72);
+}
+
+.stage__block--static {
+  position: static;
+  opacity: 1;
+  transform: none;
+  max-width: none;
+}
